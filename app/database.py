@@ -105,6 +105,35 @@ class BazurtoDatabase:
                     metodo_origen TEXT,
                     timestamp TEXT NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS contenedores_zona (
+                    contenedor_id TEXT PRIMARY KEY,
+                    zona_id TEXT NOT NULL,
+                    codigo TEXT NOT NULL,
+                    tipo TEXT NOT NULL,
+                    nivel_llenado REAL NOT NULL DEFAULT 0.0,
+                    estado_visual TEXT NOT NULL DEFAULT 'contenedor_estable',
+                    bolsas_suelo INTEGER NOT NULL DEFAULT 0,
+                    ultima_imagen TEXT,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS historial_vision (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    zona_id TEXT NOT NULL,
+                    zona_nombre TEXT NOT NULL,
+                    contenedor_id TEXT NOT NULL,
+                    contenedor_codigo TEXT NOT NULL,
+                    fuente_imagen TEXT NOT NULL,
+                    contenedor_detectado INTEGER NOT NULL,
+                    nivel_llenado_visual REAL NOT NULL,
+                    bolsas_en_suelo INTEGER NOT NULL,
+                    desbordamiento INTEGER NOT NULL,
+                    estado_visual TEXT NOT NULL,
+                    confianza REAL NOT NULL,
+                    annotated_image_base64 TEXT NOT NULL,
+                    timestamp TEXT NOT NULL
+                );
                 """
             )
             cols = {
@@ -163,6 +192,24 @@ class BazurtoDatabase:
                     ("zona_3", 82.0, 30, 8.0, 2, "desbordamiento_detectado", 4, now),
                 )
 
+            cont_count = conn.execute("SELECT COUNT(*) FROM contenedores_zona").fetchone()[0]
+            if cont_count == 0:
+                default_conts = [
+                    ("cont_z3_01", "zona_3", "CONT-Z3-01 (Pescadería Norte)", "Contenedor Verde 1100L", 92.0, "desbordamiento_detectado", 2, None, now),
+                    ("cont_z3_02", "zona_3", "CONT-Z3-02 (Muelle Central)", "Contenedor Negro 1100L", 86.5, "desbordamiento_detectado", 2, None, now),
+                    ("cont_z5_01", "zona_5", "CONT-Z5-01 (Verduras Sur)", "Contenedor Gris 1100L", 68.0, "contenedor_estable", 0, None, now),
+                    ("cont_z2_01", "zona_2", "CONT-Z2-01 (Callejón Carnes)", "Contenedor Verde 1100L", 45.0, "contenedor_estable", 0, None, now),
+                ]
+                conn.executemany(
+                    """
+                    INSERT INTO contenedores_zona (
+                        contenedor_id, zona_id, codigo, tipo, nivel_llenado,
+                        estado_visual, bolsas_suelo, ultima_imagen, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    default_conts,
+                )
+
     def reset_all(self) -> None:
         """Restaura la base de datos a su estado inicial limpio."""
         with self._connect() as conn:
@@ -174,6 +221,8 @@ class BazurtoDatabase:
                 "alertas",
                 "incidencias_supervisor",
                 "mensajes_acl",
+                "contenedores_zona",
+                "historial_vision",
             ):
                 conn.execute(f"DELETE FROM {table}")
         self._seed_default_zones()
@@ -470,6 +519,194 @@ class BazurtoDatabase:
             else:
                 rows = conn.execute(
                     "SELECT * FROM mensajes_acl ORDER BY id DESC LIMIT ?",
+                    (limit,),
+                ).fetchall()
+            return [dict(r) for r in rows]
+
+    def create_zona(
+        self,
+        zona_id: str,
+        nombre: str,
+        nivel_llenado_contenedores: float = 25.0,
+        concentracion_gases: float = 450.0,
+        temperatura: float = 30.0,
+        humedad: float = 72.0,
+    ) -> dict[str, Any]:
+        clean_id = zona_id.strip().lower().replace(" ", "_")
+        if not clean_id or not nombre.strip():
+            raise ValueError("El ID y el nombre de la zona son obligatorios.")
+        if self.get_zona(clean_id):
+            raise ValueError(f"La zona '{clean_id}' ya existe en MercadoBazurto.")
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO zonas_entorno (
+                    zona_id, nombre, nivel_llenado_contenedores,
+                    concentracion_gases, temperatura, humedad,
+                    sensor_aire_activo, comunidad_confirma, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, 1, 1, ?)
+                """,
+                (
+                    clean_id,
+                    nombre.strip(),
+                    nivel_llenado_contenedores,
+                    concentracion_gases,
+                    temperatura,
+                    humedad,
+                    now,
+                ),
+            )
+            default_cont_id = f"cont_{clean_id}_01"
+            existing_cont = conn.execute(
+                "SELECT 1 FROM contenedores_zona WHERE contenedor_id = ?", (default_cont_id,)
+            ).fetchone()
+            if not existing_cont:
+                conn.execute(
+                    """
+                    INSERT INTO contenedores_zona (
+                        contenedor_id, zona_id, codigo, tipo, nivel_llenado,
+                        estado_visual, bolsas_suelo, ultima_imagen, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, 'contenedor_estable', 0, NULL, ?)
+                    """,
+                    (
+                        default_cont_id,
+                        clean_id,
+                        f"CONT-{clean_id.upper()}-01",
+                        "Contenedor Municipal 1100L",
+                        nivel_llenado_contenedores,
+                        now,
+                    ),
+                )
+        return self.get_zona(clean_id) or {}
+
+    def list_contenedores(self, zona_id: Optional[str] = None) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            if zona_id:
+                rows = conn.execute(
+                    "SELECT * FROM contenedores_zona WHERE zona_id = ? ORDER BY contenedor_id",
+                    (zona_id,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM contenedores_zona ORDER BY zona_id, contenedor_id"
+                ).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_contenedor(self, contenedor_id: str) -> Optional[dict[str, Any]]:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM contenedores_zona WHERE contenedor_id = ?", (contenedor_id,)
+            ).fetchone()
+            return dict(row) if row else None
+
+    def create_contenedor(
+        self,
+        contenedor_id: str,
+        zona_id: str,
+        codigo: str,
+        tipo: str = "Contenedor Municipal 1100L",
+        nivel_llenado: float = 15.0,
+    ) -> dict[str, Any]:
+        if not self.get_zona(zona_id):
+            raise ValueError(f"Zona desconocida para contenedor: {zona_id}")
+        clean_id = contenedor_id.strip().lower().replace(" ", "_")
+        if not clean_id or not codigo.strip():
+            raise ValueError("El ID y código del contenedor son obligatorios.")
+        if self.get_contenedor(clean_id):
+            raise ValueError(f"El contenedor '{clean_id}' ya existe.")
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO contenedores_zona (
+                    contenedor_id, zona_id, codigo, tipo, nivel_llenado,
+                    estado_visual, bolsas_suelo, ultima_imagen, updated_at
+                ) VALUES (?, ?, ?, ?, ?, 'contenedor_estable', 0, NULL, ?)
+                """,
+                (clean_id, zona_id, codigo.strip(), tipo.strip() or "Contenedor Municipal 1100L", nivel_llenado, now),
+            )
+        return self.get_contenedor(clean_id) or {}
+
+    def update_contenedor_vision(
+        self,
+        contenedor_id: str,
+        nivel_llenado: float,
+        estado_visual: str,
+        bolsas_suelo: int,
+        ultima_imagen: str,
+    ) -> dict[str, Any]:
+        cont = self.get_contenedor(contenedor_id)
+        if not cont:
+            raise ValueError(f"Contenedor desconocido: {contenedor_id}")
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            conn.execute(
+                """
+                UPDATE contenedores_zona
+                SET nivel_llenado = ?, estado_visual = ?, bolsas_suelo = ?,
+                    ultima_imagen = ?, updated_at = ?
+                WHERE contenedor_id = ?
+                """,
+                (nivel_llenado, estado_visual, bolsas_suelo, ultima_imagen, now, contenedor_id),
+            )
+        return self.get_contenedor(contenedor_id) or {}
+
+    def insert_historial_vision(
+        self,
+        zona_id: str,
+        zona_nombre: str,
+        contenedor_id: str,
+        contenedor_codigo: str,
+        fuente_imagen: str,
+        contenedor_detectado: bool,
+        nivel_llenado_visual: float,
+        bolsas_en_suelo: int,
+        desbordamiento: bool,
+        estado_visual: str,
+        confianza: float,
+        annotated_image_base64: str,
+    ) -> dict[str, Any]:
+        now = datetime.now(timezone.utc).isoformat()
+        with self._connect() as conn:
+            cur = conn.execute(
+                """
+                INSERT INTO historial_vision (
+                    zona_id, zona_nombre, contenedor_id, contenedor_codigo,
+                    fuente_imagen, contenedor_detectado, nivel_llenado_visual,
+                    bolsas_en_suelo, desbordamiento, estado_visual,
+                    confianza, annotated_image_base64, timestamp
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    zona_id,
+                    zona_nombre,
+                    contenedor_id,
+                    contenedor_codigo,
+                    fuente_imagen,
+                    int(contenedor_detectado),
+                    nivel_llenado_visual,
+                    bolsas_en_suelo,
+                    int(desbordamiento),
+                    estado_visual,
+                    confianza,
+                    annotated_image_base64,
+                    now,
+                ),
+            )
+            row = conn.execute("SELECT * FROM historial_vision WHERE id = ?", (cur.lastrowid,)).fetchone()
+            return dict(row) if row else {}
+
+    def list_historial_vision(self, zona_id: Optional[str] = None, limit: int = 25) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            if zona_id:
+                rows = conn.execute(
+                    "SELECT * FROM historial_vision WHERE zona_id = ? ORDER BY id DESC LIMIT ?",
+                    (zona_id, limit),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM historial_vision ORDER BY id DESC LIMIT ?",
                     (limit,),
                 ).fetchall()
             return [dict(r) for r in rows]

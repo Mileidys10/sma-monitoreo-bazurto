@@ -218,3 +218,89 @@ def test_cuatro_imagenes_reales_carpeta_testeo() -> None:
     estado_despues = client.get("/api/estado").json()
     zona_3_despues = next(z for z in estado_despues["entorno_zonas"] if z["zona_id"] == "zona_3")
     assert zona_3_despues["nivel_llenado_contenedores"] == nivel_previo
+
+
+def test_nueve_imagenes_reales_y_gestion_zonas_contenedores_historial() -> None:
+    samples_dir = STATIC_DIR / "samples"
+    expected_9 = [
+        ("real_vacio_173721.png", True, 12.4, 0, False, "contenedor_estable"),
+        ("real_tope_173630.png", True, 86.5, 2, True, "desbordamiento_detectado"),
+        ("real_desborde_173640.png", True, 96.8, 6, True, "desbordamiento_detectado"),
+        ("real_no_contenedor_174700.png", False, 0.0, 0, False, "sin_contenedor_detectado"),
+        ("real_negros_desborde_180355.png", True, 94.5, 7, True, "desbordamiento_detectado"),
+        ("real_negros_limpios_180415.png", True, 8.5, 0, False, "contenedor_estable"),
+        ("real_gris_medio_180526.png", True, 58.4, 0, False, "contenedor_estable"),
+        ("real_gris_abierto_180537.png", True, 14.2, 1, False, "contenedor_estable"),
+        ("real_gris_bolsas_suelo_180550.png", True, 72.5, 2, True, "desbordamiento_detectado"),
+    ]
+    for filename, exp_det, exp_lvl, exp_bags, exp_ovf, exp_state in expected_9:
+        raw = (samples_dir / filename).read_bytes()
+        data_url = "data:image/png;base64," + base64.b64encode(raw).decode("ascii")
+        res = analizar_imagen_contenedor(image_input=data_url, static_dir=STATIC_DIR)
+        assert res["contenedor_detectado"] is exp_det, filename
+        assert res["nivel_llenado_visual"] == exp_lvl, filename
+        assert res["bolsas_en_suelo"] == exp_bags, filename
+        assert res["desbordamiento"] is exp_ovf, filename
+        assert res["estado_visual"] == exp_state, filename
+
+    # Flujo de creación de nueva zona + nuevo contenedor + asignación de imagen + historial persistente
+    client = TestClient(app)
+    assert client.post("/api/reset").status_code == 200
+
+    z_resp = client.post(
+        "/api/zonas",
+        json={"zona_id": "zona_6", "nombre": "Sector Frutas y Plátanos"},
+    )
+    assert z_resp.status_code == 200
+    assert z_resp.json()["zona_id"] == "zona_6"
+
+    c_resp = client.post(
+        "/api/contenedores",
+        json={"zona_id": "zona_6", "codigo": "CONT-Z6-02", "tipo": "Contenedor Negro 1100L"},
+    )
+    assert c_resp.status_code == 200
+    cont_id = c_resp.json()["contenedor_id"]
+
+    img_negros_b64 = "data:image/png;base64," + base64.b64encode((samples_dir / "real_negros_desborde_180355.png").read_bytes()).decode("ascii")
+    vis_resp = client.post(
+        "/api/vision/analizar",
+        json={
+            "zona_id": "zona_6",
+            "contenedor_id": cont_id,
+            "image_base64": img_negros_b64,
+            "aplicar_a_entorno": True,
+        },
+    )
+    assert vis_resp.status_code == 200
+    vis_data = vis_resp.json()
+    assert vis_data["nivel_llenado_visual"] == 94.5
+    assert vis_data["bolsas_en_suelo"] == 7
+    assert vis_data["contenedor_id"] == cont_id
+    assert vis_data["contenedor_codigo"] == "CONT-Z6-02"
+    assert vis_data["zona_actualizada"]["nivel_llenado_contenedores"] == 94.5
+
+    # Registrar también una imagen negativa asociada a zona_6 + cont_id sin sobrescribir 94.5%
+    img_neg_b64 = "data:image/png;base64," + base64.b64encode((samples_dir / "real_no_contenedor_174700.png").read_bytes()).decode("ascii")
+    vis_neg = client.post(
+        "/api/vision/analizar",
+        json={
+            "zona_id": "zona_6",
+            "contenedor_id": cont_id,
+            "image_base64": img_neg_b64,
+            "aplicar_a_entorno": True,
+        },
+    )
+    assert vis_neg.status_code == 200
+    assert vis_neg.json()["contenedor_detectado"] is False
+
+    hist_resp = client.get("/api/vision/historial", params={"zona_id": "zona_6"})
+    assert hist_resp.status_code == 200
+    hist = hist_resp.json()
+    assert len(hist) == 2
+    assert hist[0]["contenedor_codigo"] == "CONT-Z6-02"
+    assert hist[0]["contenedor_detectado"] == 0
+    assert hist[1]["nivel_llenado_visual"] == 94.5
+
+    estado = client.get("/api/estado").json()
+    z6 = next(z for z in estado["entorno_zonas"] if z["zona_id"] == "zona_6")
+    assert z6["nivel_llenado_contenedores"] == 94.5

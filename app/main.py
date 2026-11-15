@@ -1,5 +1,6 @@
 """Aplicación FastAPI para operar y visualizar SMAMonitoreoBazurto con persistencia SQLite."""
 
+import re
 from pathlib import Path
 from typing import Any, Optional
 
@@ -34,8 +35,26 @@ class ZonaUpdateRequest(BaseModel):
     comunidad_confirma: Optional[bool] = None
 
 
+class ZonaCreateRequest(BaseModel):
+    zona_id: Optional[str] = None
+    nombre: str
+    nivel_llenado_contenedores: float = Field(25.0, ge=0.0, le=100.0)
+    concentracion_gases: float = Field(450.0, ge=0.0, le=5000.0)
+    temperatura: float = Field(30.0, ge=-10.0, le=70.0)
+    humedad: float = Field(72.0, ge=0.0, le=100.0)
+
+
+class ContenedorCreateRequest(BaseModel):
+    contenedor_id: Optional[str] = None
+    zona_id: str
+    codigo: str
+    tipo: str = "Contenedor Municipal 1100L"
+    nivel_llenado: float = Field(15.0, ge=0.0, le=100.0)
+
+
 class CasoUso1Request(BaseModel):
     zona_id: str = "zona_3"
+    contenedor_id: Optional[str] = None
     forzar_duplicada: bool = False
     comunidad_confirma: Optional[bool] = None
     image_base64: Optional[str] = None
@@ -51,6 +70,7 @@ class CasoUso2Request(BaseModel):
 
 class VisionAnalyzeRequest(BaseModel):
     zona_id: str = "zona_3"
+    contenedor_id: Optional[str] = None
     image_base64: Optional[str] = None
     preset_imagen: Optional[str] = None
     aplicar_a_entorno: bool = True
@@ -108,6 +128,8 @@ def get_estado() -> dict[str, Any]:
             },
         },
         "entorno_zonas": sma.db.list_zonas(),
+        "contenedores": sma.db.list_contenedores(),
+        "historial_vision": sma.db.list_historial_vision(limit=25),
         "muestras_vision": SAMPLE_CATALOG,
         "estado_interno_residuos": sma.db.list_estados_residuos(),
         "historial_mediciones_aire": sma.db.list_historial_aire(limit=15),
@@ -118,9 +140,75 @@ def get_estado() -> dict[str, Any]:
     }
 
 
+def _slugify_id(raw: str, prefix: str) -> str:
+    slug = re.sub(r"[^a-z0-9_]+", "_", raw.strip().lower()).strip("_")
+    return slug or f"{prefix}_1"
+
+
+def _resolve_zona_y_contenedor(zona_id: str, contenedor_id: Optional[str]) -> tuple[dict[str, Any], dict[str, Any]]:
+    zona = sma.db.get_zona(zona_id)
+    if not zona:
+        raise ValueError(f"Zona desconocida: {zona_id}")
+    if contenedor_id:
+        cont = sma.db.get_contenedor(contenedor_id)
+        if cont and cont["zona_id"] == zona_id:
+            return zona, cont
+    conts = sma.db.list_contenedores(zona_id)
+    if conts:
+        return zona, conts[0]
+    created = sma.db.create_contenedor(
+        contenedor_id=f"cont_{zona_id}_01",
+        zona_id=zona_id,
+        codigo=f"CONT-{zona_id.upper()}-01",
+        tipo="Contenedor Municipal 1100L",
+        nivel_llenado=float(zona["nivel_llenado_contenedores"]),
+    )
+    return zona, created
+
+
+@app.post("/api/zonas")
+def create_zona(req: ZonaCreateRequest) -> dict[str, Any]:
+    try:
+        raw_id = req.zona_id.strip() if req.zona_id else _slugify_id(req.nombre, "zona")
+        if not raw_id.startswith("zona_") and not req.zona_id:
+            raw_id = f"zona_{raw_id}"
+        zona = sma.db.create_zona(
+            zona_id=raw_id,
+            nombre=req.nombre,
+            nivel_llenado_contenedores=req.nivel_llenado_contenedores,
+            concentracion_gases=req.concentracion_gases,
+            temperatura=req.temperatura,
+            humedad=req.humedad,
+        )
+        return {**zona, "contenedores": sma.db.list_contenedores(zona["zona_id"])}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/contenedores")
+def create_contenedor(req: ContenedorCreateRequest) -> dict[str, Any]:
+    try:
+        cid = req.contenedor_id.strip() if req.contenedor_id else _slugify_id(f"{req.zona_id}_{req.codigo}", "cont")
+        return sma.db.create_contenedor(
+            contenedor_id=cid,
+            zona_id=req.zona_id,
+            codigo=req.codigo,
+            tipo=req.tipo,
+            nivel_llenado=req.nivel_llenado,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/vision/historial")
+def get_vision_historial(zona_id: Optional[str] = None, limit: int = 25) -> list[dict[str, Any]]:
+    return sma.db.list_historial_vision(zona_id=zona_id, limit=limit)
+
+
 @app.post("/api/vision/analizar")
 def analyze_vision(req: VisionAnalyzeRequest) -> dict[str, Any]:
     try:
+        zona, cont = _resolve_zona_y_contenedor(req.zona_id, req.contenedor_id)
         resultado = analizar_imagen_contenedor(
             image_input=req.image_base64,
             preset_name=req.preset_imagen,
@@ -128,12 +216,44 @@ def analyze_vision(req: VisionAnalyzeRequest) -> dict[str, Any]:
             umbral_critico=sma.parametros.nivel_residuos_critico,
         )
         zona_actualizada = None
-        if req.aplicar_a_entorno and resultado.get("contenedor_detectado", True):
+        contenedor_actualizado = cont
+        detectado = bool(resultado.get("contenedor_detectado", True))
+        if req.aplicar_a_entorno and detectado:
+            contenedor_actualizado = sma.db.update_contenedor_vision(
+                contenedor_id=cont["contenedor_id"],
+                nivel_llenado=float(resultado["nivel_llenado_visual"]),
+                estado_visual=str(resultado["estado_visual"]),
+                bolsas_suelo=int(resultado["bolsas_en_suelo"]),
+                ultima_imagen=str(resultado["fuente_imagen"]),
+            )
             zona_actualizada = sma.db.update_zona(
                 zona_id=req.zona_id,
                 nivel_llenado_contenedores=float(resultado["nivel_llenado_visual"]),
             )
-        return {**resultado, "zona_id": req.zona_id, "zona_actualizada": zona_actualizada}
+        historial_entry = sma.db.insert_historial_vision(
+            zona_id=zona["zona_id"],
+            zona_nombre=zona["nombre"],
+            contenedor_id=cont["contenedor_id"],
+            contenedor_codigo=cont["codigo"],
+            fuente_imagen=str(resultado["fuente_imagen"]),
+            contenedor_detectado=detectado,
+            nivel_llenado_visual=float(resultado["nivel_llenado_visual"]),
+            bolsas_en_suelo=int(resultado["bolsas_en_suelo"]),
+            desbordamiento=bool(resultado["desbordamiento"]),
+            estado_visual=str(resultado["estado_visual"]),
+            confianza=float(resultado["confianza"]),
+            annotated_image_base64=str(resultado["annotated_image_base64"]),
+        )
+        return {
+            **resultado,
+            "zona_id": zona["zona_id"],
+            "zona_nombre": zona["nombre"],
+            "contenedor_id": cont["contenedor_id"],
+            "contenedor_codigo": cont["codigo"],
+            "contenedor_actualizado": contenedor_actualizado,
+            "zona_actualizada": zona_actualizada,
+            "historial_entry": historial_entry,
+        }
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -164,6 +284,7 @@ def run_cu1(req: CasoUso1Request) -> dict[str, Any]:
             image_base64=req.image_base64,
             preset_imagen=req.preset_imagen,
             esperar_confirmacion_interactiva=req.esperar_confirmacion_interactiva,
+            contenedor_id=req.contenedor_id,
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

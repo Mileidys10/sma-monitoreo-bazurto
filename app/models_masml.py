@@ -801,6 +801,7 @@ class SMAMonitoreoBazurto:
         image_base64: Optional[str] = None,
         preset_imagen: Optional[str] = None,
         esperar_confirmacion_interactiva: bool = False,
+        contenedor_id: Optional[str] = None,
     ) -> dict[str, Any]:
         """Ejecuta CU-01 completo o en espera de confirmación comunitaria interactiva."""
         if comunidad_confirma is not None:
@@ -819,6 +820,16 @@ class SMAMonitoreoBazurto:
             preset_imagen=preset_imagen,
             actualizar_entorno=bool(image_base64 or preset_imagen),
         )
+        if vision.get("contenedor_detectado", True) and contenedor_id:
+            cont = self.db.get_contenedor(contenedor_id)
+            if cont and cont["zona_id"] == zona_id:
+                self.db.update_contenedor_vision(
+                    contenedor_id=contenedor_id,
+                    nivel_llenado=float(vision["nivel_llenado_visual"]),
+                    estado_visual=str(vision["estado_visual"]),
+                    bolsas_suelo=int(vision["bolsas_en_suelo"]),
+                    ultima_imagen=str(vision["fuente_imagen"]),
+                )
         nivel_efectivo = float(vision["nivel_usado"])
         estado_interno = self.sensor_residuos.evaluarPersistencia(
             zona_id,

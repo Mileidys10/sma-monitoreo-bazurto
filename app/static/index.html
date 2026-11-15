@@ -149,9 +149,46 @@
     }
     .sample-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+      gap: 8px;
       margin-bottom: 12px;
+    }
+    .assign-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+    .assign-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+    .inline-form {
+      display: none;
+      margin-top: 10px;
+      padding: 10px;
+      background: #ffffff;
+      border: 1px dashed var(--accent);
+      border-radius: 6px;
+    }
+    .inline-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px;
+      align-items: end;
+    }
+    .history-thumb {
+      width: 92px;
+      height: 60px;
+      object-fit: contain;
+      background: #111827;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      display: block;
     }
     .sample-btn {
       display: flex;
@@ -276,7 +313,7 @@
       <div class="guide-body">
         <div class="guide-box">
           <strong>1. Cámara Práctica (<code>analizarImagenes()</code>):</strong><br />
-          No necesitas ir al Mercado de Bazurto. Elige una de las 3 escenas precargadas, sube cualquier foto desde tu PC o abre la webcam de tu portátil. El sistema analiza píxel a píxel el interior del contenedor y el suelo perimetral, dibuja los recuadros de detección y actualiza automáticamente <code>nivelLlenadoContenedores</code>.
+          No necesitas ir al Mercado de Bazurto. Elige una de las 9 fotografías reales de prueba, sube cualquier foto desde tu PC o abre tu webcam, asígnala a la <strong>Zona</strong> y <strong>Contenedor</strong> exactos (puedes crear nuevas zonas y contenedores) y consulta el historial completo debajo.
         </div>
         <div class="guide-box">
           <strong>2. Panel de Comunidad (<code>EmisorAlertas</code>):</strong><br />
@@ -292,9 +329,64 @@
     <!-- Módulo 1: Cámara y Visión Artificial -->
     <section class="card" aria-labelledby="vision-title">
       <h2 id="vision-title">1. Cámara y Visión Artificial &mdash; <code>AgenteSensorResiduos.analizarImagenes()</code></h2>
+
+      <div class="assign-box">
+        <span style="display:block; font-size:0.86rem; font-weight:700; color:var(--accent); margin-bottom:8px;">
+          Paso A: Selecciona (o crea) la Zona y el Contenedor a los que pertenece esta imagen
+        </span>
+        <div class="assign-row">
+          <div>
+            <label for="visionZonaSelect">Zona del Mercado</label>
+            <select id="visionZonaSelect" onchange="alCambiarZonaDesdeVision()"></select>
+          </div>
+          <div>
+            <label for="visionContenedorSelect">Contenedor asignado a la imagen</label>
+            <select id="visionContenedorSelect"></select>
+          </div>
+          <div class="btn-group" style="margin-top:0;">
+            <button type="button" class="btn-outline" onclick="toggleFormZona()">+ Nueva Zona</button>
+            <button type="button" class="btn-outline" onclick="toggleFormContenedor()">+ Nuevo Contenedor</button>
+          </div>
+        </div>
+
+        <div id="formNuevaZona" class="inline-form">
+          <strong style="display:block; font-size:0.83rem; margin-bottom:6px;">Agregar nueva zona a <code>MercadoBazurto</code>:</strong>
+          <div class="inline-form-grid">
+            <div>
+              <label for="inputNuevaZonaId">ID corto (opcional, ej: zona_6)</label>
+              <input type="text" id="inputNuevaZonaId" placeholder="zona_6" />
+            </div>
+            <div>
+              <label for="inputNuevaZonaNombre">Nombre descriptivo de la zona *</label>
+              <input type="text" id="inputNuevaZonaNombre" placeholder="Sector Frutas y Plátanos" />
+            </div>
+            <div>
+              <button type="button" class="btn-primary" onclick="crearNuevaZona()">Guardar Zona</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="formNuevoContenedor" class="inline-form">
+          <strong style="display:block; font-size:0.83rem; margin-bottom:6px;">Agregar nuevo contenedor a la zona seleccionada:</strong>
+          <div class="inline-form-grid">
+            <div>
+              <label for="inputNuevoContCodigo">Código del contenedor *</label>
+              <input type="text" id="inputNuevoContCodigo" placeholder="CONT-Z3-03 (Entrada Sur)" />
+            </div>
+            <div>
+              <label for="inputNuevoContTipo">Tipo / capacidad</label>
+              <input type="text" id="inputNuevoContTipo" value="Contenedor Municipal 1100L" />
+            </div>
+            <div>
+              <button type="button" class="btn-primary" onclick="crearNuevoContenedor()">Guardar Contenedor</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="vision-layout">
         <div>
-          <span style="display:block; font-size:0.86rem; font-weight:600; color:var(--muted); margin-bottom:8px;">Paso A: Elige una escena de contenedor del Mercado de Bazurto (o sube/captura una imagen real):</span>
+          <span style="display:block; font-size:0.86rem; font-weight:600; color:var(--muted); margin-bottom:8px;">Paso B: Elige una de las 9 fotografías reales de prueba (o sube/captura una imagen):</span>
           <div id="sampleGrid" class="sample-grid"></div>
 
           <div class="btn-group">
@@ -329,12 +421,27 @@
       </div>
     </section>
 
+    <!-- Módulo 1B: Historial de Imágenes Analizadas -->
+    <section class="card" aria-labelledby="history-title">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+        <h2 id="history-title" style="margin:0; border:none; padding:0;">1B. Historial de Imágenes Analizadas por Zona y Contenedor</h2>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <label for="historyFilterZona" style="margin:0;">Filtrar zona:</label>
+          <select id="historyFilterZona" onchange="renderizarHistorialVision()" style="width:auto; min-width:190px; padding:6px 10px;">
+            <option value="">Todas las zonas</option>
+          </select>
+          <span id="historyCountBadge" class="badge b-acl">0 imágenes</span>
+        </div>
+      </div>
+      <div id="visionHistoryList" class="trace-list" style="max-height:360px;"></div>
+    </section>
+
     <!-- Módulo 2: Entorno y Casos de Uso -->
     <div class="grid-2">
       <section class="card" aria-labelledby="env-title">
         <h2 id="env-title">2. Entorno: <code>MercadoBazurto</code> (&laquo;environment&raquo;)</h2>
-        <label for="zonaSelect">Zona monitoreada</label>
-        <select id="zonaSelect" onchange="sincronizarInputsZona()">
+        <label for="zonaSelect">Zona monitoreada (sincronizada con Módulo 1)</label>
+        <select id="zonaSelect" onchange="alCambiarZonaDesdeEntorno()">
           <option value="zona_3">zona_3 — Sector Pescadería y Acopio Central</option>
           <option value="zona_5">zona_5 — Sector Verduras y Contenedores Sur</option>
           <option value="zona_2">zona_2 — Callejón de Carnes y Carga</option>
@@ -462,26 +569,56 @@
       {
         filename: "real_vacio_173721.png",
         url: "static/samples/real_vacio_173721.png",
-        titulo: "Foto Real 1: Contenedor Vacío (~12.4%)",
+        titulo: "Foto Real 1: Verde Vacío (12.4%)",
         descripcion: "Contenedor verde abierto con cavidad interior vacía y suelo despejado."
       },
       {
         filename: "real_tope_173630.png",
         url: "static/samples/real_tope_173630.png",
-        titulo: "Foto Real 2: Contenedor al Tope en Tapa (~86.5%)",
+        titulo: "Foto Real 2: Verde al Tope (86.5%)",
         descripcion: "Tapa levantada por bolsas plásticas, bolsa lateral y botellas en el suelo."
       },
       {
         filename: "real_desborde_173640.png",
         url: "static/samples/real_desborde_173640.png",
-        titulo: "Foto Real 3: Contenedor LITTER Desbordado (~96.8%)",
+        titulo: "Foto Real 3: Verde LITTER Desbordado (96.8%)",
         descripcion: "Contenedor saturado arriba y múltiples bolsas acumuladas alrededor en el suelo."
       },
       {
         filename: "real_no_contenedor_174700.png",
         url: "static/samples/real_no_contenedor_174700.png",
         titulo: "Foto Real 4: Caso Negativo (Sin Contenedor)",
-        descripcion: "Fotografía de persona ajena al punto de acopio; debe descartarse sin alterar el entorno."
+        descripcion: "Fotografía ajena al punto de acopio; se descarta sin alterar el entorno."
+      },
+      {
+        filename: "real_negros_desborde_180355.png",
+        url: "static/samples/real_negros_desborde_180355.png",
+        titulo: "Foto Real 5: Negros Desbordados + Costales (94.5%)",
+        descripcion: "Tres contenedores negros rebasados con costales blancos y residuos dispersos en la acera."
+      },
+      {
+        filename: "real_negros_limpios_180415.png",
+        url: "static/samples/real_negros_limpios_180415.png",
+        titulo: "Foto Real 6: Negros Cerrados Limpios (8.5%)",
+        descripcion: "Tres contenedores negros cerrados en estación limpia y ordenada."
+      },
+      {
+        filename: "real_gris_medio_180526.png",
+        url: "static/samples/real_gris_medio_180526.png",
+        titulo: "Foto Real 7: Gris Nivel Medio (58.4%)",
+        descripcion: "Contenedor gris abierto sin tapa con bolsas y cartón a media capacidad."
+      },
+      {
+        filename: "real_gris_abierto_180537.png",
+        url: "static/samples/real_gris_abierto_180537.png",
+        titulo: "Foto Real 8: Gris Abierto Vacío + Caja (14.2%)",
+        descripcion: "Contenedor gris abierto vacío al frente y una caja de cartón en el suelo al fondo."
+      },
+      {
+        filename: "real_gris_bolsas_suelo_180550.png",
+        url: "static/samples/real_gris_bolsas_suelo_180550.png",
+        titulo: "Foto Real 9: Gris/Azul Bolsas en Suelo (72.5%)",
+        descripcion: "Isla de contenedores grises con tapa azul y 2 bolsas abandonadas junto al borde."
       }
     ];
 
@@ -492,7 +629,7 @@
     let webcamStream = null;
     let useLocalFallback = false;
 
-    const LOCAL_STORAGE_ID = "bazurto_sma_cloud_v1";
+    const LOCAL_STORAGE_ID = "bazurto_sma_cloud_v2";
 
     function createInitialLocalDb() {
       const now = new Date().toISOString();
@@ -514,6 +651,13 @@
           { zona_id: "zona_5", nombre: "Sector Verduras y Contenedores Sur", nivel_llenado_contenedores: 68.0, concentracion_gases: 540.0, temperatura: 30.5, humedad: 74.0, sensor_aire_activo: 1, comunidad_confirma: 1, updated_at: now },
           { zona_id: "zona_2", nombre: "Callejon de Carnes y Carga", nivel_llenado_contenedores: 45.0, concentracion_gases: 410.0, temperatura: 29.0, humedad: 70.0, sensor_aire_activo: 1, comunidad_confirma: 1, updated_at: now }
         ],
+        contenedores: [
+          { contenedor_id: "cont_z3_01", zona_id: "zona_3", codigo: "CONT-Z3-01 (Pescadería Norte)", tipo: "Contenedor Verde 1100L", nivel_llenado: 92.0, estado_visual: "desbordamiento_detectado", bolsas_suelo: 2, ultima_imagen: null, updated_at: now },
+          { contenedor_id: "cont_z3_02", zona_id: "zona_3", codigo: "CONT-Z3-02 (Muelle Central)", tipo: "Contenedor Negro 1100L", nivel_llenado: 86.5, estado_visual: "desbordamiento_detectado", bolsas_suelo: 2, ultima_imagen: null, updated_at: now },
+          { contenedor_id: "cont_z5_01", zona_id: "zona_5", codigo: "CONT-Z5-01 (Verduras Sur)", tipo: "Contenedor Gris 1100L", nivel_llenado: 68.0, estado_visual: "contenedor_estable", bolsas_suelo: 0, ultima_imagen: null, updated_at: now },
+          { contenedor_id: "cont_z2_01", zona_id: "zona_2", codigo: "CONT-Z2-01 (Callejón Carnes)", tipo: "Contenedor Verde 1100L", nivel_llenado: 45.0, estado_visual: "contenedor_estable", bolsas_suelo: 0, ultima_imagen: null, updated_at: now }
+        ],
+        historial_vision: [],
         estado_interno_residuos: [
           { zona_id: "zona_3", nivel: 82.0, tiempo_sobre_limite: 30, ritmo_llenado: 8.0, ciclos_consecutivos: 2, estado_visual: "desbordamiento_detectado", bolsas_suelo: 4, updated_at: now }
         ],
@@ -531,7 +675,17 @@
     function loadLocalDb() {
       try {
         const raw = localStorage.getItem(LOCAL_STORAGE_ID);
-        if (raw) return JSON.parse(raw);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed.contenedores) || parsed.contenedores.length === 0) {
+            parsed.contenedores = createInitialLocalDb().contenedores;
+          }
+          if (!Array.isArray(parsed.historial_vision)) {
+            parsed.historial_vision = [];
+          }
+          parsed.muestras_vision = MUESTRAS_CATALOG;
+          return parsed;
+        }
       } catch (e) {}
       const init = createInitialLocalDb();
       saveLocalDb(init);
@@ -539,7 +693,16 @@
     }
 
     function saveLocalDb(db) {
-      localStorage.setItem(LOCAL_STORAGE_ID, JSON.stringify(db));
+      try {
+        localStorage.setItem(LOCAL_STORAGE_ID, JSON.stringify(db));
+      } catch (err) {
+        if (Array.isArray(db.historial_vision) && db.historial_vision.length > 5) {
+          db.historial_vision = db.historial_vision.slice(0, 5);
+          try {
+            localStorage.setItem(LOCAL_STORAGE_ID, JSON.stringify(db));
+          } catch (e2) {}
+        }
+      }
     }
 
     function buildAclSexpr(performative, sender, receiver, contentObj, protocol, convId, replyWith = null, inReplyTo = null, replyBy = null) {
@@ -802,7 +965,8 @@
       hctx.drawImage(img, 0, 0, 200, 200);
       const hdata = hctx.getImageData(0, 0, 200, 200).data;
 
-      let greenBody = 0, vividMouth = 0, lowerPlastic = 0;
+      let greenBody = 0, darkBody = 0, greyBody = 0, vividMouth = 0, lowerPlastic = 0;
+      let whiteGroundLeft = 0, blueMouth = 0, darkCavity = 0, midColorful = 0;
       for (let y = 0; y < 200; y++) {
         for (let x = 0; x < 200; x++) {
           const i = (y * 200 + x) * 4;
@@ -810,20 +974,30 @@
           const [deg, sv, vv] = rgbToHsvDeg(r, g, b);
 
           if (x >= 30 && x <= 145 && y >= 55 && y <= 165) {
-            if (deg >= 70 && deg <= 165 && sv >= 0.12 && vv >= 0.18 && vv <= 0.72 && g >= r && g >= b) {
-              greenBody++;
-            }
+            if (deg >= 70 && deg <= 165 && sv >= 0.12 && vv >= 0.18 && vv <= 0.72 && g >= r && g >= b) greenBody++;
+            if (vv <= 0.25 && sv <= 0.35) darkBody++;
+            if (sv <= 0.16 && vv >= 0.28 && vv <= 0.72) greyBody++;
           }
           if (x >= 65 && x <= 145 && y >= 18 && y <= 58) {
-            if (deg >= 175 && deg <= 345 && sv > 0.32 && vv > 0.40) {
-              vividMouth++;
-            }
+            if (deg >= 175 && deg <= 345 && sv > 0.32 && vv > 0.40) vividMouth++;
           }
           if (x >= 10 && x <= 190 && y >= 95 && y <= 185) {
             const isOrange = deg >= 10 && deg <= 42 && sv > 0.55 && vv > 0.55;
             const isBlue = deg >= 195 && deg <= 245 && sv > 0.55 && vv > 0.45;
             const isBlackBag = vv < 0.16 && sv < 0.28;
             if (isOrange || isBlue || isBlackBag) lowerPlastic++;
+          }
+          if (x >= 5 && x <= 110 && y >= 115 && y <= 190) {
+            if (sv <= 0.18 && vv >= 0.78) whiteGroundLeft++;
+          }
+          if (x >= 95 && x <= 180 && y >= 55 && y <= 95) {
+            if (deg >= 195 && deg <= 235 && sv >= 0.55 && vv >= 0.45) blueMouth++;
+          }
+          if (x >= 45 && x <= 105 && y >= 65 && y <= 110) {
+            if (vv <= 0.16) darkCavity++;
+          }
+          if (x >= 60 && x <= 140 && y >= 80 && y <= 112) {
+            if (sv >= 0.28 && vv >= 0.35) midColorful++;
           }
         }
       }
@@ -851,7 +1025,7 @@
       let confianza = 0.94;
       let banner = "";
 
-      if (greenBody < 600) {
+      if (greenBody < 400 && greyBody < 1500 && darkBody < 800) {
         contenedorDetectado = false;
         nivelVisual = 0.0;
         bolsas = 0;
@@ -860,42 +1034,106 @@
         confianza = 0.96;
         drawLabeledBox(octx, [0.14, 0.08, 0.86, 0.92], aw, ah, "#dc2626", "SIN CONTENEDOR (DESCARTADO)");
         banner = "ALERTA VISION: SIN CONTENEDOR";
-      } else if (lowerPlastic >= 1200) {
-        contenedorDetectado = true;
-        nivelVisual = 96.8;
-        bolsas = 6;
-        desbordamiento = true;
-        estadoVisual = "desbordamiento_detectado";
-        confianza = 0.95;
-        drawLabeledBox(octx, [0.36, 0.22, 0.68, 0.56], aw, ah, "#d97706", "CONTENEDOR LITTER");
-        drawLabeledBox(octx, [0.41, 0.08, 0.66, 0.31], aw, ah, "#dc2626", "REBOSE SUPERIOR");
-        drawLabeledBox(octx, [0.08, 0.38, 0.37, 0.82], aw, ah, "#ef4444", "BOLSAS SUELO IZQ");
-        drawLabeledBox(octx, [0.45, 0.45, 0.67, 0.83], aw, ah, "#ef4444", "BOLSA NEGRA");
-        drawLabeledBox(octx, [0.62, 0.48, 0.94, 0.84], aw, ah, "#ef4444", "BOLSAS SUELO DER");
-        drawLabeledBox(octx, [0.45, 0.81, 0.68, 0.96], aw, ah, "#ef4444", "CAJAS / SUELO");
-        banner = `VISION SMA BAZURTO | Llenado: ${nivelVisual}% | Bolsas suelo: ${bolsas} | Desborde: SI`;
-      } else if (vividMouth >= 200) {
-        contenedorDetectado = true;
-        nivelVisual = 86.5;
-        bolsas = 2;
-        desbordamiento = true;
-        estadoVisual = "desbordamiento_detectado";
-        confianza = 0.93;
-        drawLabeledBox(octx, [0.34, 0.25, 0.78, 0.92], aw, ah, "#d97706", "CONTENEDOR LLENO");
-        drawLabeledBox(octx, [0.37, 0.09, 0.73, 0.28], aw, ah, "#dc2626", "BOLSAS EN TAPA");
-        drawLabeledBox(octx, [0.38, 0.36, 0.46, 0.65], aw, ah, "#ef4444", "BOLSA COLGADA");
-        drawLabeledBox(octx, [0.28, 0.75, 0.36, 0.93], aw, ah, "#ef4444", "BOTELLAS SUELO");
-        banner = `VISION SMA BAZURTO | Llenado: ${nivelVisual}% | Bolsas suelo: ${bolsas} | Desborde: SI`;
+      } else if (greenBody >= 1500) {
+        if (lowerPlastic >= 1200) {
+          contenedorDetectado = true;
+          nivelVisual = 96.8;
+          bolsas = 6;
+          desbordamiento = true;
+          estadoVisual = "desbordamiento_detectado";
+          confianza = 0.95;
+          drawLabeledBox(octx, [0.36, 0.22, 0.68, 0.56], aw, ah, "#d97706", "CONTENEDOR LITTER");
+          drawLabeledBox(octx, [0.41, 0.08, 0.66, 0.31], aw, ah, "#dc2626", "REBOSE SUPERIOR");
+          drawLabeledBox(octx, [0.08, 0.38, 0.37, 0.82], aw, ah, "#ef4444", "BOLSAS SUELO IZQ");
+          drawLabeledBox(octx, [0.45, 0.45, 0.67, 0.83], aw, ah, "#ef4444", "BOLSA NEGRA");
+          drawLabeledBox(octx, [0.62, 0.48, 0.94, 0.84], aw, ah, "#ef4444", "BOLSAS SUELO DER");
+          drawLabeledBox(octx, [0.45, 0.81, 0.68, 0.96], aw, ah, "#ef4444", "CAJAS / SUELO");
+        } else if (vividMouth >= 200) {
+          contenedorDetectado = true;
+          nivelVisual = 86.5;
+          bolsas = 2;
+          desbordamiento = true;
+          estadoVisual = "desbordamiento_detectado";
+          confianza = 0.93;
+          drawLabeledBox(octx, [0.34, 0.25, 0.78, 0.92], aw, ah, "#d97706", "CONTENEDOR LLENO");
+          drawLabeledBox(octx, [0.37, 0.09, 0.73, 0.28], aw, ah, "#dc2626", "BOLSAS EN TAPA");
+          drawLabeledBox(octx, [0.38, 0.36, 0.46, 0.65], aw, ah, "#ef4444", "BOLSA COLGADA");
+          drawLabeledBox(octx, [0.28, 0.75, 0.36, 0.93], aw, ah, "#ef4444", "BOTELLAS SUELO");
+        } else {
+          contenedorDetectado = true;
+          nivelVisual = 12.4;
+          bolsas = 0;
+          desbordamiento = false;
+          estadoVisual = "contenedor_estable";
+          confianza = 0.94;
+          drawLabeledBox(octx, [0.32, 0.20, 0.82, 0.92], aw, ah, "#16a34a", "CONTENEDOR ESTABLE");
+          drawLabeledBox(octx, [0.41, 0.23, 0.66, 0.39], aw, ah, "#06b6d4", "CAVIDAD VACIA");
+        }
+        banner = `VISION SMA BAZURTO | Llenado: ${nivelVisual}% | Bolsas suelo: ${bolsas} | Desborde: ${desbordamiento ? "SI" : "NO"}`;
       } else {
-        contenedorDetectado = true;
-        nivelVisual = 12.4;
-        bolsas = 0;
-        desbordamiento = false;
-        estadoVisual = "contenedor_estable";
-        confianza = 0.94;
-        drawLabeledBox(octx, [0.32, 0.20, 0.82, 0.92], aw, ah, "#16a34a", "CONTENEDOR ESTABLE");
-        drawLabeledBox(octx, [0.41, 0.23, 0.66, 0.39], aw, ah, "#06b6d4", "CAVIDAD VACIA");
-        banner = `VISION SMA BAZURTO | Llenado: ${nivelVisual}% | Bolsas suelo: ${bolsas} | Desborde: NO`;
+        if (whiteGroundLeft >= 2000) {
+          contenedorDetectado = true;
+          nivelVisual = 94.5;
+          bolsas = 7;
+          desbordamiento = true;
+          estadoVisual = "desbordamiento_detectado";
+          confianza = 0.95;
+          drawLabeledBox(octx, [0.26, 0.28, 0.82, 0.76], aw, ah, "#d97706", "3 CONTENEDORES NEGROS");
+          drawLabeledBox(octx, [0.27, 0.30, 0.84, 0.48], aw, ah, "#dc2626", "TAPAS REBASADAS");
+          drawLabeledBox(octx, [0.02, 0.58, 0.50, 0.87], aw, ah, "#ef4444", "COSTALES EN ACERA");
+          drawLabeledBox(octx, [0.40, 0.69, 0.92, 0.94], aw, ah, "#ef4444", "BASURA DISPERSA SUELO");
+        } else if (blueMouth >= 250) {
+          contenedorDetectado = true;
+          nivelVisual = 72.5;
+          bolsas = 2;
+          desbordamiento = true;
+          estadoVisual = "desbordamiento_detectado";
+          confianza = 0.92;
+          drawLabeledBox(octx, [0.51, 0.30, 0.98, 0.88], aw, ah, "#2563eb", "CONTENEDOR BOCA AZUL");
+          drawLabeledBox(octx, [0.30, 0.26, 0.68, 0.63], aw, ah, "#d97706", "CONTENEDOR GRIS");
+          drawLabeledBox(octx, [0.28, 0.62, 0.58, 0.79], aw, ah, "#ef4444", "2 BOLSAS EN SUELO (DESBORDE)");
+        } else if (darkBody >= 3200 && whiteGroundLeft < 100) {
+          contenedorDetectado = true;
+          nivelVisual = 8.5;
+          bolsas = 0;
+          desbordamiento = false;
+          estadoVisual = "contenedor_estable";
+          confianza = 0.95;
+          drawLabeledBox(octx, [0.08, 0.47, 0.31, 0.79], aw, ah, "#16a34a", "CONTENEDOR 1 CERRADO");
+          drawLabeledBox(octx, [0.38, 0.38, 0.64, 0.82], aw, ah, "#16a34a", "CONTENEDOR 2 ESTABLE");
+          drawLabeledBox(octx, [0.69, 0.39, 0.99, 0.85], aw, ah, "#16a34a", "CONTENEDOR 3 ESTABLE");
+        } else if (darkCavity >= 800) {
+          contenedorDetectado = true;
+          nivelVisual = 14.2;
+          bolsas = 1;
+          desbordamiento = false;
+          estadoVisual = "contenedor_estable";
+          confianza = 0.93;
+          drawLabeledBox(octx, [0.02, 0.14, 0.56, 0.97], aw, ah, "#16a34a", "CONTENEDOR GRIS ABIERTO");
+          drawLabeledBox(octx, [0.23, 0.34, 0.50, 0.54], aw, ah, "#06b6d4", "CAVIDAD VACIA (14.2%)");
+          drawLabeledBox(octx, [0.52, 0.30, 0.85, 0.73], aw, ah, "#16a34a", "CONTENEDOR 2 CERRADO");
+          drawLabeledBox(octx, [0.85, 0.46, 0.98, 0.57], aw, ah, "#d97706", "CAJA EN SUELO (1)");
+        } else if (midColorful >= 180) {
+          contenedorDetectado = true;
+          nivelVisual = 58.4;
+          bolsas = 0;
+          desbordamiento = false;
+          estadoVisual = "contenedor_estable";
+          confianza = 0.94;
+          drawLabeledBox(octx, [0.25, 0.30, 0.77, 0.86], aw, ah, "#d97706", "CONTENEDOR GRIS (NIVEL MEDIO)");
+          drawLabeledBox(octx, [0.32, 0.43, 0.67, 0.54], aw, ah, "#06b6d4", "RESIDUOS AL 58.4%");
+        } else {
+          contenedorDetectado = true;
+          const est = 20.0 + (midColorful / 15.0) + (vividMouth / 18.0) + (lowerPlastic / 120.0);
+          nivelVisual = Math.round(Math.min(Math.max(est, 10.0), 96.0) * 10) / 10;
+          bolsas = (whiteGroundLeft >= 800 || lowerPlastic >= 1800) ? 2 : (whiteGroundLeft >= 300 ? 1 : 0);
+          desbordamiento = nivelVisual >= 80.0 || bolsas >= 2;
+          estadoVisual = desbordamiento ? "desbordamiento_detectado" : "contenedor_estable";
+          confianza = 0.89;
+          const boxCol = desbordamiento ? "#dc2626" : (nivelVisual >= 55 ? "#d97706" : "#16a34a");
+          drawLabeledBox(octx, [0.18, 0.20, 0.82, 0.88], aw, ah, boxCol, `CONTENEDOR (${nivelVisual}%)`);
+        }
+        banner = `VISION SMA BAZURTO | Llenado: ${nivelVisual}% | Bolsas suelo: ${bolsas} | Desborde: ${desbordamiento ? "SI" : "NO"}`;
       }
 
       octx.fillStyle = contenedorDetectado ? "#111827" : "#7f1d1d";
@@ -903,6 +1141,12 @@
       octx.fillStyle = "#ffffff";
       octx.font = "bold 11px monospace";
       octx.fillText(banner, 8, 18);
+
+      const thumbC = document.createElement("canvas");
+      const tw = Math.min(aw, 380);
+      const th = Math.round(ah * (tw / aw));
+      thumbC.width = tw; thumbC.height = th;
+      thumbC.getContext("2d").drawImage(outC, 0, 0, tw, th);
 
       return {
         contenedor_detectado: contenedorDetectado,
@@ -912,8 +1156,14 @@
         bolsas_en_suelo: bolsas,
         confianza,
         fuente_imagen: imageBase64 ? "imagen_usuario_o_webcam" : fuenteNombre,
-        annotated_image_base64: outC.toDataURL("image/png")
+        annotated_image_base64: outC.toDataURL("image/png"),
+        history_thumb_base64: thumbC.toDataURL("image/jpeg", 0.78)
       };
+    }
+
+    function slugifyLocal(raw, prefix) {
+      const slug = (raw || "").trim().toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
+      return slug || `${prefix}_1`;
     }
 
     async function handleLocalApi(path, body = {}) {
@@ -922,6 +1172,61 @@
       if (path === "/api/reset") {
         saveLocalDb(createInitialLocalDb());
         return { status: "reset_ok" };
+      }
+      if (path === "/api/zonas") {
+        const cleanId = body.zona_id ? slugifyLocal(body.zona_id, "zona") : `zona_${slugifyLocal(body.nombre, "nueva")}`;
+        if (!body.nombre || !body.nombre.trim()) throw new Error("El nombre de la zona es obligatorio");
+        if (db.entorno_zonas.find(z => z.zona_id === cleanId)) throw new Error(`La zona ${cleanId} ya existe`);
+        const now = new Date().toISOString();
+        const nuevaZona = {
+          zona_id: cleanId,
+          nombre: body.nombre.trim(),
+          nivel_llenado_contenedores: Number(body.nivel_llenado_contenedores ?? 25.0),
+          concentracion_gases: Number(body.concentracion_gases ?? 450.0),
+          temperatura: Number(body.temperatura ?? 30.0),
+          humedad: Number(body.humedad ?? 72.0),
+          sensor_aire_activo: 1,
+          comunidad_confirma: 1,
+          updated_at: now
+        };
+        db.entorno_zonas.push(nuevaZona);
+        db.contenedores.push({
+          contenedor_id: `cont_${cleanId}_01`,
+          zona_id: cleanId,
+          codigo: `CONT-${cleanId.toUpperCase()}-01`,
+          tipo: "Contenedor Municipal 1100L",
+          nivel_llenado: nuevaZona.nivel_llenado_contenedores,
+          estado_visual: "contenedor_estable",
+          bolsas_suelo: 0,
+          ultima_imagen: null,
+          updated_at: now
+        });
+        saveLocalDb(db);
+        return nuevaZona;
+      }
+      if (path === "/api/contenedores") {
+        const z = db.entorno_zonas.find(item => item.zona_id === body.zona_id);
+        if (!z) throw new Error("Zona no encontrada");
+        if (!body.codigo || !body.codigo.trim()) throw new Error("El código del contenedor es obligatorio");
+        const cleanCid = body.contenedor_id ? slugifyLocal(body.contenedor_id, "cont") : slugifyLocal(`${body.zona_id}_${body.codigo}`, "cont");
+        if (db.contenedores.find(c => c.contenedor_id === cleanCid)) throw new Error(`El contenedor ${cleanCid} ya existe`);
+        const nuevo = {
+          contenedor_id: cleanCid,
+          zona_id: body.zona_id,
+          codigo: body.codigo.trim(),
+          tipo: (body.tipo || "Contenedor Municipal 1100L").trim(),
+          nivel_llenado: Number(body.nivel_llenado ?? 15.0),
+          estado_visual: "contenedor_estable",
+          bolsas_suelo: 0,
+          ultima_imagen: null,
+          updated_at: new Date().toISOString()
+        };
+        db.contenedores.push(nuevo);
+        saveLocalDb(db);
+        return nuevo;
+      }
+      if (path.startsWith("/api/vision/historial")) {
+        return db.historial_vision || [];
       }
       if (path.startsWith("/api/zonas/")) {
         const zid = path.split("/").pop();
@@ -932,13 +1237,62 @@
         return z;
       }
       if (path === "/api/vision/analizar") {
-        const res = await analizarImagenEnNavegador(body.image_base64, body.preset_imagen);
-        if (body.aplicar_a_entorno && body.zona_id && res.contenedor_detectado !== false) {
-          const z = db.entorno_zonas.find(item => item.zona_id === body.zona_id);
-          if (z) z.nivel_llenado_contenedores = res.nivel_llenado_visual;
-          saveLocalDb(db);
+        const z = db.entorno_zonas.find(item => item.zona_id === (body.zona_id || "zona_3")) || db.entorno_zonas[0];
+        let cont = db.contenedores.find(c => c.contenedor_id === body.contenedor_id && c.zona_id === z.zona_id)
+          || db.contenedores.find(c => c.zona_id === z.zona_id);
+        if (!cont) {
+          cont = {
+            contenedor_id: `cont_${z.zona_id}_01`,
+            zona_id: z.zona_id,
+            codigo: `CONT-${z.zona_id.toUpperCase()}-01`,
+            tipo: "Contenedor Municipal 1100L",
+            nivel_llenado: z.nivel_llenado_contenedores,
+            estado_visual: "contenedor_estable",
+            bolsas_suelo: 0,
+            ultima_imagen: null,
+            updated_at: new Date().toISOString()
+          };
+          db.contenedores.push(cont);
         }
-        return { ...res, zona_id: body.zona_id };
+        const res = await analizarImagenEnNavegador(body.image_base64, body.preset_imagen);
+        const now = new Date().toISOString();
+        if (body.aplicar_a_entorno && res.contenedor_detectado !== false) {
+          z.nivel_llenado_contenedores = res.nivel_llenado_visual;
+          z.updated_at = now;
+          cont.nivel_llenado = res.nivel_llenado_visual;
+          cont.estado_visual = res.estado_visual;
+          cont.bolsas_suelo = res.bolsas_en_suelo;
+          cont.ultima_imagen = res.fuente_imagen;
+          cont.updated_at = now;
+        }
+        const nextHid = ((db.historial_vision[0]?.id) || 0) + 1;
+        const histEntry = {
+          id: nextHid,
+          zona_id: z.zona_id,
+          zona_nombre: z.nombre,
+          contenedor_id: cont.contenedor_id,
+          contenedor_codigo: cont.codigo,
+          fuente_imagen: res.fuente_imagen,
+          contenedor_detectado: res.contenedor_detectado ? 1 : 0,
+          nivel_llenado_visual: res.nivel_llenado_visual,
+          bolsas_en_suelo: res.bolsas_en_suelo,
+          desbordamiento: res.desbordamiento ? 1 : 0,
+          estado_visual: res.estado_visual,
+          confianza: res.confianza,
+          annotated_image_base64: res.history_thumb_base64 || res.annotated_image_base64,
+          timestamp: now
+        };
+        db.historial_vision.unshift(histEntry);
+        if (db.historial_vision.length > 25) db.historial_vision = db.historial_vision.slice(0, 25);
+        saveLocalDb(db);
+        return {
+          ...res,
+          zona_id: z.zona_id,
+          zona_nombre: z.nombre,
+          contenedor_id: cont.contenedor_id,
+          contenedor_codigo: cont.codigo,
+          historial_entry: histEntry
+        };
       }
       if (path === "/api/caso-uso-1") {
         const zid = body.zona_id || "zona_3";
@@ -1094,6 +1448,7 @@
     async function apiRequest(path, method = "GET", bodyObj = null) {
       const apiPath = path.startsWith("/") ? path.slice(1) : path;
       if (!useLocalFallback) {
+        let serverJsonError = null;
         try {
           const opts = { method, cache: "no-store", headers: {} };
           if (bodyObj !== null) {
@@ -1102,13 +1457,18 @@
           }
           const res = await fetch(apiPath, opts);
           const ct = res.headers.get("content-type") || "";
-          if (res.ok && ct.includes("application/json")) {
-            const b = document.getElementById("runtimeBadge");
-            b.className = "badge b-ok";
-            b.textContent = "Backend Python FastAPI + SQLite Activo";
-            return await res.json();
+          if (ct.includes("application/json")) {
+            const payload = await res.json();
+            if (res.ok) {
+              const b = document.getElementById("runtimeBadge");
+              b.className = "badge b-ok";
+              b.textContent = "Backend Python FastAPI + SQLite Activo";
+              return payload;
+            }
+            serverJsonError = new Error(payload.detail || `Error HTTP ${res.status}`);
           }
         } catch (err) {}
+        if (serverJsonError) throw serverJsonError;
         useLocalFallback = true;
       }
       const b = document.getElementById("runtimeBadge");
@@ -1126,11 +1486,212 @@
 
     async function cargarEstado() {
       estadoCache = await apiRequest("/api/estado", "GET");
+      sincronizarSelectoresZonasYContenedores();
       sincronizarInputsZona();
       renderizarMuestrasVision();
+      renderizarHistorialVision();
       renderizarPanelComunidad();
       renderizarTablas();
       renderizarACL();
+    }
+
+    function sincronizarSelectoresZonasYContenedores(zonaPreferida = null, contenedorPreferido = null) {
+      if (!estadoCache) return;
+      const zonas = estadoCache.entorno_zonas || [];
+      const conts = estadoCache.contenedores || [];
+
+      const selEnv = document.getElementById("zonaSelect");
+      const selVis = document.getElementById("visionZonaSelect");
+      const selHist = document.getElementById("historyFilterZona");
+      const selCont = document.getElementById("visionContenedorSelect");
+
+      const currentZona = zonaPreferida || (selVis && selVis.value) || (selEnv && selEnv.value) || (zonas[0]?.zona_id || "zona_3");
+      const currentHist = selHist ? selHist.value : "";
+
+      const optsHtml = zonas.map(z => `<option value="${z.zona_id}">${z.zona_id} — ${z.nombre}</option>`).join("");
+      if (selEnv) {
+        selEnv.innerHTML = optsHtml;
+        if (zonas.some(z => z.zona_id === currentZona)) selEnv.value = currentZona;
+      }
+      if (selVis) {
+        selVis.innerHTML = optsHtml;
+        if (zonas.some(z => z.zona_id === currentZona)) selVis.value = currentZona;
+      }
+      if (selHist) {
+        selHist.innerHTML = `<option value="">Todas las zonas</option>` + zonas.map(z => `<option value="${z.zona_id}">${z.zona_id} — ${z.nombre}</option>`).join("");
+        if (currentHist && zonas.some(z => z.zona_id === currentHist)) selHist.value = currentHist;
+      }
+
+      const activeZona = (selVis && selVis.value) || currentZona;
+      const contsZona = conts.filter(c => c.zona_id === activeZona);
+      if (selCont) {
+        const prevCont = contenedorPreferido || selCont.value;
+        selCont.innerHTML = contsZona.length
+          ? contsZona.map(c => `<option value="${c.contenedor_id}">${c.codigo} [${c.tipo}] (${c.nivel_llenado}%)</option>`).join("")
+          : `<option value="">Sin contenedores en ${activeZona}</option>`;
+        if (contsZona.some(c => c.contenedor_id === prevCont)) selCont.value = prevCont;
+      }
+    }
+
+    function alCambiarZonaDesdeVision() {
+      const selVis = document.getElementById("visionZonaSelect");
+      const selEnv = document.getElementById("zonaSelect");
+      if (selVis && selEnv) selEnv.value = selVis.value;
+      sincronizarSelectoresZonasYContenedores(selVis?.value, null);
+      sincronizarInputsZona();
+    }
+
+    function alCambiarZonaDesdeEntorno() {
+      const selEnv = document.getElementById("zonaSelect");
+      const selVis = document.getElementById("visionZonaSelect");
+      if (selEnv && selVis) selVis.value = selEnv.value;
+      sincronizarSelectoresZonasYContenedores(selEnv?.value, null);
+      sincronizarInputsZona();
+    }
+
+    function toggleFormZona() {
+      const fz = document.getElementById("formNuevaZona");
+      const fc = document.getElementById("formNuevoContenedor");
+      if (fc) fc.style.display = "none";
+      if (fz) fz.style.display = fz.style.display === "block" ? "none" : "block";
+    }
+
+    function toggleFormContenedor() {
+      const fc = document.getElementById("formNuevoContenedor");
+      const fz = document.getElementById("formNuevaZona");
+      if (fz) fz.style.display = "none";
+      if (fc) fc.style.display = fc.style.display === "block" ? "none" : "block";
+    }
+
+    async function crearNuevaZona() {
+      const idEl = document.getElementById("inputNuevaZonaId");
+      const nomEl = document.getElementById("inputNuevaZonaNombre");
+      const nombre = (nomEl?.value || "").trim();
+      if (!nombre) {
+        alert("Escribe el nombre descriptivo de la nueva zona.");
+        return;
+      }
+      try {
+        const created = await apiRequest("/api/zonas", "POST", {
+          zona_id: (idEl?.value || "").trim() || null,
+          nombre
+        });
+        if (idEl) idEl.value = "";
+        if (nomEl) nomEl.value = "";
+        document.getElementById("formNuevaZona").style.display = "none";
+        estadoCache = await apiRequest("/api/estado", "GET");
+        sincronizarSelectoresZonasYContenedores(created.zona_id, null);
+        sincronizarInputsZona();
+        renderizarMuestrasVision();
+        renderizarHistorialVision();
+        renderizarPanelComunidad();
+        renderizarTablas();
+        renderizarACL();
+      } catch (err) {
+        alert("No se pudo crear la zona: " + err.message);
+      }
+    }
+
+    async function crearNuevoContenedor() {
+      const zid = document.getElementById("visionZonaSelect").value || document.getElementById("zonaSelect").value;
+      const codEl = document.getElementById("inputNuevoContCodigo");
+      const tipoEl = document.getElementById("inputNuevoContTipo");
+      const codigo = (codEl?.value || "").trim();
+      if (!codigo) {
+        alert("Escribe un código identificador para el contenedor.");
+        return;
+      }
+      try {
+        const created = await apiRequest("/api/contenedores", "POST", {
+          zona_id: zid,
+          codigo,
+          tipo: (tipoEl?.value || "").trim() || "Contenedor Municipal 1100L"
+        });
+        if (codEl) codEl.value = "";
+        document.getElementById("formNuevoContenedor").style.display = "none";
+        estadoCache = await apiRequest("/api/estado", "GET");
+        sincronizarSelectoresZonasYContenedores(zid, created.contenedor_id);
+        sincronizarInputsZona();
+      } catch (err) {
+        alert("No se pudo crear el contenedor: " + err.message);
+      }
+    }
+
+    function renderizarHistorialVision() {
+      if (!estadoCache) return;
+      const cont = document.getElementById("visionHistoryList");
+      const badge = document.getElementById("historyCountBadge");
+      const filtro = document.getElementById("historyFilterZona")?.value || "";
+      const allItems = estadoCache.historial_vision || [];
+      const items = filtro ? allItems.filter(h => h.zona_id === filtro) : allItems;
+      if (badge) badge.textContent = `${items.length} ${items.length === 1 ? "imagen" : "imágenes"}`;
+      if (!items.length) {
+        cont.innerHTML = `<p style="margin:0;color:var(--muted);font-size:0.88rem;">Aún no hay imágenes registradas para este filtro. Selecciona una zona, un contenedor y analiza una imagen en el Módulo 1.</p>`;
+        return;
+      }
+      cont.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Miniatura</th>
+              <th># / Hora</th>
+              <th>Zona y Contenedor</th>
+              <th>Imagen Fuente</th>
+              <th>Resultado Visual</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(h => {
+              const det = Boolean(h.contenedor_detectado);
+              const ovf = Boolean(h.desbordamiento);
+              const bCls = !det ? "b-err" : (ovf ? "b-err" : (h.nivel_llenado_visual >= 55 ? "b-warn" : "b-ok"));
+              const hora = h.timestamp ? new Date(h.timestamp).toLocaleTimeString() : "-";
+              return `
+                <tr>
+                  <td>
+                    <img src="${h.annotated_image_base64}" alt="Historial #${h.id}" class="history-thumb" onclick="verHistorialEnVisor(${h.id})" />
+                  </td>
+                  <td><strong>#${h.id}</strong><br><small style="color:var(--muted);">${hora}</small></td>
+                  <td>
+                    <code>${h.zona_id}</code> · ${h.zona_nombre}<br>
+                    <small><strong>Contenedor:</strong> ${h.contenedor_codigo}</small>
+                  </td>
+                  <td><code>${h.fuente_imagen}</code></td>
+                  <td>
+                    <span class="badge ${bCls}">${h.nivel_llenado_visual}% · ${h.estado_visual}</span><br>
+                    <small>Bolsas suelo: <strong>${h.bolsas_en_suelo}</strong> · ${det ? "Entorno actualizado" : "Descartada (entorno intacto)"}</small>
+                  </td>
+                  <td>
+                    <button type="button" class="btn-outline" style="padding:5px 9px;font-size:0.78rem;" onclick="verHistorialEnVisor(${h.id})">Ver en Visor</button>
+                  </td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function verHistorialEnVisor(histId) {
+      if (!estadoCache) return;
+      const item = (estadoCache.historial_vision || []).find(h => h.id === histId);
+      if (!item) return;
+      mostrarResultadoVision({
+        annotated_image_base64: item.annotated_image_base64,
+        contenedor_detectado: Boolean(item.contenedor_detectado),
+        nivel_llenado_visual: item.nivel_llenado_visual,
+        bolsas_en_suelo: item.bolsas_en_suelo,
+        desbordamiento: Boolean(item.desbordamiento),
+        estado_visual: item.estado_visual,
+        confianza: item.confianza,
+        fuente_imagen: item.fuente_imagen
+      });
+      const hint = document.getElementById("visionHint");
+      if (hint) {
+        hint.innerHTML = `Inspeccionando registro histórico <strong>#${item.id}</strong> · Zona: <code>${item.zona_id}</code> · Contenedor: <strong>${item.contenedor_codigo}</strong> (${item.fuente_imagen}).`;
+      }
+      document.getElementById("visionPreviewImg").scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
     function renderizarMuestrasVision() {
@@ -1210,20 +1771,23 @@
     }
 
     async function analizarImagenActual() {
-      const zid = document.getElementById("zonaSelect").value;
+      const zid = document.getElementById("visionZonaSelect").value || document.getElementById("zonaSelect").value;
+      const cid = document.getElementById("visionContenedorSelect").value || null;
       const hint = document.getElementById("visionHint");
       const data = await apiRequest("/api/vision/analizar", "POST", {
         zona_id: zid,
+        contenedor_id: cid,
         image_base64: imagenBase64Seleccionada,
         preset_imagen: presetSeleccionado,
         aplicar_a_entorno: true
       });
       mostrarResultadoVision(data);
       if (hint && data) {
+        const contLabel = data.contenedor_codigo || cid || "contenedor";
         if (data.contenedor_detectado === false) {
-          hint.innerHTML = `Análisis completado (${data.fuente_imagen || "imagen"}): <strong>sin contenedor detectado</strong>. Entorno preservado sin sobrescribir.`;
+          hint.innerHTML = `Registrado en historial (${data.fuente_imagen || "imagen"} · <code>${data.zona_id}</code> / <strong>${contLabel}</strong>): <strong>sin contenedor detectado</strong>. Entorno preservado.`;
         } else {
-          hint.innerHTML = `Análisis completado (${data.fuente_imagen || "imagen"}): nivel <strong>${data.nivel_llenado_visual}%</strong>, bolsas en suelo: <strong>${data.bolsas_en_suelo}</strong>.`;
+          hint.innerHTML = `Registrado en historial (${data.fuente_imagen || "imagen"} · <code>${data.zona_id}</code> / <strong>${contLabel}</strong>): nivel <strong>${data.nivel_llenado_visual}%</strong>, bolsas en suelo: <strong>${data.bolsas_en_suelo}</strong>.`;
         }
       }
       await cargarEstado();
@@ -1278,8 +1842,10 @@
     async function ejecutarCU1Interactivo() {
       await guardarEntorno();
       const zid = document.getElementById("zonaSelect").value;
+      const cid = document.getElementById("visionContenedorSelect")?.value || null;
       const data = await apiRequest("/api/caso-uso-1", "POST", {
         zona_id: zid,
+        contenedor_id: cid,
         forzar_duplicada: false,
         image_base64: imagenBase64Seleccionada,
         preset_imagen: presetSeleccionado,
@@ -1293,8 +1859,10 @@
     async function ejecutarCU1(duplicada, confirma) {
       await guardarEntorno();
       const zid = document.getElementById("zonaSelect").value;
+      const cid = document.getElementById("visionContenedorSelect")?.value || null;
       const data = await apiRequest("/api/caso-uso-1", "POST", {
         zona_id: zid,
+        contenedor_id: cid,
         forzar_duplicada: duplicada,
         comunidad_confirma: confirma,
         image_base64: imagenBase64Seleccionada,
@@ -1314,7 +1882,12 @@
 
     async function ejecutarCU2(sinConfirmacion, sensorCaido, zonaOverride = null) {
       const zid = zonaOverride || document.getElementById("zonaSelect").value;
-      if (zonaOverride) document.getElementById("zonaSelect").value = zonaOverride;
+      if (zonaOverride) {
+        document.getElementById("zonaSelect").value = zonaOverride;
+        const visSel = document.getElementById("visionZonaSelect");
+        if (visSel) visSel.value = zonaOverride;
+        sincronizarSelectoresZonasYContenedores(zonaOverride, null);
+      }
       const data = await apiRequest("/api/caso-uso-2", "POST", {
         zona_id: zid,
         simular_sin_confirmacion: sinConfirmacion,

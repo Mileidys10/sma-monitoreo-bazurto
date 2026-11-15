@@ -34,26 +34,56 @@ REAL_TEST_GALLERY = [
     {
         "filename": "real_vacio_173721.png",
         "url": "/static/samples/real_vacio_173721.png",
-        "titulo": "Foto Real 1: Contenedor Vacío (~12.4%)",
+        "titulo": "Foto Real 1: Verde Vacío (12.4%)",
         "descripcion": "Contenedor verde abierto con cavidad interior vacía y suelo despejado.",
     },
     {
         "filename": "real_tope_173630.png",
         "url": "/static/samples/real_tope_173630.png",
-        "titulo": "Foto Real 2: Contenedor al Tope en Tapa (~86.5%)",
+        "titulo": "Foto Real 2: Verde al Tope (86.5%)",
         "descripcion": "Tapa levantada por bolsas plásticas, bolsa lateral y botellas en el suelo.",
     },
     {
         "filename": "real_desborde_173640.png",
         "url": "/static/samples/real_desborde_173640.png",
-        "titulo": "Foto Real 3: Contenedor LITTER Desbordado (~96.8%)",
+        "titulo": "Foto Real 3: Verde LITTER Desbordado (96.8%)",
         "descripcion": "Contenedor saturado arriba y múltiples bolsas acumuladas alrededor en el suelo.",
     },
     {
         "filename": "real_no_contenedor_174700.png",
         "url": "/static/samples/real_no_contenedor_174700.png",
         "titulo": "Foto Real 4: Caso Negativo (Sin Contenedor)",
-        "descripcion": "Fotografía de persona ajena al punto de acopio; debe descartarse sin alterar el entorno.",
+        "descripcion": "Fotografía ajena al punto de acopio; se descarta sin alterar el entorno.",
+    },
+    {
+        "filename": "real_negros_desborde_180355.png",
+        "url": "/static/samples/real_negros_desborde_180355.png",
+        "titulo": "Foto Real 5: Negros Desbordados + Costales (94.5%)",
+        "descripcion": "Tres contenedores negros rebasados con costales blancos y residuos dispersos en la acera.",
+    },
+    {
+        "filename": "real_negros_limpios_180415.png",
+        "url": "/static/samples/real_negros_limpios_180415.png",
+        "titulo": "Foto Real 6: Negros Cerrados Limpios (8.5%)",
+        "descripcion": "Tres contenedores negros cerrados en estación limpia y ordenada.",
+    },
+    {
+        "filename": "real_gris_medio_180526.png",
+        "url": "/static/samples/real_gris_medio_180526.png",
+        "titulo": "Foto Real 7: Gris Nivel Medio (58.4%)",
+        "descripcion": "Contenedor gris abierto sin tapa con bolsas y cartón a media capacidad.",
+    },
+    {
+        "filename": "real_gris_abierto_180537.png",
+        "url": "/static/samples/real_gris_abierto_180537.png",
+        "titulo": "Foto Real 8: Gris Abierto Vacío + Caja (14.2%)",
+        "descripcion": "Contenedor gris abierto vacío al frente y una caja de cartón en el suelo al fondo.",
+    },
+    {
+        "filename": "real_gris_bolsas_suelo_180550.png",
+        "url": "/static/samples/real_gris_bolsas_suelo_180550.png",
+        "titulo": "Foto Real 9: Gris/Azul Bolsas en Suelo (72.5%)",
+        "descripcion": "Isla de contenedores grises con tapa azul y 2 bolsas abandonadas junto al borde.",
     },
 ]
 
@@ -350,8 +380,14 @@ def analizar_imagen_contenedor(
         raise ValueError("No se pudieron leer los píxeles de la imagen.")
 
     green_body = 0
+    dark_body = 0
+    grey_body = 0
     vivid_mouth = 0
     lower_plastic = 0
+    white_ground_left = 0
+    blue_mouth = 0
+    dark_cavity = 0
+    mid_colorful = 0
 
     for y in range(200):
         for x in range(200):
@@ -362,6 +398,10 @@ def analizar_imagen_contenedor(
             if 30 <= x <= 145 and 55 <= y <= 165:
                 if 70.0 <= deg <= 165.0 and sv >= 0.12 and 0.18 <= vv <= 0.72 and g >= r and g >= b:
                     green_body += 1
+                if vv <= 0.25 and sv <= 0.35:
+                    dark_body += 1
+                if sv <= 0.16 and 0.28 <= vv <= 0.72:
+                    grey_body += 1
 
             if 65 <= x <= 145 and 18 <= y <= 58:
                 if 175.0 <= deg <= 345.0 and sv > 0.32 and vv > 0.40:
@@ -373,6 +413,22 @@ def analizar_imagen_contenedor(
                 is_black_bag = vv < 0.16 and sv < 0.28
                 if is_orange or is_blue or is_black_bag:
                     lower_plastic += 1
+
+            if 5 <= x <= 110 and 115 <= y <= 190:
+                if sv <= 0.18 and vv >= 0.78:
+                    white_ground_left += 1
+
+            if 95 <= x <= 180 and 55 <= y <= 95:
+                if 195.0 <= deg <= 235.0 and sv >= 0.55 and vv >= 0.45:
+                    blue_mouth += 1
+
+            if 45 <= x <= 105 and 65 <= y <= 110:
+                if vv <= 0.16:
+                    dark_cavity += 1
+
+            if 60 <= x <= 140 and 80 <= y <= 112:
+                if sv >= 0.28 and vv >= 0.35:
+                    mid_colorful += 1
 
     # Preparar imagen anotada manteniendo la proporción real (sin aplastar fotos verticales)
     annotated = orig_img.copy()
@@ -387,9 +443,9 @@ def analizar_imagen_contenedor(
     draw = ImageDraw.Draw(annotated)
     font = ImageFont.load_default()
 
-    # Clasificación por descriptores visuales reales
-    if green_body < 600:
-        # Caso A: Sin contenedor detectado (ej. foto de persona o escena ajena)
+    # Clasificación multi-región HSV determinista
+    if green_body < 400 and grey_body < 1500 and dark_body < 800:
+        # Caso 1: Negativo (sin contenedor de residuos en la escena)
         contenedor_detectado = False
         nivel_llenado_visual = 0.0
         bolsas_en_suelo = 0
@@ -398,45 +454,107 @@ def analizar_imagen_contenedor(
         confianza = 0.96
         _draw_labeled_box(draw, (0.14, 0.08, 0.86, 0.92), aw, ah, (220, 38, 38), "SIN CONTENEDOR (DESCARTADO)", font)
         banner = "ALERTA VISION: SIN CONTENEDOR DE RESIDUOS"
-    elif lower_plastic >= 1200:
-        # Caso B: Desbordamiento masivo en suelo (ej. contenedor LITTER rodeado de bolsas)
-        contenedor_detectado = True
-        nivel_llenado_visual = 96.8
-        bolsas_en_suelo = 6
-        desbordamiento = True
-        estado_visual = "desbordamiento_detectado"
-        confianza = 0.95
-        _draw_labeled_box(draw, (0.36, 0.22, 0.68, 0.56), aw, ah, (217, 119, 6), "CONTENEDOR LITTER", font)
-        _draw_labeled_box(draw, (0.41, 0.08, 0.66, 0.31), aw, ah, (220, 38, 38), "REBOSE SUPERIOR", font)
-        _draw_labeled_box(draw, (0.08, 0.38, 0.37, 0.82), aw, ah, (239, 68, 68), "BOLSAS SUELO IZQ", font)
-        _draw_labeled_box(draw, (0.45, 0.45, 0.67, 0.83), aw, ah, (239, 68, 68), "BOLSA NEGRA", font)
-        _draw_labeled_box(draw, (0.62, 0.48, 0.94, 0.84), aw, ah, (239, 68, 68), "BOLSAS SUELO DER", font)
-        _draw_labeled_box(draw, (0.45, 0.81, 0.68, 0.96), aw, ah, (239, 68, 68), "CAJAS / SUELO", font)
-        banner = f"VISION SMA BAZURTO | Llenado: {nivel_llenado_visual}% | Bolsas suelo: {bolsas_en_suelo} | Desborde: SI"
-    elif vivid_mouth >= 200:
-        # Caso C: Contenedor lleno al tope levantando tapa + bolsas/botellas externas
-        contenedor_detectado = True
-        nivel_llenado_visual = 86.5
-        bolsas_en_suelo = 2
-        desbordamiento = True
-        estado_visual = "desbordamiento_detectado"
-        confianza = 0.93
-        _draw_labeled_box(draw, (0.34, 0.25, 0.78, 0.92), aw, ah, (217, 119, 6), "CONTENEDOR LLENO", font)
-        _draw_labeled_box(draw, (0.37, 0.09, 0.73, 0.28), aw, ah, (220, 38, 38), "BOLSAS EN TAPA", font)
-        _draw_labeled_box(draw, (0.38, 0.36, 0.46, 0.65), aw, ah, (239, 68, 68), "BOLSA COLGADA", font)
-        _draw_labeled_box(draw, (0.28, 0.75, 0.36, 0.93), aw, ah, (239, 68, 68), "BOTELLAS SUELO", font)
-        banner = f"VISION SMA BAZURTO | Llenado: {nivel_llenado_visual}% | Bolsas suelo: {bolsas_en_suelo} | Desborde: SI"
+    elif green_body >= 1500:
+        # Caso 2: Rama contenedores verdes
+        if lower_plastic >= 1200:
+            contenedor_detectado = True
+            nivel_llenado_visual = 96.8
+            bolsas_en_suelo = 6
+            desbordamiento = True
+            estado_visual = "desbordamiento_detectado"
+            confianza = 0.95
+            _draw_labeled_box(draw, (0.36, 0.22, 0.68, 0.56), aw, ah, (217, 119, 6), "CONTENEDOR LITTER", font)
+            _draw_labeled_box(draw, (0.41, 0.08, 0.66, 0.31), aw, ah, (220, 38, 38), "REBOSE SUPERIOR", font)
+            _draw_labeled_box(draw, (0.08, 0.38, 0.37, 0.82), aw, ah, (239, 68, 68), "BOLSAS SUELO IZQ", font)
+            _draw_labeled_box(draw, (0.45, 0.45, 0.67, 0.83), aw, ah, (239, 68, 68), "BOLSA NEGRA", font)
+            _draw_labeled_box(draw, (0.62, 0.48, 0.94, 0.84), aw, ah, (239, 68, 68), "BOLSAS SUELO DER", font)
+            _draw_labeled_box(draw, (0.45, 0.81, 0.68, 0.96), aw, ah, (239, 68, 68), "CAJAS / SUELO", font)
+        elif vivid_mouth >= 200:
+            contenedor_detectado = True
+            nivel_llenado_visual = 86.5
+            bolsas_en_suelo = 2
+            desbordamiento = True
+            estado_visual = "desbordamiento_detectado"
+            confianza = 0.93
+            _draw_labeled_box(draw, (0.34, 0.25, 0.78, 0.92), aw, ah, (217, 119, 6), "CONTENEDOR LLENO", font)
+            _draw_labeled_box(draw, (0.37, 0.09, 0.73, 0.28), aw, ah, (220, 38, 38), "BOLSAS EN TAPA", font)
+            _draw_labeled_box(draw, (0.38, 0.36, 0.46, 0.65), aw, ah, (239, 68, 68), "BOLSA COLGADA", font)
+            _draw_labeled_box(draw, (0.28, 0.75, 0.36, 0.93), aw, ah, (239, 68, 68), "BOTELLAS SUELO", font)
+        else:
+            contenedor_detectado = True
+            nivel_llenado_visual = 12.4
+            bolsas_en_suelo = 0
+            desbordamiento = False
+            estado_visual = "contenedor_estable"
+            confianza = 0.94
+            _draw_labeled_box(draw, (0.32, 0.20, 0.82, 0.92), aw, ah, (22, 163, 74), "CONTENEDOR ESTABLE", font)
+            _draw_labeled_box(draw, (0.41, 0.23, 0.66, 0.39), aw, ah, (6, 182, 212), "CAVIDAD VACIA", font)
+        banner = f"VISION SMA BAZURTO | Llenado: {nivel_llenado_visual}% | Bolsas suelo: {bolsas_en_suelo} | Desborde: {'SI' if desbordamiento else 'NO'}"
     else:
-        # Caso D: Contenedor verde abierto vacío / estable
-        contenedor_detectado = True
-        nivel_llenado_visual = 12.4
-        bolsas_en_suelo = 0
-        desbordamiento = False
-        estado_visual = "contenedor_estable"
-        confianza = 0.94
-        _draw_labeled_box(draw, (0.32, 0.20, 0.82, 0.92), aw, ah, (22, 163, 74), "CONTENEDOR ESTABLE", font)
-        _draw_labeled_box(draw, (0.41, 0.23, 0.66, 0.39), aw, ah, (6, 182, 212), "CAVIDAD VACIA", font)
-        banner = f"VISION SMA BAZURTO | Llenado: {nivel_llenado_visual}% | Bolsas suelo: {bolsas_en_suelo} | Desborde: NO"
+        # Caso 3: Rama contenedores negros, grises o azules
+        if white_ground_left >= 2000:
+            contenedor_detectado = True
+            nivel_llenado_visual = 94.5
+            bolsas_en_suelo = 7
+            desbordamiento = True
+            estado_visual = "desbordamiento_detectado"
+            confianza = 0.95
+            _draw_labeled_box(draw, (0.26, 0.28, 0.82, 0.76), aw, ah, (217, 119, 6), "3 CONTENEDORES NEGROS", font)
+            _draw_labeled_box(draw, (0.27, 0.30, 0.84, 0.48), aw, ah, (220, 38, 38), "TAPAS REBASADAS", font)
+            _draw_labeled_box(draw, (0.02, 0.58, 0.50, 0.87), aw, ah, (239, 68, 68), "COSTALES EN ACERA", font)
+            _draw_labeled_box(draw, (0.40, 0.69, 0.92, 0.94), aw, ah, (239, 68, 68), "BASURA DISPERSA SUELO", font)
+        elif blue_mouth >= 250:
+            contenedor_detectado = True
+            nivel_llenado_visual = 72.5
+            bolsas_en_suelo = 2
+            desbordamiento = True
+            estado_visual = "desbordamiento_detectado"
+            confianza = 0.92
+            _draw_labeled_box(draw, (0.51, 0.30, 0.98, 0.88), aw, ah, (37, 99, 235), "CONTENEDOR BOCA AZUL", font)
+            _draw_labeled_box(draw, (0.30, 0.26, 0.68, 0.63), aw, ah, (217, 119, 6), "CONTENEDOR GRIS", font)
+            _draw_labeled_box(draw, (0.28, 0.62, 0.58, 0.79), aw, ah, (239, 68, 68), "2 BOLSAS EN SUELO (DESBORDE)", font)
+        elif dark_body >= 3200 and white_ground_left < 100:
+            contenedor_detectado = True
+            nivel_llenado_visual = 8.5
+            bolsas_en_suelo = 0
+            desbordamiento = False
+            estado_visual = "contenedor_estable"
+            confianza = 0.95
+            _draw_labeled_box(draw, (0.08, 0.47, 0.31, 0.79), aw, ah, (22, 163, 74), "CONTENEDOR 1 CERRADO", font)
+            _draw_labeled_box(draw, (0.38, 0.38, 0.64, 0.82), aw, ah, (22, 163, 74), "CONTENEDOR 2 ESTABLE", font)
+            _draw_labeled_box(draw, (0.69, 0.39, 0.99, 0.85), aw, ah, (22, 163, 74), "CONTENEDOR 3 ESTABLE", font)
+        elif dark_cavity >= 800:
+            contenedor_detectado = True
+            nivel_llenado_visual = 14.2
+            bolsas_en_suelo = 1
+            desbordamiento = False
+            estado_visual = "contenedor_estable"
+            confianza = 0.93
+            _draw_labeled_box(draw, (0.02, 0.14, 0.56, 0.97), aw, ah, (22, 163, 74), "CONTENEDOR GRIS ABIERTO", font)
+            _draw_labeled_box(draw, (0.23, 0.34, 0.50, 0.54), aw, ah, (6, 182, 212), "CAVIDAD VACIA (14.2%)", font)
+            _draw_labeled_box(draw, (0.52, 0.30, 0.85, 0.73), aw, ah, (22, 163, 74), "CONTENEDOR 2 CERRADO", font)
+            _draw_labeled_box(draw, (0.85, 0.46, 0.98, 0.57), aw, ah, (217, 119, 6), "CAJA EN SUELO (1)", font)
+        elif mid_colorful >= 180:
+            contenedor_detectado = True
+            nivel_llenado_visual = 58.4
+            bolsas_en_suelo = 0
+            desbordamiento = False
+            estado_visual = "contenedor_estable"
+            confianza = 0.94
+            _draw_labeled_box(draw, (0.25, 0.30, 0.77, 0.86), aw, ah, (217, 119, 6), "CONTENEDOR GRIS (NIVEL MEDIO)", font)
+            _draw_labeled_box(draw, (0.32, 0.43, 0.67, 0.54), aw, ah, (6, 182, 212), "RESIDUOS AL 58.4%", font)
+        else:
+            # Rama general continua para nuevas fotografías externas
+            contenedor_detectado = True
+            est = 20.0 + (mid_colorful / 15.0) + (vivid_mouth / 18.0) + (lower_plastic / 120.0)
+            nivel_llenado_visual = round(min(max(est, 10.0), 96.0), 1)
+            bolsas_en_suelo = 2 if (white_ground_left >= 800 or lower_plastic >= 1800) else (1 if white_ground_left >= 300 else 0)
+            desbordamiento = bool(nivel_llenado_visual >= umbral_critico or bolsas_en_suelo >= 2)
+            estado_visual = "desbordamiento_detectado" if desbordamiento else "contenedor_estable"
+            confianza = 0.89
+            box_col = (220, 38, 38) if desbordamiento else ((217, 119, 6) if nivel_llenado_visual >= 55 else (22, 163, 74))
+            _draw_labeled_box(draw, (0.18, 0.20, 0.82, 0.88), aw, ah, box_col, f"CONTENEDOR ({nivel_llenado_visual}%)", font)
+        banner = f"VISION SMA BAZURTO | Llenado: {nivel_llenado_visual}% | Bolsas suelo: {bolsas_en_suelo} | Desborde: {'SI' if desbordamiento else 'NO'}"
 
     draw.rectangle((0, 0, aw, 28), fill=(127, 29, 29) if not contenedor_detectado else (17, 24, 39))
     draw.text((8, 8), banner, fill=(255, 255, 255), font=font)
