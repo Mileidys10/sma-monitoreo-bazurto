@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SMAMonitoreoBazurto — Consola Multiagente MAS-ML & FIPA-ACL</title>
+  <style>
+    :root {
+      --bg: #f3f5f3;
+      --surface: #ffffff;
+      --surface-alt: #f8faf8;
+      --ink: #111827;
+      --muted: #4b5563;
+      --border: #d1d5db;
+      --accent: #0f5132;
+      --accent-hover: #0a3622;
+      --accent-soft: #ecfdf5;
+      --warn: #b45309;
+      --warn-hover: #92400e;
+      --warn-soft: #fffbeb;
+      --danger: #991b1b;
+      --danger-hover: #7f1d1d;
+      --danger-soft: #fef2f2;
+      --info: #1e40af;
+      --code-bg: #18181b;
+      --code-ink: #e4e4e7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 3px solid var(--accent);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    header h1 { margin: 0; font-size: 1.35rem; color: var(--accent); }
+    header p { margin: 2px 0 0; font-size: 0.9rem; color: var(--muted); }
+    .container { max-width: 1360px; margin: 20px auto; padding: 0 20px 60px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; margin-bottom: 20px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 1.08rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      color: var(--ink);
+    }
+    details.guide {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-left: 5px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 18px;
+      margin-bottom: 20px;
+    }
+    details.guide summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 0.98rem;
+    }
+    details.guide .guide-body {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: var(--ink);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .guide-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: var(--ink); }
+    select, input[type="number"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.92rem;
+      margin-bottom: 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+    .row-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px; }
+    .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    button {
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 9px 14px;
+      font-size: 0.87rem;
+      font-weight: 600;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+      outline: 3px solid #2563eb;
+      outline-offset: 2px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-warn { background: var(--warn); color: #fff; }
+    .btn-warn:hover { background: var(--warn-hover); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: var(--danger-hover); }
+    .btn-outline { background: #fff; color: var(--ink); border-color: var(--border); }
+    .btn-outline:hover { background: #f3f4f6; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+    .b-acl { background: #dbeafe; color: #1e3a8a; }
+    .b-met { background: #e5e7eb; color: #1f2937; }
+    .b-err { background: #fee2e2; color: #7f1d1d; }
+    .b-ok { background: #d1fae5; color: #065f46; }
+    .b-warn { background: #fef3c7; color: #92400e; }
+
+    /* Visión Artificial */
+    .vision-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(300px, 1.15fr);
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 820px) {
+      .vision-layout, .grid-2 { grid-template-columns: 1fr; }
+    }
+    .sample-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .sample-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      text-align: left;
+      padding: 6px;
+      background: var(--surface-alt);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      color: var(--ink);
+    }
+    .sample-btn.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .sample-btn img {
+      width: 100%;
+      height: 76px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      border: 1px solid var(--border);
+    }
+    .sample-btn span { font-size: 0.78rem; font-weight: 700; line-height: 1.25; }
+    .vision-viewer {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    .vision-viewer img, .vision-viewer video {
+      max-width: 100%;
+      width: 100%;
+      max-height: 290px;
+      object-fit: contain;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #111827;
+    }
+    .vision-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .webcam-box {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px dashed var(--accent);
+      border-radius: 6px;
+      background: var(--accent-soft);
+      display: none;
+    }
+
+    /* Panel de Comunidad */
+    .community-item {
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--accent);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      background: var(--surface-alt);
+    }
+    .community-item.pending {
+      border-left-color: var(--warn);
+      background: var(--warn-soft);
+    }
+    .community-item.failed {
+      border-left-color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .trace-list {
+      max-height: 420px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      background: #fafafa;
+    }
+    .trace-item { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; font-size: 0.87rem; }
+    .trace-item:last-child { border-bottom: none; }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      padding: 10px 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.8rem;
+      margin: 6px 0 0;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { background: #f9fafb; font-weight: 700; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .tab-btn { background: #e5e7eb; color: #111827; }
+    .tab-btn.active { background: var(--accent); color: #fff; }
+    footer { text-align: center; font-size: 0.85rem; color: var(--muted); margin-top: 28px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>SMAMonitoreoBazurto &mdash; Consola Multiagente</h1>
+      <p>
+        Organización MAS-ML · Ontología: <code>AmbientalBazurto</code> ·
+        <span id="runtimeBadge" class="badge b-ok">Conectando motor...</span>
+      </p>
+    </div>
+    <div class="btn-group">
+      <button class="btn-outline" onclick="cargarEstado()">Actualizar Estado</button>
+      <button class="btn-danger" onclick="resetearBD()">Reiniciar BD</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <details class="guide" open>
+      <summary>Guía Rápida de Sustentación: Cómo funciona la Cámara, la Comunidad y por qué Python + SQLite supera a n8n</summary>
+      <div class="guide-body">
+        <div class="guide-box">
+          <strong>1. Cámara Práctica (<code>analizarImagenes()</code>):</strong><br />
+          No necesitas ir al Mercado de Bazurto. Elige una de las 3 escenas precargadas, sube cualquier foto desde tu PC o abre la webcam de tu portátil. El sistema analiza píxel a píxel el interior del contenedor y el suelo perimetral, dibuja los recuadros de detección y actualiza automáticamente <code>nivelLlenadoContenedores</code>.
+        </div>
+        <div class="guide-box">
+          <strong>2. Panel de Comunidad (<code>EmisorAlertas</code>):</strong><br />
+          Al pulsar <em>"Ejecutar CU-01 y Enviar al Panel de Comunidad"</em>, <code>AgenteAlertas</code> envía el aviso al buzón comunitario en pantalla. Allí decides en vivo si el líder de zona <strong>Confirma ACK</strong> (cierre <code>INFORM-DONE</code>) o <strong>No Responde</strong> (cierre <code>FAILURE</code> y auditoría automática con <code>AgenteSupervisor</code> en <code>CU-02</code>).
+        </div>
+        <div class="guide-box">
+          <strong>3. Solución al Límite de Persistencia en n8n:</strong><br />
+          Los agentes <em>Basados en Modelos</em> (<code>AgenteSensorResiduos</code> y <code>AgenteSensorAire</code>) necesitan recordar ciclos previos (<code>estadoInterno</code> e <code>historialMediciones</code>). En local usamos FastAPI + SQLite (<code>bazurto_sma.db</code>), y en la versión web pública de GitHub Pages se incluye respaldo interactivo persistente en el navegador.
+        </div>
+      </div>
+    </details>
+
+    <!-- Módulo 1: Cámara y Visión Artificial -->
+    <section class="card" aria-labelledby="vision-title">
+      <h2 id="vision-title">1. Cámara y Visión Artificial &mdash; <code>AgenteSensorResiduos.analizarImagenes()</code></h2>
+      <div class="vision-layout">
+        <div>
+          <label>Paso A: Elige una escena de contenedor del Mercado de Bazurto (o sube/captura una imagen real):</label>
+          <div id="sampleGrid" class="sample-grid"></div>
+
+          <div class="btn-group">
+            <label for="fileUpload" class="btn-outline" style="margin:0; cursor:pointer; display:inline-block; padding:9px 14px; border:1px solid var(--border); border-radius:6px; font-weight:600; font-size:0.87rem;">
+              Subir Foto desde mi PC
+            </label>
+            <input type="file" id="fileUpload" accept="image/*" style="display:none;" onchange="manejarArchivoSubido(event)" />
+            <button type="button" class="btn-outline" onclick="abrirWebcam()">Usar Webcam de mi PC</button>
+            <button type="button" class="btn-primary" onclick="analizarImagenActual()">Analizar Imagen en Cámara y Sincronizar Entorno</button>
+          </div>
+
+          <div id="webcamBox" class="webcam-box">
+            <video id="webcamVideo" autoplay playsinline style="max-width:100%; max-height:200px; border-radius:6px; background:#000;"></video>
+            <div class="btn-group">
+              <button type="button" class="btn-primary" onclick="capturarDesdeWebcam()">Capturar Foto de Webcam y Analizar</button>
+              <button type="button" class="btn-outline" onclick="cerrarWebcam()">Cerrar Webcam</button>
+            </div>
+            <canvas id="webcamCanvas" style="display:none;"></canvas>
+          </div>
+          <p id="visionHint" style="font-size:0.84rem; color:var(--muted); margin:10px 0 0;">
+            Imagen seleccionada lista para <code>analizarImagenes()</code>: <code>contenedor_critico.png</code>
+          </p>
+        </div>
+
+        <div class="vision-viewer">
+          <img id="visionPreviewImg" src="static/samples/contenedor_critico.png" alt="Vista previa del contenedor analizado por AgenteSensorResiduos con recuadros de detección" />
+          <div id="visionMetrics" class="vision-metrics">
+            <span class="badge b-met">Analizando imagen...</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Módulo 2: Entorno y Casos de Uso -->
+    <div class="grid-2">
+      <section class="card" aria-labelledby="env-title">
+        <h2 id="env-title">2. Entorno: <code>MercadoBazurto</code> (&laquo;environment&raquo;)</h2>
+        <label for="zonaSelect">Zona monitoreada</label>
+        <select id="zonaSelect" onchange="sincronizarInputsZona()">
+          <option value="zona_3">zona_3 — Sector Pescadería y Acopio Central</option>
+          <option value="zona_5">zona_5 — Sector Verduras y Contenedores Sur</option>
+          <option value="zona_2">zona_2 — Callejón de Carnes y Carga</option>
+        </select>
+
+        <div class="row-fields">
+          <div>
+            <label for="inResiduos">nivelLlenadoContenedores (%)</label>
+            <input type="number" id="inResiduos" min="0" max="100" step="0.1" value="92" />
+          </div>
+          <div>
+            <label for="inGases">concentracionGases (CO2 ppm)</label>
+            <input type="number" id="inGases" min="200" max="3000" step="10" value="850" />
+          </div>
+          <div>
+            <label for="inTemp">temperatura (&deg;C)</label>
+            <input type="number" id="inTemp" min="10" max="55" step="0.5" value="32" />
+          </div>
+          <div>
+            <label for="inHum">humedad (%)</label>
+            <input type="number" id="inHum" min="0" max="100" step="1" value="78" />
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn-outline" onclick="guardarEntorno()">Guardar Valores en Entorno</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="uc-title">
+        <h2 id="uc-title">3. Ejecución de los 2 Casos de Uso (MAS-ML + FIPA-ACL)</h2>
+
+        <p style="margin:0 0 6px;font-size:0.9rem;"><strong>CU-01: Monitoreo, Priorización de Riesgo y Emisión de Alerta</strong></p>
+        <div class="btn-group" style="margin-bottom:14px;">
+          <button class="btn-primary" onclick="ejecutarCU1Interactivo()">Ejecutar CU-01 y Enviar al Panel de Comunidad</button>
+          <button class="btn-outline" onclick="ejecutarCU1(false, true)">CU-01 Rápido Éxito (INFORM-DONE)</button>
+          <button class="btn-danger" onclick="ejecutarCU1(true, true)">CU-01 Alerta Duplicada (REFUSE)</button>
+        </div>
+
+        <p style="margin:0 0 6px;font-size:0.9rem;"><strong>CU-02: Supervisión Continua, Auditoría y Escalamiento</strong></p>
+        <div class="btn-group">
+          <button class="btn-primary" onclick="ejecutarCU2(false, false)">CU-02 Auditoría OK (CONFIRM)</button>
+          <button class="btn-warn" onclick="ejecutarCU2(true, false)">CU-02 Sin Confirmación (DISCONFIRM + Escalar)</button>
+          <button class="btn-danger" onclick="ejecutarCU2(false, true)">CU-02 Timeout Sensor (INFORM Fallo + Recalcular)</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Módulo 3: Panel Interactivo de Comunidad / Líder de Zona -->
+    <section class="card" aria-labelledby="comm-title">
+      <h2 id="comm-title">4. Panel de Comunidad / Líder de Zona &mdash; Recepción de Avisos (<code>EmisorAlertas</code>)</h2>
+      <p style="margin:0 0 12px; font-size:0.88rem; color:var(--muted);">
+        Simula el dispositivo del líder comunitario o junta de comerciantes del Mercado de Bazurto. Cuando llega un aviso desde <code>AgenteAlertas.emitirAviso()</code>, decide en vivo si confirmas recepción (<code>ACK</code>) o si simulas ausencia de respuesta para activar la auditoría de <code>AgenteSupervisor</code>.
+      </p>
+      <div id="communityInbox"></div>
+    </section>
+
+    <!-- Módulo 4: Traza en Vivo y Mensajes ACL -->
+    <div class="grid-2">
+      <section class="card" aria-labelledby="trace-title">
+        <h2 id="trace-title">5. Traza de Ejecución en Vivo (Métodos y Mensajes ACL)</h2>
+        <div id="traceSummary" style="margin-bottom:10px;font-size:0.9rem;color:var(--muted);">
+          Ejecuta una acción de cámara, CU-01, respuesta comunitaria o CU-02 para visualizar la traza exacta paso a paso.
+        </div>
+        <div id="traceContainer" class="trace-list"></div>
+      </section>
+
+      <section class="card" aria-labelledby="acl-title">
+        <h2 id="acl-title">6. Últimos Mensajes FIPA-ACL Persistidos</h2>
+        <div class="tabs">
+          <button class="tab-btn active" id="btnSexpr" onclick="cambiarFormatoACL('sexpr')">Formato S-expression (LISP)</button>
+          <button class="tab-btn" id="btnJson" onclick="cambiarFormatoACL('json')">Formato JSON</button>
+        </div>
+        <div id="aclList" class="trace-list"></div>
+      </section>
+    </div>
+
+    <!-- Módulo 5: Estado Persistido SQLite / Local -->
+    <section class="card" aria-labelledby="persist-title">
+      <h2 id="persist-title">7. Estado Persistido de los Agentes (Solución al límite de n8n)</h2>
+      <div class="grid-2">
+        <div>
+          <h3 style="font-size:0.95rem;margin:0 0 8px;">AgenteSensorResiduos &mdash; <code>estadoInterno</code> + Visión</h3>
+          <table>
+            <thead><tr><th>Zona</th><th>Nivel</th><th>tiempoSobreLimite</th><th>ritmoLlenado</th><th>Estado Visual</th><th>Bolsas Suelo</th></tr></thead>
+            <tbody id="tblResiduos"></tbody>
+          </table>
+        </div>
+        <div>
+          <h3 style="font-size:0.95rem;margin:0 0 8px;">AgenteSensorAire &mdash; <code>historialMediciones</code></h3>
+          <table>
+            <thead><tr><th>ID</th><th>Zona</th><th>Gases (ppm)</th><th>Temp (&deg;C)</th><th>Hum (%)</th></tr></thead>
+            <tbody id="tblAire"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:16px;">
+        <div>
+          <h3 style="font-size:0.95rem;margin:0 0 8px;">AgenteAlertas &mdash; Reportes Emitidos</h3>
+          <table>
+            <thead><tr><th>ID</th><th>Zona</th><th>Nivel</th><th>Estado</th><th>Reporte</th></tr></thead>
+            <tbody id="tblAlertas"></tbody>
+          </table>
+        </div>
+        <div>
+          <h3 style="font-size:0.95rem;margin:0 0 8px;">AgenteSupervisor &mdash; Incidencias y Acciones</h3>
+          <table>
+            <thead><tr><th>ID</th><th>Agente</th><th>Zona</th><th>Descripción</th><th>Acción Correctiva</th></tr></thead>
+            <tbody id="tblIncidencias"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer id="pageFooter">
+      SMAMonitoreoBazurto · MAS-ML &amp; FIPA-ACL ·
+      <a href="privacy" id="lnkPrivacy" onclick="return abrirLegalFallback(event, 'Privacidad')">Política de Privacidad</a> ·
+      <a href="terms" id="lnkTerms" onclick="return abrirLegalFallback(event, 'Términos')">Términos de Uso</a> ·
+      <a href="docs" id="lnkDocs" target="_blank">Swagger API</a>
+    </footer>
+  </main>
+
+  <script>
+    const MUESTRAS_CATALOG = [
+      {
+        filename: "contenedor_limpio.png",
+        url: "static/samples/contenedor_limpio.png",
+        titulo: "Escena 1: Contenedor Limpio (~17%)",
+        descripcion: "Contenedor municipal vacío en su mayoría y piso despejado."
+      },
+      {
+        filename: "contenedor_medio.png",
+        url: "static/samples/contenedor_medio.png",
+        titulo: "Escena 2: Contenedor Nivel Medio (~65%)",
+        descripcion: "Contenedor con acumulación intermedia sin desbordamiento externo."
+      },
+      {
+        filename: "contenedor_critico.png",
+        url: "static/samples/contenedor_critico.png",
+        titulo: "Escena 3: Contenedor Crítico Desbordado (~98%)",
+        descripcion: "Contenedor rebasado con bolsas acumuladas en el suelo perimetral."
+      }
+    ];
+
+    let estadoCache = null;
+    let formatoACL = "sexpr";
+    let presetSeleccionado = "contenedor_critico.png";
+    let imagenBase64Seleccionada = null;
+    let webcamStream = null;
+    let useLocalFallback = false;
+
+    const LOCAL_STORAGE_ID = "bazurto_sma_cloud_v1";
+
+    function createInitialLocalDb() {
+      const now = new Date().toISOString();
+      return {
+        organizacion: {
+          nombre: "SMAMonitoreoBazurto",
+          objetivo: "ReducirRiesgoAmbientalBazurto",
+          politica: "PriorizacionCoordinada",
+          parametros: {
+            nivel_residuos_critico: 80.0,
+            tiempo_persistencia_min: 30,
+            gases_co2_critico: 700.0,
+            riesgo_alerta_umbral: 0.65
+          }
+        },
+        muestras_vision: MUESTRAS_CATALOG,
+        entorno_zonas: [
+          { zona_id: "zona_3", nombre: "Sector Pescaderia y Acopio Central", nivel_llenado_contenedores: 92.0, concentracion_gases: 850.0, temperatura: 32.0, humedad: 78.0, sensor_aire_activo: 1, comunidad_confirma: 1, updated_at: now },
+          { zona_id: "zona_5", nombre: "Sector Verduras y Contenedores Sur", nivel_llenado_contenedores: 68.0, concentracion_gases: 540.0, temperatura: 30.5, humedad: 74.0, sensor_aire_activo: 1, comunidad_confirma: 1, updated_at: now },
+          { zona_id: "zona_2", nombre: "Callejon de Carnes y Carga", nivel_llenado_contenedores: 45.0, concentracion_gases: 410.0, temperatura: 29.0, humedad: 70.0, sensor_aire_activo: 1, comunidad_confirma: 1, updated_at: now }
+        ],
+        estado_interno_residuos: [
+          { zona_id: "zona_3", nivel: 82.0, tiempo_sobre_limite: 30, ritmo_llenado: 8.0, ciclos_consecutivos: 2, estado_visual: "desbordamiento_detectado", bolsas_suelo: 4, updated_at: now }
+        ],
+        historial_mediciones_aire: [
+          { id: 2, zona_id: "zona_3", concentracion_gases: 720.0, temperatura: 31.0, humedad: 75.0, timestamp: now },
+          { id: 1, zona_id: "zona_3", concentracion_gases: 610.0, temperatura: 30.0, humedad: 72.0, timestamp: now }
+        ],
+        eventos_riesgo: [],
+        alertas: [],
+        incidencias: [],
+        mensajes_acl: []
+      };
+    }
+
+    function loadLocalDb() {
+      try {
+        const raw = localStorage.getItem(LOCAL_STORAGE_ID);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      const init = createInitialLocalDb();
+      saveLocalDb(init);
+      return init;
+    }
+
+    function saveLocalDb(db) {
+      localStorage.setItem(LOCAL_STORAGE_ID, JSON.stringify(db));
+    }
+
+    function buildAclSexpr(performative, sender, receiver, contentObj, protocol, convId, replyWith = null, inReplyTo = null, replyBy = null) {
+      const contentStr = "(" + Object.entries(contentObj).map(([k, v]) => `${k}: ${v}`).join(", ") + ")";
+      const lines = [
+        `(${performative}`,
+        `  :sender ${sender}`,
+        `  :receiver ${receiver}`,
+        `  :content "${contentStr}"`,
+        `  :language fipa-sl`,
+        `  :ontology AmbientalBazurto`,
+        `  :protocol ${protocol}`,
+        `  :conversation-id ${convId}`
+      ];
+      if (replyWith) lines.push(`  :reply-with ${replyWith}`);
+      if (inReplyTo) lines.push(`  :in-reply-to ${inReplyTo}`);
+      if (replyBy) lines.push(`  :reply-by ${replyBy}`);
+      lines.push(")");
+      return lines.join("\n");
+    }
+
+    function pushAcl(db, trace, params) {
+      const sexpr = buildAclSexpr(
+        params.performative, params.sender, params.receiver, params.content,
+        params.protocol, params.conversation_id, params.reply_with, params.in_reply_to, params.reply_by
+      );
+      const nextId = (db.mensajes_acl[0]?.id || 0) + 1;
+      const contentJsonObj = {
+        performative: params.performative,
+        sender: params.sender,
+        receiver: params.receiver,
+        content: params.content,
+        language: "fipa-sl",
+        ontology: "AmbientalBazurto",
+        protocol: params.protocol,
+        "conversation-id": params.conversation_id
+      };
+      if (params.reply_with) contentJsonObj["reply-with"] = params.reply_with;
+      if (params.in_reply_to) contentJsonObj["in-reply-to"] = params.in_reply_to;
+      if (params.reply_by) contentJsonObj["reply-by"] = params.reply_by;
+
+      db.mensajes_acl.unshift({
+        id: nextId,
+        caso_uso: params.caso_uso,
+        conversation_id: params.conversation_id,
+        performative: params.performative,
+        sender: params.sender,
+        receiver: params.receiver,
+        acl_sexpr: sexpr,
+        content_json: JSON.stringify(contentJsonObj),
+        protocol: params.protocol,
+        metodo_origen: params.metodo_origen,
+        timestamp: new Date().toISOString()
+      });
+      trace.push({
+        tipo: "ACL",
+        performative: params.performative,
+        sender: params.sender,
+        receiver: params.receiver,
+        metodo_origen: params.metodo_origen,
+        protocol: params.protocol,
+        content: params.content,
+        sexpr
+      });
+    }
+
+    function pixelIsWaste(r, g, b, bg) {
+      const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+      const sat = Math.max(r, g, b) - Math.min(r, g, b);
+      const dist = Math.hypot(r - bg[0], g - bg[1], b - bg[2]);
+      return (luma < 145 && dist > 38) || (sat > 38 && dist > 32) || (dist > 68);
+    }
+
+    async function analizarImagenEnNavegador(imageBase64, presetName) {
+      const src = imageBase64 || `static/samples/${presetName || "contenedor_critico.png"}`;
+      const img = await new Promise((resolve, reject) => {
+        const i = new Image();
+        i.crossOrigin = "anonymous";
+        i.onload = () => resolve(i);
+        i.onerror = () => reject(new Error("No se pudo cargar imagen para análisis"));
+        i.src = src;
+      });
+
+      const anaW = 240, anaH = 160;
+      const c = document.createElement("canvas");
+      c.width = anaW; c.height = anaH;
+      const ctx = c.getContext("2d");
+      ctx.drawImage(img, 0, 0, anaW, anaH);
+      const data = ctx.getImageData(0, 0, anaW, anaH).data;
+      const px = (x, y) => {
+        const idx = (y * anaW + x) * 4;
+        return [data[idx], data[idx + 1], data[idx + 2]];
+      };
+
+      let wr = 0, wg = 0, wb = 0, wc = 0;
+      for (let y = 4; y < 18; y++) {
+        for (let x = 10; x < 48; x++) { const [r, g, b] = px(x, y); wr += r; wg += g; wb += b; wc++; }
+        for (let x = anaW - 48; x < anaW - 10; x++) { const [r, g, b] = px(x, y); wr += r; wg += g; wb += b; wc++; }
+      }
+      const bgWall = [wr / wc, wg / wc, wb / wc];
+
+      let fr = 0, fg = 0, fb = 0, fc = 0;
+      for (let y = Math.floor(anaH * 0.80); y < Math.floor(anaH * 0.94); y++) {
+        for (let x = 4; x < 14; x++) { const [r, g, b] = px(x, y); fr += r; fg += g; fb += b; fc++; }
+        for (let x = anaW - 14; x < anaW - 4; x++) { const [r, g, b] = px(x, y); fr += r; fg += g; fb += b; fc++; }
+      }
+      const bgFloor = [fr / fc, fg / fc, fb / fc];
+
+      const rx1 = Math.floor(anaW * 0.25), rx2 = Math.floor(anaW * 0.75);
+      const ry1 = Math.floor(anaH * 0.22), ry2 = Math.floor(anaH * 0.74);
+      let wasteRows = 0, highestRow = ry2, wastePx = 0;
+      const roiPx = (rx2 - rx1) * (ry2 - ry1);
+      for (let y = ry1; y < ry2; y++) {
+        let rowW = 0;
+        for (let x = rx1; x < rx2; x++) {
+          const [r, g, b] = px(x, y);
+          if (pixelIsWaste(r, g, b, bgWall)) rowW++;
+        }
+        wastePx += rowW;
+        if (rowW / (rx2 - rx1) >= 0.30) {
+          wasteRows++;
+          if (y < highestRow) highestRow = y;
+        }
+      }
+
+      const oy1 = Math.floor(anaH * 0.06), oy2 = Math.floor(anaH * 0.16);
+      let topOv = 0;
+      for (let y = oy1; y < oy2; y++) {
+        for (let x = rx1; x < rx2; x++) {
+          const [r, g, b] = px(x, y);
+          if (pixelIsWaste(r, g, b, bgWall)) topOv++;
+        }
+      }
+      const topOvRatio = topOv / ((rx2 - rx1) * (oy2 - oy1));
+      const alturaPct = wasteRows > 0 ? ((ry2 - highestRow) / (ry2 - ry1)) * 100 : 0;
+      const densPct = (wastePx / roiPx) * 100;
+      let nivel = 0.70 * densPct + 0.30 * alturaPct;
+      if (topOvRatio > 0.15) nivel = Math.max(nivel, 88.0 + Math.min(topOvRatio * 20, 9));
+      const nivelVisual = Math.round(Math.min(Math.max(nivel, 5), 98) * 10) / 10;
+
+      const fy1 = Math.floor(anaH * 0.78), fy2 = Math.floor(anaH * 0.95);
+      const fxStart = Math.floor(anaW * 0.06);
+      const secW = Math.floor((Math.floor(anaW * 0.94) - fxStart) / 10);
+      const gBoxes = [];
+      for (let s = 0; s < 10; s++) {
+        const sx1 = fxStart + s * secW, sx2 = sx1 + secW;
+        let sw = 0;
+        for (let y = fy1; y < fy2; y++) {
+          for (let x = sx1; x < sx2; x++) {
+            const [r, g, b] = px(x, y);
+            if (pixelIsWaste(r, g, b, bgFloor)) sw++;
+          }
+        }
+        if (sw / ((sx2 - sx1) * (fy2 - fy1)) >= 0.24) {
+          if (gBoxes.length && sx1 <= gBoxes[gBoxes.length - 1][2] + 4) {
+            gBoxes[gBoxes.length - 1][2] = sx2;
+          } else {
+            gBoxes.push([sx1, fy1, sx2, fy2]);
+          }
+        }
+      }
+      const bolsas = gBoxes.length;
+      const desbordamiento = nivelVisual >= 80.0 || bolsas >= 2;
+      const estadoVisual = desbordamiento ? "desbordamiento_detectado" : "contenedor_estable";
+
+      const aw = 480, ah = 320;
+      const outC = document.createElement("canvas");
+      outC.width = aw; outC.height = ah;
+      const octx = outC.getContext("2d");
+      octx.drawImage(img, 0, 0, aw, ah);
+      const sxF = aw / anaW, syF = ah / anaH;
+      const color = desbordamiento ? "#dc2626" : (nivelVisual >= 55 ? "#d97706" : "#16a34a");
+      octx.strokeStyle = color;
+      octx.lineWidth = 3;
+      octx.strokeRect(rx1 * sxF, ry1 * syF, (rx2 - rx1) * sxF, (ry2 - ry1) * syF);
+      const lvlY = (ry2 - (ry2 - ry1) * (nivelVisual / 100)) * syF;
+      octx.beginPath(); octx.moveTo(rx1 * sxF, lvlY); octx.lineTo(rx2 * sxF, lvlY); octx.stroke();
+
+      octx.strokeStyle = "#ef4444";
+      for (const [gx1, gy1, gx2, gy2] of gBoxes) {
+        octx.strokeRect(gx1 * sxF, gy1 * syF, (gx2 - gx1) * sxF, (gy2 - gy1) * syF);
+      }
+      octx.fillStyle = "#111827";
+      octx.fillRect(0, 0, aw, 28);
+      octx.fillStyle = "#ffffff";
+      octx.font = "bold 12px monospace";
+      octx.fillText(`VISION SMA BAZURTO | Llenado: ${nivelVisual}% | Bolsas suelo: ${bolsas} | Desborde: ${desbordamiento ? "SI" : "NO"}`, 10, 18);
+
+      return {
+        nivel_llenado_visual: nivelVisual,
+        desbordamiento,
+        estado_visual: estadoVisual,
+        bolsas_en_suelo: bolsas,
+        confianza: desbordamiento ? 0.94 : 0.90,
+        fuente_imagen: imageBase64 ? "imagen_usuario_o_webcam" : (presetName || "contenedor_critico.png"),
+        annotated_image_base64: outC.toDataURL("image/png")
+      };
+    }
+
+    async function handleLocalApi(path, body = {}) {
+      const db = loadLocalDb();
+      if (path === "/api/estado") return db;
+      if (path === "/api/reset") {
+        saveLocalDb(createInitialLocalDb());
+        return { status: "reset_ok" };
+      }
+      if (path.startsWith("/api/zonas/")) {
+        const zid = path.split("/").pop();
+        const z = db.entorno_zonas.find(item => item.zona_id === zid);
+        if (!z) throw new Error("Zona no encontrada");
+        Object.assign(z, body, { updated_at: new Date().toISOString() });
+        saveLocalDb(db);
+        return z;
+      }
+      if (path === "/api/vision/analizar") {
+        const res = await analizarImagenEnNavegador(body.image_base64, body.preset_imagen);
+        if (body.aplicar_a_entorno && body.zona_id) {
+          const z = db.entorno_zonas.find(item => item.zona_id === body.zona_id);
+          if (z) z.nivel_llenado_contenedores = res.nivel_llenado_visual;
+          saveLocalDb(db);
+        }
+        return { ...res, zona_id: body.zona_id };
+      }
+      if (path === "/api/caso-uso-1") {
+        const zid = body.zona_id || "zona_3";
+        const z = db.entorno_zonas.find(item => item.zona_id === zid);
+        const trace = [];
+        const convId = `cu01-${zid}-${String(db.eventos_riesgo.length + 1).padStart(3, "0")}`;
+        if (body.comunidad_confirma !== undefined && body.comunidad_confirma !== null) {
+          z.comunidad_confirma = body.comunidad_confirma ? 1 : 0;
+        }
+        trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "medirNivelLlenadoContenedores()", detalle: `Consulta a MercadoBazurto(${zid}) -> nivel=${z.nivel_llenado_contenedores}%` });
+        const preset = body.preset_imagen || (z.nivel_llenado_contenedores >= 80 ? "contenedor_critico.png" : (z.nivel_llenado_contenedores >= 45 ? "contenedor_medio.png" : "contenedor_limpio.png"));
+        const vision = await analizarImagenEnNavegador(body.image_base64, preset);
+        if (body.image_base64 || body.preset_imagen) {
+          z.nivel_llenado_contenedores = vision.nivel_llenado_visual;
+        }
+        trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "analizarImagenes()", detalle: `Vision real (${vision.fuente_imagen}) en ${zid}: ${vision.estado_visual} (${vision.nivel_llenado_visual}%, bolsas=${vision.bolsas_en_suelo})` });
+
+        let prev = db.estado_interno_residuos.find(r => r.zona_id === zid);
+        const nivel = z.nivel_llenado_contenedores;
+        const ritmo = prev ? Math.round((nivel - prev.nivel) * 100) / 100 : 0;
+        const tiempo = nivel >= 80 ? ((prev ? prev.tiempo_sobre_limite : 0) + 15) : 0;
+        const ciclos = nivel >= 80 ? ((prev ? prev.ciclos_consecutivos : 0) + 1) : 0;
+        if (!prev) {
+          prev = { zona_id: zid };
+          db.estado_interno_residuos.push(prev);
+        }
+        Object.assign(prev, { nivel, tiempo_sobre_limite: tiempo, ritmo_llenado: ritmo, ciclos_consecutivos: ciclos, estado_visual: vision.estado_visual, bolsas_suelo: vision.bolsas_en_suelo });
+        trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "evaluarPersistencia()", detalle: `estadoInterno persistido -> nivel=${nivel}%, tiempo=${tiempo}min, vision=${vision.estado_visual}` });
+
+        const eventoId = (db.eventos_riesgo[0]?.id || 0) + 1;
+        trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "publicarEventoRiesgo()", detalle: `Evento #${eventoId} enviado por INFORM a AgenteCoordinador` });
+        pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "INFORM", sender: "AgenteSensorResiduos", receiver: "AgenteCoordinador", content: { eventoRiesgo: zid, evento_id: eventoId, nivel }, protocol: "FIPA-Inform", metodo_origen: "publicarEventoRiesgo()" });
+
+        trace.push({ tipo: "METODO", agente: "AgenteSensorAire", metodo: "medirGases()", detalle: `CO2=${z.concentracion_gases}ppm, temp=${z.temperatura}C, hum=${z.humedad}%` });
+        const medId = (db.historial_mediciones_aire[0]?.id || 0) + 1;
+        db.historial_mediciones_aire.unshift({ id: medId, zona_id: zid, concentracion_gases: z.concentracion_gases, temperatura: z.temperatura, humedad: z.humedad, timestamp: new Date().toISOString() });
+        trace.push({ tipo: "METODO", agente: "AgenteSensorAire", metodo: "registrarMedicion()", detalle: `Medicion #${medId} guardada en historialMediciones` });
+        trace.push({ tipo: "METODO", agente: "AgenteSensorAire", metodo: "detectarAumentoProgresivo()", detalle: `Tendencia evaluada en ${zid}` });
+        trace.push({ tipo: "METODO", agente: "AgenteSensorAire", metodo: "publicarMedicion()", detalle: `Publicando medicion de aire via ACL:INFORM` });
+        pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "INFORM", sender: "AgenteSensorAire", receiver: "AgenteCoordinador", content: { medicion: zid, concentracionGases: z.concentracion_gases }, protocol: "FIPA-Inform", metodo_origen: "publicarMedicion()" });
+
+        const riesgo = Math.round((0.55 * Math.min(nivel / 100, 1) + 0.45 * Math.min(z.concentracion_gases / 1000, 1)) * 100) / 100;
+        db.eventos_riesgo.unshift({ id: eventoId, zona_id: zid, origen: "AgenteSensorResiduos", descripcion: `Nivel ${nivel}%`, riesgo_calculado: riesgo, prioridad: 1, atendido: 1 });
+        trace.push({ tipo: "METODO", agente: "AgenteCoordinador", metodo: "consultarEventos()", detalle: `Eventos consultados para ${zid}` });
+        trace.push({ tipo: "METODO", agente: "AgenteCoordinador", metodo: "calcularRiesgo()", detalle: `Riesgo calculado=${riesgo}` });
+        trace.push({ tipo: "METODO", agente: "AgenteCoordinador", metodo: "priorizarZonas()", detalle: `Zona ${zid} priorizada` });
+        const replyWith = `req-alerta-${eventoId}`;
+        const nivelAlerta = riesgo >= 0.65 ? "ALTO" : "MODERADO";
+        trace.push({ tipo: "METODO", agente: "AgenteCoordinador", metodo: "delegarAlerta()", detalle: `Delegando emision de alerta (${nivelAlerta}) a AgenteAlertas` });
+        pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "REQUEST", sender: "AgenteCoordinador", receiver: "AgenteAlertas", content: { action: "emitir_alerta", zona: zid, riesgo, nivel: nivelAlerta }, protocol: "FIPA-Request", reply_with: replyWith, metodo_origen: "delegarAlerta()" });
+
+        let resultado = "REFUSE", alertaId = null;
+        trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "recibirSolicitudAlerta()", detalle: `Evaluando solicitud (duplicada=${Boolean(body.forzar_duplicada)})` });
+        if (body.forzar_duplicada) {
+          pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "REFUSE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { motivo: "alerta_ya_emitida", zona: zid }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "recibirSolicitudAlerta()" });
+        } else {
+          pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "AGREE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { action: "emitir_alerta", zona: zid }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "recibirSolicitudAlerta()" });
+          trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "emitirAviso()", detalle: `Difundiendo aviso ambiental a comunidad de ${zid}` });
+          alertaId = (db.alertas[0]?.id || 0) + 1;
+          if (body.esperar_confirmacion_interactiva) {
+            db.alertas.unshift({ id: alertaId, evento_id: eventoId, zona_id: zid, nivel: nivelAlerta, estado: "PENDIENTE_COMUNIDAD", confirmada_comunidad: 0, reporte: `Aviso #${eventoId} emitido a líderes de ${zid}. Esperando respuesta en Panel de Comunidad.` });
+            trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "gestionarConfirmacion()", detalle: `Alerta #${alertaId} en espera de respuesta en Panel de Comunidad` });
+            resultado = "PENDIENTE_COMUNIDAD";
+          } else if (z.comunidad_confirma) {
+            db.alertas.unshift({ id: alertaId, evento_id: eventoId, zona_id: zid, nivel: nivelAlerta, estado: "CONFIRMADA", confirmada_comunidad: 1, reporte: `Alerta en ${zid} emitida y confirmada por la comunidad.` });
+            trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "generarReporteConfirmacion()", detalle: `Reporte guardado (alerta #${alertaId})` });
+            pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "INFORM-DONE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { estado: "alerta_confirmada", zona: zid, alerta_id: alertaId }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "generarReporteConfirmacion()" });
+            resultado = "INFORM-DONE";
+          } else {
+            db.alertas.unshift({ id: alertaId, evento_id: eventoId, zona_id: zid, nivel: nivelAlerta, estado: "SIN_CONFIRMACION", confirmada_comunidad: 0, reporte: `Alerta en ${zid} emitida pero SIN confirmacion comunitaria.` });
+            trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "generarReporteSinConfirmacion()", detalle: `Falta de confirmacion registrada (alerta #${alertaId})` });
+            pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "FAILURE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { motivo: "sin_confirmacion_comunitaria", zona: zid, alerta_id: alertaId }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "generarReporteSinConfirmacion()" });
+            resultado = "FAILURE";
+          }
+        }
+        saveLocalDb(db);
+        return { caso_uso: "CU-01", conversation_id: convId, zona_id: zid, riesgo, resultado_acl: resultado, alerta_id: alertaId, vision, traza: trace };
+      }
+      if (path.startsWith("/api/alertas/") && path.endsWith("/responder")) {
+        const alertaId = parseInt(path.split("/")[3], 10);
+        const alerta = db.alertas.find(a => a.id === alertaId);
+        const zid = alerta.zona_id;
+        const z = db.entorno_zonas.find(item => item.zona_id === zid);
+        z.comunidad_confirma = body.confirmar ? 1 : 0;
+        const trace = [];
+        const convId = `cu01-${zid}-ack-${String(alertaId).padStart(3, "0")}`;
+        const replyWith = `req-alerta-${alerta.evento_id}`;
+        trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "gestionarConfirmacion()", detalle: `Confirmacion comunitaria en ${zid}: ${Boolean(body.confirmar)}` });
+        if (body.confirmar) {
+          alerta.estado = "CONFIRMADA";
+          alerta.confirmada_comunidad = 1;
+          alerta.reporte = `Alerta en ${zid} emitida y confirmada por la comunidad del Mercado de Bazurto.`;
+          trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "generarReporteConfirmacion()", detalle: `Reporte de confirmacion guardado (alerta #${alertaId})` });
+          pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "INFORM-DONE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { estado: "alerta_confirmada", zona: zid, alerta_id: alertaId }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "generarReporteConfirmacion()" });
+        } else {
+          alerta.estado = "SIN_CONFIRMACION";
+          alerta.confirmada_comunidad = 0;
+          alerta.reporte = `Alerta en ${zid} emitida pero SIN confirmacion de recepcion comunitaria.`;
+          trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "generarReporteSinConfirmacion()", detalle: `Reporte de falta de confirmacion guardado (alerta #${alertaId})` });
+          pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "FAILURE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { motivo: "sin_confirmacion_comunitaria", zona: zid, alerta_id: alertaId }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "generarReporteSinConfirmacion()" });
+        }
+        saveLocalDb(db);
+        return { caso_uso: "CU-01", conversation_id: convId, zona_id: zid, alerta_id: alertaId, resultado_acl: body.confirmar ? "INFORM-DONE" : "FAILURE", confirmada_comunidad: Boolean(body.confirmar), traza: trace };
+      }
+      if (path === "/api/caso-uso-2") {
+        const zid = body.zona_id || "zona_3";
+        const z = db.entorno_zonas.find(item => item.zona_id === zid);
+        if (body.simular_sin_confirmacion !== undefined && body.simular_sin_confirmacion !== null) z.comunidad_confirma = body.simular_sin_confirmacion ? 0 : 1;
+        if (body.simular_sensor_caido !== undefined && body.simular_sensor_caido !== null) z.sensor_aire_activo = body.simular_sensor_caido ? 0 : 1;
+        const trace = [];
+        const evId = db.eventos_riesgo[0]?.id || 1;
+        const convId = `cu02-${zid}-${String(db.incidencias.length + 1).padStart(3, "0")}`;
+        trace.push({ tipo: "METODO", agente: "AgenteSupervisor", metodo: "verificarAtencionEventos()", detalle: `Auditoria sobre evento #${evId} en ${zid}` });
+        trace.push({ tipo: "METODO", agente: "AgenteSupervisor", metodo: "supervisarAgentes()", detalle: "Iniciando ronda de auditoria sobre roles Monitor, Coordinador y EmisorAlertas" });
+
+        pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "QUERY-IF", sender: "AgenteSupervisor", receiver: "AgenteCoordinador", content: { atendido_evento: evId, zona: zid }, protocol: "FIPA-Query", reply_with: `q-coord-${evId}`, metodo_origen: "verificarAtencionEventos()" });
+        pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "CONFIRM", sender: "AgenteCoordinador", receiver: "AgenteSupervisor", content: { atendido_evento: evId, alerta_delegada: true }, protocol: "FIPA-Query", in_reply_to: `q-coord-${evId}`, metodo_origen: "consultarEventos()" });
+
+        pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "QUERY-IF", sender: "AgenteSupervisor", receiver: "AgenteAlertas", content: { alerta_confirmada_por_comunidad: zid }, protocol: "FIPA-Query", reply_with: `q-alerta-${evId}`, metodo_origen: "verificarAtencionEventos()" });
+        if (z.comunidad_confirma) {
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "CONFIRM", sender: "AgenteAlertas", receiver: "AgenteSupervisor", content: { reporteConfirmacion: zid }, protocol: "FIPA-Query", in_reply_to: `q-alerta-${evId}`, metodo_origen: "gestionarConfirmacion()" });
+        } else {
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "DISCONFIRM", sender: "AgenteAlertas", receiver: "AgenteSupervisor", content: { reporteSinConfirmacion: zid }, protocol: "FIPA-Query", in_reply_to: `q-alerta-${evId}`, metodo_origen: "generarReporteSinConfirmacion()" });
+          const incId = (db.incidencias[0]?.id || 0) + 1;
+          db.incidencias.unshift({ id: incId, agente_afectado: "AgenteAlertas", zona_id: zid, descripcion: `Alerta evento #${evId} sin confirmacion comunitaria`, accion_correctiva: "Escalamiento y reintento de alerta" });
+          trace.push({ tipo: "METODO", agente: "AgenteSupervisor", metodo: "registrarIncidencias()", detalle: `Incidencia #${incId} registrada por falta de confirmacion` });
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "REQUEST", sender: "AgenteSupervisor", receiver: "AgenteCoordinador", content: { accion_correctiva: "escalar_alerta_reintento", zona: zid }, protocol: "FIPA-Request", reply_with: `req-corr-${zid}`, metodo_origen: "solicitarAccionesCorrectivas()" });
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "AGREE", sender: "AgenteCoordinador", receiver: "AgenteSupervisor", content: { accion_correctiva: "escalar_alerta_reintento", zona: zid }, protocol: "FIPA-Request", in_reply_to: `req-corr-${zid}`, metodo_origen: "delegarAlerta()" });
+        }
+
+        pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "QUERY-IF", sender: "AgenteSupervisor", receiver: "AgenteSensorAire", content: { estado_activo: "AgenteSensorAire", zona: zid }, protocol: "FIPA-Query", reply_with: `q-sensor-${evId}`, reply_by: "5s", metodo_origen: "supervisarAgentes()" });
+        if (z.sensor_aire_activo) {
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "CONFIRM", sender: "AgenteSensorAire", receiver: "AgenteSupervisor", content: { estado_activo: true, zona: zid }, protocol: "FIPA-Query", in_reply_to: `q-sensor-${evId}`, metodo_origen: "medirGases()" });
+        } else {
+          trace.push({ tipo: "TIMEOUT", agente: "AgenteSensorAire", metodo: "reply-by vencido (5s)", detalle: `AgenteSensorAire en ${zid} no respondio dentro de 5s` });
+          const incId2 = (db.incidencias[0]?.id || 0) + 1;
+          db.incidencias.unshift({ id: incId2, agente_afectado: "AgenteSensorAire", zona_id: zid, descripcion: `Timeout de AgenteSensorAire en ${zid}`, accion_correctiva: "Recalculo de riesgo usando solo AgenteSensorResiduos" });
+          trace.push({ tipo: "METODO", agente: "AgenteSupervisor", metodo: "registrarIncidencias()", detalle: `Incidencia #${incId2} por timeout del sensor de aire` });
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "INFORM", sender: "AgenteSupervisor", receiver: "AgenteCoordinador", content: { fallo: "AgenteSensorAire", zona: zid }, protocol: "FIPA-Inform", metodo_origen: "notificarFallos()" });
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "REQUEST", sender: "AgenteSupervisor", receiver: "AgenteCoordinador", content: { accion_correctiva: "recalcular_riesgo_sin_sensor_aire", zona: zid }, protocol: "FIPA-Request", reply_with: `req-corr-${zid}`, metodo_origen: "solicitarAccionesCorrectivas()" });
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "AGREE", sender: "AgenteCoordinador", receiver: "AgenteSupervisor", content: { accion_correctiva: "recalcular_riesgo", zona: zid }, protocol: "FIPA-Request", in_reply_to: `req-corr-${zid}`, metodo_origen: "calcularRiesgo()" });
+        }
+        saveLocalDb(db);
+        return { caso_uso: "CU-02", conversation_id: convId, zona_id: zid, alerta_confirmada: Boolean(z.comunidad_confirma), sensor_aire_activo: Boolean(z.sensor_aire_activo), traza: trace };
+      }
+      throw new Error("Ruta local no implementada: " + path);
+    }
+
+    async function apiRequest(path, method = "GET", bodyObj = null) {
+      const apiPath = path.startsWith("/") ? path.slice(1) : path;
+      if (!useLocalFallback) {
+        try {
+          const opts = { method, cache: "no-store", headers: {} };
+          if (bodyObj !== null) {
+            opts.headers["Content-Type"] = "application/json";
+            opts.body = JSON.stringify(bodyObj);
+          }
+          const res = await fetch(apiPath, opts);
+          const ct = res.headers.get("content-type") || "";
+          if (res.ok && ct.includes("application/json")) {
+            const b = document.getElementById("runtimeBadge");
+            b.className = "badge b-ok";
+            b.textContent = "Backend Python FastAPI + SQLite Activo";
+            return await res.json();
+          }
+        } catch (err) {}
+        useLocalFallback = true;
+      }
+      const b = document.getElementById("runtimeBadge");
+      b.className = "badge b-acl";
+      b.textContent = "Modo Nube Autónomo (GitHub Pages + LocalStorage)";
+      return await handleLocalApi("/" + apiPath, bodyObj || {});
+    }
+
+    function abrirLegalFallback(e, seccion) {
+      if (!useLocalFallback) return true;
+      e.preventDefault();
+      alert(`${seccion} — SMAMonitoreoBazurto:\nEste sistema procesa únicamente variables ambientales (nivel de contenedores, gases CO2, temperatura y humedad) sin recopilar datos personales sensibles.`);
+      return false;
+    }
+
+    async function cargarEstado() {
+      estadoCache = await apiRequest("/api/estado", "GET");
+      sincronizarInputsZona();
+      renderizarMuestrasVision();
+      renderizarPanelComunidad();
+      renderizarTablas();
+      renderizarACL();
+    }
+
+    function renderizarMuestrasVision() {
+      const muestras = (estadoCache && estadoCache.muestras_vision) || MUESTRAS_CATALOG;
+      const grid = document.getElementById("sampleGrid");
+      grid.innerHTML = muestras.map(m => {
+        const cleanUrl = m.url.startsWith("/") ? m.url.slice(1) : m.url;
+        const active = !imagenBase64Seleccionada && presetSeleccionado === m.filename ? "selected" : "";
+        return `
+          <button type="button" class="sample-btn ${active}" onclick="seleccionarPreset('${m.filename}')">
+            <img src="${cleanUrl}" alt="${m.titulo}" />
+            <span>${m.titulo}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    async function seleccionarPreset(filename) {
+      presetSeleccionado = filename;
+      imagenBase64Seleccionada = null;
+      document.getElementById("visionHint").innerHTML =
+        `Escena seleccionada: <code>${filename}</code>. Analizando píxeles automáticamente...`;
+      renderizarMuestrasVision();
+      await analizarImagenActual();
+    }
+
+    function manejarArchivoSubido(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        imagenBase64Seleccionada = reader.result;
+        presetSeleccionado = null;
+        document.getElementById("visionHint").innerHTML =
+          `Foto subida desde tu PC: <code>${file.name}</code>. Ejecutando <code>analizarImagenes()</code>...`;
+        renderizarMuestrasVision();
+        await analizarImagenActual();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function abrirWebcam() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Tu navegador no soporta acceso a webcam en esta sesión. Usa una escena precargada o sube una imagen.");
+        return;
+      }
+      try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        document.getElementById("webcamVideo").srcObject = webcamStream;
+        document.getElementById("webcamBox").style.display = "block";
+      } catch (err) {
+        alert("No se pudo abrir la webcam: " + err.message);
+      }
+    }
+
+    function cerrarWebcam() {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(t => t.stop());
+        webcamStream = null;
+      }
+      document.getElementById("webcamBox").style.display = "none";
+    }
+
+    async function capturarDesdeWebcam() {
+      const video = document.getElementById("webcamVideo");
+      const canvas = document.getElementById("webcamCanvas");
+      canvas.width = video.videoWidth || 480;
+      canvas.height = video.videoHeight || 320;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      imagenBase64Seleccionada = canvas.toDataURL("image/png");
+      presetSeleccionado = null;
+      document.getElementById("visionHint").innerHTML =
+        "Fotograma capturado desde tu webcam. Ejecutando <code>analizarImagenes()</code>...";
+      renderizarMuestrasVision();
+      await analizarImagenActual();
+    }
+
+    async function analizarImagenActual() {
+      const zid = document.getElementById("zonaSelect").value;
+      const data = await apiRequest("/api/vision/analizar", "POST", {
+        zona_id: zid,
+        image_base64: imagenBase64Seleccionada,
+        preset_imagen: presetSeleccionado,
+        aplicar_a_entorno: true
+      });
+      mostrarResultadoVision(data);
+      await cargarEstado();
+    }
+
+    function mostrarResultadoVision(vision) {
+      if (!vision) return;
+      document.getElementById("visionPreviewImg").src = vision.annotated_image_base64;
+      const badgeClass = vision.desbordamiento ? "b-err" : (vision.nivel_llenado_visual >= 55 ? "b-warn" : "b-ok");
+      document.getElementById("visionMetrics").innerHTML = `
+        <span class="badge ${badgeClass}">Llenado Visual: ${vision.nivel_llenado_visual}%</span>
+        <span class="badge b-acl">Bolsas en Suelo: ${vision.bolsas_en_suelo}</span>
+        <span class="badge ${vision.desbordamiento ? "b-err" : "b-ok"}">${vision.estado_visual}</span>
+        <span class="badge b-met">Confianza: ${Math.round(vision.confianza * 100)}%</span>
+      `;
+    }
+
+    function sincronizarInputsZona() {
+      if (!estadoCache) return;
+      const zid = document.getElementById("zonaSelect").value;
+      const z = estadoCache.entorno_zonas.find(item => item.zona_id === zid);
+      if (!z) return;
+      document.getElementById("inResiduos").value = z.nivel_llenado_contenedores;
+      document.getElementById("inGases").value = z.concentracion_gases;
+      document.getElementById("inTemp").value = z.temperatura;
+      document.getElementById("inHum").value = z.humedad;
+    }
+
+    async function guardarEntorno() {
+      const zid = document.getElementById("zonaSelect").value;
+      await apiRequest(`/api/zonas/${zid}`, "PUT", {
+        nivel_llenado_contenedores: parseFloat(document.getElementById("inResiduos").value),
+        concentracion_gases: parseFloat(document.getElementById("inGases").value),
+        temperatura: parseFloat(document.getElementById("inTemp").value),
+        humedad: parseFloat(document.getElementById("inHum").value)
+      });
+      await cargarEstado();
+    }
+
+    async function ejecutarCU1Interactivo() {
+      await guardarEntorno();
+      const zid = document.getElementById("zonaSelect").value;
+      const data = await apiRequest("/api/caso-uso-1", "POST", {
+        zona_id: zid,
+        forzar_duplicada: false,
+        image_base64: imagenBase64Seleccionada,
+        preset_imagen: presetSeleccionado,
+        esperar_confirmacion_interactiva: true
+      });
+      if (data.vision) mostrarResultadoVision(data.vision);
+      renderizarTraza(data);
+      await cargarEstado();
+    }
+
+    async function ejecutarCU1(duplicada, confirma) {
+      await guardarEntorno();
+      const zid = document.getElementById("zonaSelect").value;
+      const data = await apiRequest("/api/caso-uso-1", "POST", {
+        zona_id: zid,
+        forzar_duplicada: duplicada,
+        comunidad_confirma: confirma,
+        image_base64: imagenBase64Seleccionada,
+        preset_imagen: presetSeleccionado,
+        esperar_confirmacion_interactiva: false
+      });
+      if (data.vision) mostrarResultadoVision(data.vision);
+      renderizarTraza(data);
+      await cargarEstado();
+    }
+
+    async function responderAlertaComunidad(alertaId, confirmar) {
+      const data = await apiRequest(`/api/alertas/${alertaId}/responder`, "POST", { confirmar });
+      renderizarTraza(data);
+      await cargarEstado();
+    }
+
+    async function ejecutarCU2(sinConfirmacion, sensorCaido, zonaOverride = null) {
+      const zid = zonaOverride || document.getElementById("zonaSelect").value;
+      if (zonaOverride) document.getElementById("zonaSelect").value = zonaOverride;
+      const data = await apiRequest("/api/caso-uso-2", "POST", {
+        zona_id: zid,
+        simular_sin_confirmacion: sinConfirmacion,
+        simular_sensor_caido: sensorCaido
+      });
+      renderizarTraza(data);
+      await cargarEstado();
+    }
+
+    async function resetearBD() {
+      await apiRequest("/api/reset", "POST");
+      document.getElementById("traceContainer").innerHTML = "";
+      document.getElementById("traceSummary").textContent = "Base de datos reiniciada al estado inicial.";
+      await cargarEstado();
+    }
+
+    function renderizarPanelComunidad() {
+      if (!estadoCache) return;
+      const box = document.getElementById("communityInbox");
+      const alertas = estadoCache.alertas || [];
+      if (alertas.length === 0) {
+        box.innerHTML = `<p style="margin:0;color:var(--muted);font-size:0.9rem;">No hay avisos emitidos todavía. Pulsa <strong>"Ejecutar CU-01 y Enviar al Panel de Comunidad"</strong> para recibir una alerta en vivo.</p>`;
+        return;
+      }
+
+      box.innerHTML = alertas.slice(0, 4).map(a => {
+        const isPending = a.estado === "PENDIENTE_COMUNIDAD";
+        const isFailed = a.estado === "SIN_CONFIRMACION";
+        const cls = isPending ? "pending" : (isFailed ? "failed" : "");
+        const badgeCls = isPending ? "b-warn" : (isFailed ? "b-err" : "b-ok");
+
+        let actions = "";
+        if (isPending) {
+          actions = `
+            <div class="btn-group">
+              <button type="button" class="btn-primary" onclick="responderAlertaComunidad(${a.id}, true)">
+                Confirmar Recepción (ACK Comunidad &rarr; INFORM-DONE)
+              </button>
+              <button type="button" class="btn-warn" onclick="responderAlertaComunidad(${a.id}, false)">
+                Simular No Respuesta de Comunidad (Sin Confirmación &rarr; FAILURE)
+              </button>
+            </div>
+          `;
+        } else if (isFailed) {
+          actions = `
+            <div class="btn-group">
+              <button type="button" class="btn-danger" onclick="ejecutarCU2(true, false, '${a.zona_id}')">
+                Auditar con AgenteSupervisor (Ejecutar CU-02 sobre Alerta #${a.id})
+              </button>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="community-item ${cls}">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center;">
+              <strong>Aviso Comunitario #${a.id} · Zona: <code>${a.zona_id}</code> · Riesgo ${a.nivel}</strong>
+              <span class="badge ${badgeCls}">${a.estado}</span>
+            </div>
+            <p style="margin:6px 0 4px;font-size:0.88rem;">${a.reporte}</p>
+            ${actions}
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderizarTraza(data) {
+      const summary = document.getElementById("traceSummary");
+      if (data.caso_uso === "CU-01") {
+        const extra = data.riesgo !== undefined ? ` · Riesgo: <strong>${data.riesgo}</strong>` : "";
+        summary.innerHTML = `<strong>${data.caso_uso}</strong> · Conversación <code>${data.conversation_id}</code>${extra} · Cierre ACL: <span class="badge b-acl">${data.resultado_acl}</span>`;
+      } else {
+        summary.innerHTML = `<strong>${data.caso_uso}</strong> · Conversación <code>${data.conversation_id}</code> · Confirmada: <strong>${data.alerta_confirmada}</strong> · Sensor Activo: <strong>${data.sensor_aire_activo}</strong>`;
+      }
+
+      const cont = document.getElementById("traceContainer");
+      cont.innerHTML = data.traza.map((item, idx) => {
+        if (item.tipo === "ACL") {
+          return `<div class="trace-item"><span class="badge b-acl">ACL:${item.performative}</span> <strong>${item.sender}</strong> &rarr; <strong>${item.receiver}</strong> <small>(${item.protocol})</small><br><span style="color:#4b5563">Origen: <code>${item.metodo_origen}</code></span><pre>${item.sexpr}</pre></div>`;
+        }
+        if (item.tipo === "TIMEOUT") {
+          return `<div class="trace-item"><span class="badge b-err">TIMEOUT</span> <strong>${item.agente}</strong>: ${item.detalle}</div>`;
+        }
+        return `<div class="trace-item"><span class="badge b-met">${idx + 1}. MÉTODO</span> <strong>${item.agente}</strong>.<code>${item.metodo}</code><br><span style="color:#4b5563">${item.detalle}</span></div>`;
+      }).join("");
+    }
+
+    function cambiarFormatoACL(fmt) {
+      formatoACL = fmt;
+      document.getElementById("btnSexpr").classList.toggle("active", fmt === "sexpr");
+      document.getElementById("btnJson").classList.toggle("active", fmt === "json");
+      renderizarACL();
+    }
+
+    function renderizarACL() {
+      if (!estadoCache) return;
+      const cont = document.getElementById("aclList");
+      cont.innerHTML = estadoCache.mensajes_acl.map(m => {
+        const body = formatoACL === "sexpr" ? m.acl_sexpr : JSON.stringify(JSON.parse(m.content_json), null, 2);
+        return `<div class="trace-item"><span class="badge b-acl">${m.caso_uso} · ${m.performative}</span> <strong>${m.sender}</strong> &rarr; <strong>${m.receiver}</strong><pre>${body}</pre></div>`;
+      }).join("");
+    }
+
+    function renderizarTablas() {
+      document.getElementById("tblResiduos").innerHTML = estadoCache.estado_interno_residuos.map(r =>
+        `<tr><td><code>${r.zona_id}</code></td><td>${r.nivel}%</td><td>${r.tiempo_sobre_limite} min</td><td>${r.ritmo_llenado}</td><td><code>${r.estado_visual || "contenedor_estable"}</code></td><td>${r.bolsas_suelo ?? 0}</td></tr>`
+      ).join("");
+
+      document.getElementById("tblAire").innerHTML = estadoCache.historial_mediciones_aire.slice(0, 8).map(m =>
+        `<tr><td>#${m.id}</td><td><code>${m.zona_id}</code></td><td>${m.concentracion_gases}</td><td>${m.temperatura}</td><td>${m.humedad}</td></tr>`
+      ).join("");
+
+      document.getElementById("tblAlertas").innerHTML = estadoCache.alertas.slice(0, 8).map(a => {
+        const badge = a.estado === "CONFIRMADA" ? "b-ok" : (a.estado === "PENDIENTE_COMUNIDAD" ? "b-warn" : "b-err");
+        return `<tr><td>#${a.id}</td><td><code>${a.zona_id}</code></td><td>${a.nivel}</td><td><span class="badge ${badge}">${a.estado}</span></td><td>${a.reporte}</td></tr>`;
+      }).join("");
+
+      document.getElementById("tblIncidencias").innerHTML = estadoCache.incidencias.slice(0, 8).map(i =>
+        `<tr><td>#${i.id}</td><td>${i.agente_afectado}</td><td><code>${i.zona_id}</code></td><td>${i.descripcion}</td><td>${i.accion_correctiva}</td></tr>`
+      ).join("");
+    }
+
+    cargarEstado().then(() => analizarImagenActual());
+  </script>
+</body>
+</html>

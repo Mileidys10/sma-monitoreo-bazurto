@@ -1,0 +1,12 @@
+services:
+  sma-bazurto:
+    build: .
+    container_name: sma-monitoreo-bazurto
+    ports:
+      - "8000:8000"
+    volumes:
+      - sma_data:/app
+    restart: unless-stopped
+
+volumes:
+  sma_data:
