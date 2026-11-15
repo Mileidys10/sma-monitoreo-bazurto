@@ -1,7 +1,9 @@
 """Pruebas automatizadas para los 21 métodos MAS-ML, FIPA-ACL y los 2 Casos de Uso."""
 
 import base64
+import io
 from pathlib import Path
+from PIL import Image, ImageDraw
 from fastapi.testclient import TestClient
 
 from app.main import STATIC_DIR, app
@@ -180,70 +182,72 @@ def test_panel_comunidad_interactivo_confirmar_y_rechazar() -> None:
     assert resp_fail.json()["confirmada_comunidad"] is False
 
 
-def test_cuatro_imagenes_reales_carpeta_testeo() -> None:
+def _pil_to_data_url(img: Image.Image) -> str:
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+def test_galeria_sin_imagenes_reales_precargadas_y_calculo_matematico_continuo() -> None:
     samples_dir = STATIC_DIR / "samples"
-    expected_cases = [
-        ("real_vacio_173721.png", True, 12.4, 0, False, "contenedor_estable"),
-        ("real_tope_173630.png", True, 86.5, 2, True, "desbordamiento_detectado"),
-        ("real_desborde_173640.png", True, 96.8, 6, True, "desbordamiento_detectado"),
-        ("real_no_contenedor_174700.png", False, 0.0, 0, False, "sin_contenedor_detectado"),
+    # Garantizar que no existen fotos reales precargadas en samples/
+    preloaded_real = list(samples_dir.glob("real_*.png"))
+    assert preloaded_real == []
+
+    catalogo = ensure_sample_images(STATIC_DIR)
+    assert [m["filename"] for m in catalogo] == [
+        "contenedor_limpio.png",
+        "contenedor_medio.png",
+        "contenedor_critico.png",
     ]
 
-    for filename, exp_det, exp_lvl, exp_bags, exp_ovf, exp_state in expected_cases:
-        raw = (samples_dir / filename).read_bytes()
-        data_url = "data:image/png;base64," + base64.b64encode(raw).decode("ascii")
-        res = analizar_imagen_contenedor(image_input=data_url, static_dir=STATIC_DIR)
-        assert res["contenedor_detectado"] is exp_det
-        assert res["nivel_llenado_visual"] == exp_lvl
-        assert res["bolsas_en_suelo"] == exp_bags
-        assert res["desbordamiento"] is exp_ovf
-        assert res["estado_visual"] == exp_state
+    # 1. Foto sintética en memoria (400x300) de contenedor verde vacío
+    img_vacio = Image.new("RGB", (400, 300), (210, 210, 200))
+    ImageDraw.Draw(img_vacio).rectangle((80, 90, 280, 240), fill=(45, 130, 65))
+    res_vacio = analizar_imagen_contenedor(image_input=_pil_to_data_url(img_vacio), static_dir=STATIC_DIR)
+    assert res_vacio["contenedor_detectado"] is True
+    assert res_vacio["nivel_llenado_visual"] < 25.0
+    assert res_vacio["bolsas_en_suelo"] == 0
+    assert res_vacio["desbordamiento"] is False
+    assert res_vacio["telemetria_pixeles"]["estructura_px"] >= 1500
 
-    # Verificar vía endpoint /api/vision/analizar que la imagen negativa NO sobrescribe MercadoBazurto
-    client = TestClient(app)
-    assert client.post("/api/reset").status_code == 200
-    estado_antes = client.get("/api/estado").json()
-    zona_3_antes = next(z for z in estado_antes["entorno_zonas"] if z["zona_id"] == "zona_3")
-    nivel_previo = zona_3_antes["nivel_llenado_contenedores"]
+    # 2. Foto en memoria de contenedor verde con rebose superior + bolsas naranjas y azules en suelo
+    img_lleno = Image.new("RGB", (400, 300), (210, 210, 200))
+    draw_lleno = ImageDraw.Draw(img_lleno)
+    draw_lleno.rectangle((80, 90, 280, 240), fill=(45, 130, 65))
+    draw_lleno.rectangle((140, 32, 280, 84), fill=(220, 35, 135))
+    draw_lleno.rectangle((40, 165, 190, 265), fill=(235, 110, 20))
+    draw_lleno.rectangle((200, 170, 340, 265), fill=(25, 95, 225))
+    res_lleno = analizar_imagen_contenedor(image_input=_pil_to_data_url(img_lleno), static_dir=STATIC_DIR)
+    assert res_lleno["contenedor_detectado"] is True
+    assert res_lleno["nivel_llenado_visual"] >= 85.0
+    assert res_lleno["bolsas_en_suelo"] >= 4
+    assert res_lleno["desbordamiento"] is True
+    assert res_lleno["estado_visual"] == "desbordamiento_detectado"
+    assert res_lleno["telemetria_pixeles"]["boca_residuos_px"] > 0
+    assert res_lleno["telemetria_pixeles"]["suelo_residuos_px"] > 0
 
-    neg_b64 = "data:image/png;base64," + base64.b64encode((samples_dir / "real_no_contenedor_174700.png").read_bytes()).decode("ascii")
-    resp_neg = client.post(
-        "/api/vision/analizar",
-        json={"zona_id": "zona_3", "image_base64": neg_b64, "aplicar_a_entorno": True},
-    )
-    assert resp_neg.status_code == 200
-    assert resp_neg.json()["contenedor_detectado"] is False
-    assert resp_neg.json()["estado_visual"] == "sin_contenedor_detectado"
+    # 3. Foto en memoria de contenedor gris con costales blancos apilados en acera
+    img_gris = Image.new("RGB", (400, 300), (195, 185, 175))
+    draw_gris = ImageDraw.Draw(img_gris)
+    draw_gris.rectangle((80, 90, 280, 240), fill=(110, 112, 114))
+    draw_gris.rectangle((20, 180, 205, 275), fill=(245, 245, 242))
+    res_gris = analizar_imagen_contenedor(image_input=_pil_to_data_url(img_gris), static_dir=STATIC_DIR)
+    assert res_gris["contenedor_detectado"] is True
+    assert res_gris["nivel_llenado_visual"] >= 80.0
+    assert res_gris["bolsas_en_suelo"] >= 4
+    assert res_gris["desbordamiento"] is True
 
-    estado_despues = client.get("/api/estado").json()
-    zona_3_despues = next(z for z in estado_despues["entorno_zonas"] if z["zona_id"] == "zona_3")
-    assert zona_3_despues["nivel_llenado_contenedores"] == nivel_previo
+    # 4. Foto negativa en memoria sin contenedor (paisaje cálido)
+    img_neg = Image.new("RGB", (400, 300), (235, 205, 170))
+    ImageDraw.Draw(img_neg).rectangle((120, 100, 250, 210), fill=(200, 110, 75))
+    res_neg = analizar_imagen_contenedor(image_input=_pil_to_data_url(img_neg), static_dir=STATIC_DIR)
+    assert res_neg["contenedor_detectado"] is False
+    assert res_neg["nivel_llenado_visual"] == 0.0
+    assert res_neg["estado_visual"] == "sin_contenedor_detectado"
 
 
-def test_nueve_imagenes_reales_y_gestion_zonas_contenedores_historial() -> None:
-    samples_dir = STATIC_DIR / "samples"
-    expected_9 = [
-        ("real_vacio_173721.png", True, 12.4, 0, False, "contenedor_estable"),
-        ("real_tope_173630.png", True, 86.5, 2, True, "desbordamiento_detectado"),
-        ("real_desborde_173640.png", True, 96.8, 6, True, "desbordamiento_detectado"),
-        ("real_no_contenedor_174700.png", False, 0.0, 0, False, "sin_contenedor_detectado"),
-        ("real_negros_desborde_180355.png", True, 94.5, 7, True, "desbordamiento_detectado"),
-        ("real_negros_limpios_180415.png", True, 8.5, 0, False, "contenedor_estable"),
-        ("real_gris_medio_180526.png", True, 58.4, 0, False, "contenedor_estable"),
-        ("real_gris_abierto_180537.png", True, 14.2, 1, False, "contenedor_estable"),
-        ("real_gris_bolsas_suelo_180550.png", True, 72.5, 2, True, "desbordamiento_detectado"),
-    ]
-    for filename, exp_det, exp_lvl, exp_bags, exp_ovf, exp_state in expected_9:
-        raw = (samples_dir / filename).read_bytes()
-        data_url = "data:image/png;base64," + base64.b64encode(raw).decode("ascii")
-        res = analizar_imagen_contenedor(image_input=data_url, static_dir=STATIC_DIR)
-        assert res["contenedor_detectado"] is exp_det, filename
-        assert res["nivel_llenado_visual"] == exp_lvl, filename
-        assert res["bolsas_en_suelo"] == exp_bags, filename
-        assert res["desbordamiento"] is exp_ovf, filename
-        assert res["estado_visual"] == exp_state, filename
-
-    # Flujo de creación de nueva zona + nuevo contenedor + asignación de imagen + historial persistente
+def test_gestion_zonas_contenedores_asignacion_e_historial_persistente() -> None:
     client = TestClient(app)
     assert client.post("/api/reset").status_code == 200
 
@@ -261,32 +265,39 @@ def test_nueve_imagenes_reales_y_gestion_zonas_contenedores_historial() -> None:
     assert c_resp.status_code == 200
     cont_id = c_resp.json()["contenedor_id"]
 
-    img_negros_b64 = "data:image/png;base64," + base64.b64encode((samples_dir / "real_negros_desborde_180355.png").read_bytes()).decode("ascii")
+    # Imagen de prueba calculada matemáticamente (sin presets precargados)
+    img_lleno = Image.new("RGB", (400, 300), (210, 210, 200))
+    draw_lleno = ImageDraw.Draw(img_lleno)
+    draw_lleno.rectangle((80, 90, 280, 240), fill=(45, 130, 65))
+    draw_lleno.rectangle((140, 32, 280, 84), fill=(220, 35, 135))
+    draw_lleno.rectangle((40, 165, 190, 265), fill=(235, 110, 20))
     vis_resp = client.post(
         "/api/vision/analizar",
         json={
             "zona_id": "zona_6",
             "contenedor_id": cont_id,
-            "image_base64": img_negros_b64,
+            "image_base64": _pil_to_data_url(img_lleno),
             "aplicar_a_entorno": True,
         },
     )
     assert vis_resp.status_code == 200
     vis_data = vis_resp.json()
-    assert vis_data["nivel_llenado_visual"] == 94.5
-    assert vis_data["bolsas_en_suelo"] == 7
+    assert vis_data["contenedor_detectado"] is True
+    assert vis_data["nivel_llenado_visual"] >= 80.0
+    assert vis_data["bolsas_en_suelo"] >= 2
     assert vis_data["contenedor_id"] == cont_id
     assert vis_data["contenedor_codigo"] == "CONT-Z6-02"
-    assert vis_data["zona_actualizada"]["nivel_llenado_contenedores"] == 94.5
+    assert "telemetria_pixeles" in vis_data
+    assert vis_data["zona_actualizada"]["nivel_llenado_contenedores"] == vis_data["nivel_llenado_visual"]
 
-    # Registrar también una imagen negativa asociada a zona_6 + cont_id sin sobrescribir 94.5%
-    img_neg_b64 = "data:image/png;base64," + base64.b64encode((samples_dir / "real_no_contenedor_174700.png").read_bytes()).decode("ascii")
+    # Imagen negativa asociada a zona_6 + cont_id: se registra en historial sin sobrescribir entorno
+    img_neg = Image.new("RGB", (400, 300), (235, 205, 170))
     vis_neg = client.post(
         "/api/vision/analizar",
         json={
             "zona_id": "zona_6",
             "contenedor_id": cont_id,
-            "image_base64": img_neg_b64,
+            "image_base64": _pil_to_data_url(img_neg),
             "aplicar_a_entorno": True,
         },
     )
@@ -299,8 +310,9 @@ def test_nueve_imagenes_reales_y_gestion_zonas_contenedores_historial() -> None:
     assert len(hist) == 2
     assert hist[0]["contenedor_codigo"] == "CONT-Z6-02"
     assert hist[0]["contenedor_detectado"] == 0
-    assert hist[1]["nivel_llenado_visual"] == 94.5
+    assert hist[1]["nivel_llenado_visual"] == vis_data["nivel_llenado_visual"]
 
     estado = client.get("/api/estado").json()
     z6 = next(z for z in estado["entorno_zonas"] if z["zona_id"] == "zona_6")
-    assert z6["nivel_llenado_contenedores"] == 94.5
+    assert z6["nivel_llenado_contenedores"] == vis_data["nivel_llenado_visual"]
+    assert all(not m["filename"].startswith("real_") for m in estado["muestras_vision"])

@@ -313,7 +313,7 @@
       <div class="guide-body">
         <div class="guide-box">
           <strong>1. Cámara Práctica (<code>analizarImagenes()</code>):</strong><br />
-          No necesitas ir al Mercado de Bazurto. Elige una de las 9 fotografías reales de prueba, sube cualquier foto desde tu PC o abre tu webcam, asígnala a la <strong>Zona</strong> y <strong>Contenedor</strong> exactos (puedes crear nuevas zonas y contenedores) y consulta el historial completo debajo.
+          No necesitas ir al Mercado de Bazurto. Usa las 3 escenas sintéticas base o sube tus propias fotografías reales desde tu PC (o webcam) para evaluar el algoritmo continuo píxel a píxel, asígnalas a la <strong>Zona</strong> y <strong>Contenedor</strong> exactos y consulta el historial completo debajo.
         </div>
         <div class="guide-box">
           <strong>2. Panel de Comunidad (<code>EmisorAlertas</code>):</strong><br />
@@ -386,7 +386,7 @@
 
       <div class="vision-layout">
         <div>
-          <span style="display:block; font-size:0.86rem; font-weight:600; color:var(--muted); margin-bottom:8px;">Paso B: Elige una de las 9 fotografías reales de prueba (o sube/captura una imagen):</span>
+          <span style="display:block; font-size:0.86rem; font-weight:600; color:var(--muted); margin-bottom:8px;">Paso B: Elige una de las 3 escenas sintéticas base (o sube/captura tus propias fotografías reales):</span>
           <div id="sampleGrid" class="sample-grid"></div>
 
           <div class="btn-group">
@@ -407,12 +407,12 @@
             <canvas id="webcamCanvas" style="display:none;"></canvas>
           </div>
           <p id="visionHint" style="font-size:0.84rem; color:var(--muted); margin:10px 0 0;">
-            Imagen seleccionada lista para <code>analizarImagenes()</code>: <code>real_tope_173630.png</code>
+            Escena seleccionada lista para <code>analizarImagenes()</code>: <code>contenedor_critico.png</code>
           </p>
         </div>
 
         <div class="vision-viewer">
-          <img id="visionPreviewImg" src="static/samples/real_tope_173630.png" alt="Vista previa del contenedor analizado por AgenteSensorResiduos con recuadros de detección" />
+          <img id="visionPreviewImg" src="static/samples/contenedor_critico.png" alt="Vista previa del contenedor analizado por AgenteSensorResiduos con recuadros de detección" />
           <div id="visionAlertBox" style="display:none; width:100%; padding:10px 12px; border-radius:8px; background:#fef2f2; border:1px solid #ef4444; color:#991b1b; font-size:0.85rem; line-height:1.4;"></div>
           <div id="visionMetrics" class="vision-metrics">
             <span class="badge b-met">Analizando imagen...</span>
@@ -567,69 +567,33 @@
   <script>
     const MUESTRAS_CATALOG = [
       {
-        filename: "real_vacio_173721.png",
-        url: "static/samples/real_vacio_173721.png",
-        titulo: "Foto Real 1: Verde Vacío (12.4%)",
-        descripcion: "Contenedor verde abierto con cavidad interior vacía y suelo despejado."
+        filename: "contenedor_limpio.png",
+        url: "static/samples/contenedor_limpio.png",
+        titulo: "Sintética 1: Contenedor Limpio (<15%)",
+        descripcion: "Contenedor verde estable con baja ocupación y perímetro despejado."
       },
       {
-        filename: "real_tope_173630.png",
-        url: "static/samples/real_tope_173630.png",
-        titulo: "Foto Real 2: Verde al Tope (86.5%)",
-        descripcion: "Tapa levantada por bolsas plásticas, bolsa lateral y botellas en el suelo."
+        filename: "contenedor_medio.png",
+        url: "static/samples/contenedor_medio.png",
+        titulo: "Sintética 2: Nivel Medio (~50%)",
+        descripcion: "Contenedor verde a mitad de capacidad sin desbordamiento externo."
       },
       {
-        filename: "real_desborde_173640.png",
-        url: "static/samples/real_desborde_173640.png",
-        titulo: "Foto Real 3: Verde LITTER Desbordado (96.8%)",
-        descripcion: "Contenedor saturado arriba y múltiples bolsas acumuladas alrededor en el suelo."
-      },
-      {
-        filename: "real_no_contenedor_174700.png",
-        url: "static/samples/real_no_contenedor_174700.png",
-        titulo: "Foto Real 4: Caso Negativo (Sin Contenedor)",
-        descripcion: "Fotografía ajena al punto de acopio; se descarta sin alterar el entorno."
-      },
-      {
-        filename: "real_negros_desborde_180355.png",
-        url: "static/samples/real_negros_desborde_180355.png",
-        titulo: "Foto Real 5: Negros Desbordados + Costales (94.5%)",
-        descripcion: "Tres contenedores negros rebasados con costales blancos y residuos dispersos en la acera."
-      },
-      {
-        filename: "real_negros_limpios_180415.png",
-        url: "static/samples/real_negros_limpios_180415.png",
-        titulo: "Foto Real 6: Negros Cerrados Limpios (8.5%)",
-        descripcion: "Tres contenedores negros cerrados en estación limpia y ordenada."
-      },
-      {
-        filename: "real_gris_medio_180526.png",
-        url: "static/samples/real_gris_medio_180526.png",
-        titulo: "Foto Real 7: Gris Nivel Medio (58.4%)",
-        descripcion: "Contenedor gris abierto sin tapa con bolsas y cartón a media capacidad."
-      },
-      {
-        filename: "real_gris_abierto_180537.png",
-        url: "static/samples/real_gris_abierto_180537.png",
-        titulo: "Foto Real 8: Gris Abierto Vacío + Caja (14.2%)",
-        descripcion: "Contenedor gris abierto vacío al frente y una caja de cartón en el suelo al fondo."
-      },
-      {
-        filename: "real_gris_bolsas_suelo_180550.png",
-        url: "static/samples/real_gris_bolsas_suelo_180550.png",
-        titulo: "Foto Real 9: Gris/Azul Bolsas en Suelo (72.5%)",
-        descripcion: "Isla de contenedores grises con tapa azul y 2 bolsas abandonadas junto al borde."
+        filename: "contenedor_critico.png",
+        url: "static/samples/contenedor_critico.png",
+        titulo: "Sintética 3: Crítico Desbordado (~98%)",
+        descripcion: "Contenedor rebasado con bolsas acumuladas en el suelo perimetral."
       }
     ];
 
     let estadoCache = null;
     let formatoACL = "sexpr";
-    let presetSeleccionado = "real_tope_173630.png";
+    let presetSeleccionado = "contenedor_critico.png";
     let imagenBase64Seleccionada = null;
     let webcamStream = null;
     let useLocalFallback = false;
 
-    const LOCAL_STORAGE_ID = "bazurto_sma_cloud_v2";
+    const LOCAL_STORAGE_ID = "bazurto_sma_cloud_v3";
 
     function createInitialLocalDb() {
       const now = new Date().toISOString();
@@ -830,7 +794,7 @@
     }
 
     async function analizarImagenEnNavegador(imageBase64, presetName) {
-      const fuenteNombre = presetName || "real_tope_173630.png";
+      const fuenteNombre = presetName || "contenedor_critico.png";
       const src = imageBase64 || `static/samples/${fuenteNombre}`;
       const img = await new Promise((resolve, reject) => {
         const i = new Image();
@@ -902,6 +866,7 @@
         const fxStart = Math.floor(anaW * 0.06);
         const secW = Math.floor((Math.floor(anaW * 0.94) - fxStart) / 10);
         const gBoxes = [];
+        let sueloWastePx = 0;
         for (let s = 0; s < 10; s++) {
           const sx1 = fxStart + s * secW, sx2 = sx1 + secW;
           let sw = 0;
@@ -911,6 +876,7 @@
               if (pixelIsWaste(r, g, b, bgFloor)) sw++;
             }
           }
+          sueloWastePx += sw;
           if (sw / ((sx2 - sx1) * (fy2 - fy1)) >= 0.24) {
             if (gBoxes.length && sx1 <= gBoxes[gBoxes.length - 1][2] + 4) {
               gBoxes[gBoxes.length - 1][2] = sx2;
@@ -954,11 +920,45 @@
           bolsas_en_suelo: bolsas,
           confianza: desbordamiento ? 0.94 : 0.90,
           fuente_imagen: imageBase64 ? "imagen_usuario_o_webcam" : fuenteNombre,
-          annotated_image_base64: outC.toDataURL("image/png")
+          telemetria_pixeles: {
+            estructura_px: roiPx,
+            boca_residuos_px: topOv,
+            cavidad_residuos_px: wastePx,
+            suelo_residuos_px: sueloWastePx,
+            cavidad_vacia_px: Math.max(roiPx - wastePx, 0)
+          },
+          annotated_image_base64: outC.toDataURL("image/png"),
+          history_thumb_base64: outC.toDataURL("image/jpeg", 0.78)
         };
       }
 
-      // Análisis multi-región HSV 200x200 para fotografías reales
+      // Análisis continuo HSV 200x200 píxel a píxel para fotografías reales (cero respuestas fijas)
+      const makeCells = () => Array.from({ length: 20 }, () => new Array(20).fill(0));
+      const bboxFromCells = (cells, minCellPx = 4) => {
+        let coords = [];
+        for (let cy = 0; cy < 20; cy++) {
+          for (let cx = 0; cx < 20; cx++) {
+            if (cells[cy][cx] >= minCellPx) coords.push([cx, cy]);
+          }
+        }
+        if (!coords.length && minCellPx > 1) {
+          for (let cy = 0; cy < 20; cy++) {
+            for (let cx = 0; cx < 20; cx++) {
+              if (cells[cy][cx] > 0) coords.push([cx, cy]);
+            }
+          }
+        }
+        if (!coords.length) return null;
+        let minCx = 19, maxCx = 0, minCy = 19, maxCy = 0;
+        for (const [cx, cy] of coords) {
+          if (cx < minCx) minCx = cx;
+          if (cx > maxCx) maxCx = cx;
+          if (cy < minCy) minCy = cy;
+          if (cy > maxCy) maxCy = cy;
+        }
+        return [minCx / 20.0, minCy / 20.0, (maxCx + 1) / 20.0, (maxCy + 1) / 20.0];
+      };
+
       const hc = document.createElement("canvas");
       hc.width = 200; hc.height = 200;
       const hctx = hc.getContext("2d");
@@ -966,41 +966,88 @@
       const hdata = hctx.getImageData(0, 0, 200, 200).data;
 
       let greenBody = 0, darkBody = 0, greyBody = 0, vividMouth = 0, lowerPlastic = 0;
-      let whiteGroundLeft = 0, blueMouth = 0, darkCavity = 0, midColorful = 0;
+      let whiteGroundLeft = 0, whiteGroundMid = 0, blueMouth = 0, darkCavity = 0, midColorful = 0;
+      const structCells = makeCells(), topWasteCells = makeCells();
+      const groundPlasticCells = makeCells(), groundWhiteCells = makeCells(), cavityCells = makeCells();
+
       for (let y = 0; y < 200; y++) {
+        const cy = Math.floor(y / 10);
         for (let x = 0; x < 200; x++) {
+          const cx = Math.floor(x / 10);
           const i = (y * 200 + x) * 4;
           const r = hdata[i], g = hdata[i + 1], b = hdata[i + 2];
           const [deg, sv, vv] = rgbToHsvDeg(r, g, b);
 
           if (x >= 30 && x <= 145 && y >= 55 && y <= 165) {
-            if (deg >= 70 && deg <= 165 && sv >= 0.12 && vv >= 0.18 && vv <= 0.72 && g >= r && g >= b) greenBody++;
-            if (vv <= 0.25 && sv <= 0.35) darkBody++;
-            if (sv <= 0.16 && vv >= 0.28 && vv <= 0.72) greyBody++;
+            const isG = deg >= 70 && deg <= 165 && sv >= 0.12 && vv >= 0.18 && vv <= 0.72 && g >= r && g >= b;
+            const isD = vv <= 0.25 && sv <= 0.35;
+            const isGr = sv <= 0.16 && vv >= 0.28 && vv <= 0.72;
+            if (isG) greenBody++;
+            if (isD) darkBody++;
+            if (isGr) greyBody++;
+            if (isG || isD || isGr) structCells[cy][cx]++;
           }
           if (x >= 65 && x <= 145 && y >= 18 && y <= 58) {
-            if (deg >= 175 && deg <= 345 && sv > 0.32 && vv > 0.40) vividMouth++;
+            if (deg >= 175 && deg <= 345 && sv > 0.32 && vv > 0.40) {
+              vividMouth++;
+              topWasteCells[cy][cx]++;
+            }
           }
           if (x >= 10 && x <= 190 && y >= 95 && y <= 185) {
             const isOrange = deg >= 10 && deg <= 42 && sv > 0.55 && vv > 0.55;
             const isBlue = deg >= 195 && deg <= 245 && sv > 0.55 && vv > 0.45;
             const isBlackBag = vv < 0.16 && sv < 0.28;
-            if (isOrange || isBlue || isBlackBag) lowerPlastic++;
+            if (isOrange || isBlue || isBlackBag) {
+              lowerPlastic++;
+              groundPlasticCells[cy][cx]++;
+            }
           }
           if (x >= 5 && x <= 110 && y >= 115 && y <= 190) {
-            if (sv <= 0.18 && vv >= 0.78) whiteGroundLeft++;
+            if (sv <= 0.18 && vv >= 0.78) {
+              whiteGroundLeft++;
+              groundWhiteCells[cy][cx]++;
+            }
+          }
+          if (x >= 55 && x <= 120 && y >= 120 && y <= 165) {
+            if (sv <= 0.22 && vv >= 0.72) {
+              whiteGroundMid++;
+              groundWhiteCells[cy][cx]++;
+            }
           }
           if (x >= 95 && x <= 180 && y >= 55 && y <= 95) {
-            if (deg >= 195 && deg <= 235 && sv >= 0.55 && vv >= 0.45) blueMouth++;
+            if (deg >= 195 && deg <= 235 && sv >= 0.55 && vv >= 0.45) {
+              blueMouth++;
+              topWasteCells[cy][cx]++;
+            }
           }
           if (x >= 45 && x <= 105 && y >= 65 && y <= 110) {
-            if (vv <= 0.16) darkCavity++;
+            if (vv <= 0.16) {
+              darkCavity++;
+              cavityCells[cy][cx]++;
+            }
           }
           if (x >= 60 && x <= 140 && y >= 80 && y <= 112) {
-            if (sv >= 0.28 && vv >= 0.35) midColorful++;
+            if (
+              !(deg >= 70 && deg <= 165 && g >= r && g >= b) &&
+              !(deg >= 195 && deg <= 235 && sv >= 0.50) &&
+              sv >= 0.28 && vv >= 0.35
+            ) {
+              midColorful++;
+              topWasteCells[cy][cx]++;
+            }
           }
         }
       }
+
+      const effPlastic = greenBody >= 1500 ? Math.max(0.0, lowerPlastic - 650.0) : 0.0;
+      const effWhitePile = (greenBody < 1500 && blueMouth < 200) ? Math.max(0.0, whiteGroundLeft - 450.0) : 0.0;
+      const telemetriaPixeles = {
+        estructura_px: greenBody + darkBody + greyBody,
+        boca_residuos_px: vividMouth + blueMouth,
+        cavidad_residuos_px: midColorful,
+        suelo_residuos_px: Math.round(effPlastic + effWhitePile + (greenBody < 1500 ? whiteGroundMid : 0)),
+        cavidad_vacia_px: darkCavity
+      };
 
       let aw = img.naturalWidth || 480;
       let ah = img.naturalHeight || 320;
@@ -1018,11 +1065,11 @@
       octx.drawImage(img, 0, 0, aw, ah);
 
       let contenedorDetectado = true;
-      let nivelVisual = 12.4;
+      let nivelVisual = 14.0;
       let bolsas = 0;
       let desbordamiento = false;
       let estadoVisual = "contenedor_estable";
-      let confianza = 0.94;
+      let confianza = 0.90;
       let banner = "";
 
       if (greenBody < 400 && greyBody < 1500 && darkBody < 800) {
@@ -1034,104 +1081,53 @@
         confianza = 0.96;
         drawLabeledBox(octx, [0.14, 0.08, 0.86, 0.92], aw, ah, "#dc2626", "SIN CONTENEDOR (DESCARTADO)");
         banner = "ALERTA VISION: SIN CONTENEDOR";
-      } else if (greenBody >= 1500) {
-        if (lowerPlastic >= 1200) {
-          contenedorDetectado = true;
-          nivelVisual = 96.8;
-          bolsas = 6;
-          desbordamiento = true;
-          estadoVisual = "desbordamiento_detectado";
-          confianza = 0.95;
-          drawLabeledBox(octx, [0.36, 0.22, 0.68, 0.56], aw, ah, "#d97706", "CONTENEDOR LITTER");
-          drawLabeledBox(octx, [0.41, 0.08, 0.66, 0.31], aw, ah, "#dc2626", "REBOSE SUPERIOR");
-          drawLabeledBox(octx, [0.08, 0.38, 0.37, 0.82], aw, ah, "#ef4444", "BOLSAS SUELO IZQ");
-          drawLabeledBox(octx, [0.45, 0.45, 0.67, 0.83], aw, ah, "#ef4444", "BOLSA NEGRA");
-          drawLabeledBox(octx, [0.62, 0.48, 0.94, 0.84], aw, ah, "#ef4444", "BOLSAS SUELO DER");
-          drawLabeledBox(octx, [0.45, 0.81, 0.68, 0.96], aw, ah, "#ef4444", "CAJAS / SUELO");
-        } else if (vividMouth >= 200) {
-          contenedorDetectado = true;
-          nivelVisual = 86.5;
-          bolsas = 2;
-          desbordamiento = true;
-          estadoVisual = "desbordamiento_detectado";
-          confianza = 0.93;
-          drawLabeledBox(octx, [0.34, 0.25, 0.78, 0.92], aw, ah, "#d97706", "CONTENEDOR LLENO");
-          drawLabeledBox(octx, [0.37, 0.09, 0.73, 0.28], aw, ah, "#dc2626", "BOLSAS EN TAPA");
-          drawLabeledBox(octx, [0.38, 0.36, 0.46, 0.65], aw, ah, "#ef4444", "BOLSA COLGADA");
-          drawLabeledBox(octx, [0.28, 0.75, 0.36, 0.93], aw, ah, "#ef4444", "BOTELLAS SUELO");
-        } else {
-          contenedorDetectado = true;
-          nivelVisual = 12.4;
-          bolsas = 0;
-          desbordamiento = false;
-          estadoVisual = "contenedor_estable";
-          confianza = 0.94;
-          drawLabeledBox(octx, [0.32, 0.20, 0.82, 0.92], aw, ah, "#16a34a", "CONTENEDOR ESTABLE");
-          drawLabeledBox(octx, [0.41, 0.23, 0.66, 0.39], aw, ah, "#06b6d4", "CAVIDAD VACIA");
-        }
-        banner = `VISION SMA BAZURTO | Llenado: ${nivelVisual}% | Bolsas suelo: ${bolsas} | Desborde: ${desbordamiento ? "SI" : "NO"}`;
       } else {
-        if (whiteGroundLeft >= 2000) {
-          contenedorDetectado = true;
-          nivelVisual = 94.5;
-          bolsas = 7;
-          desbordamiento = true;
-          estadoVisual = "desbordamiento_detectado";
-          confianza = 0.95;
-          drawLabeledBox(octx, [0.26, 0.28, 0.82, 0.76], aw, ah, "#d97706", "3 CONTENEDORES NEGROS");
-          drawLabeledBox(octx, [0.27, 0.30, 0.84, 0.48], aw, ah, "#dc2626", "TAPAS REBASADAS");
-          drawLabeledBox(octx, [0.02, 0.58, 0.50, 0.87], aw, ah, "#ef4444", "COSTALES EN ACERA");
-          drawLabeledBox(octx, [0.40, 0.69, 0.92, 0.94], aw, ah, "#ef4444", "BASURA DISPERSA SUELO");
-        } else if (blueMouth >= 250) {
-          contenedorDetectado = true;
-          nivelVisual = 72.5;
-          bolsas = 2;
-          desbordamiento = true;
-          estadoVisual = "desbordamiento_detectado";
-          confianza = 0.92;
-          drawLabeledBox(octx, [0.51, 0.30, 0.98, 0.88], aw, ah, "#2563eb", "CONTENEDOR BOCA AZUL");
-          drawLabeledBox(octx, [0.30, 0.26, 0.68, 0.63], aw, ah, "#d97706", "CONTENEDOR GRIS");
-          drawLabeledBox(octx, [0.28, 0.62, 0.58, 0.79], aw, ah, "#ef4444", "2 BOLSAS EN SUELO (DESBORDE)");
-        } else if (darkBody >= 3200 && whiteGroundLeft < 100) {
-          contenedorDetectado = true;
-          nivelVisual = 8.5;
-          bolsas = 0;
-          desbordamiento = false;
-          estadoVisual = "contenedor_estable";
-          confianza = 0.95;
-          drawLabeledBox(octx, [0.08, 0.47, 0.31, 0.79], aw, ah, "#16a34a", "CONTENEDOR 1 CERRADO");
-          drawLabeledBox(octx, [0.38, 0.38, 0.64, 0.82], aw, ah, "#16a34a", "CONTENEDOR 2 ESTABLE");
-          drawLabeledBox(octx, [0.69, 0.39, 0.99, 0.85], aw, ah, "#16a34a", "CONTENEDOR 3 ESTABLE");
-        } else if (darkCavity >= 800) {
-          contenedorDetectado = true;
-          nivelVisual = 14.2;
-          bolsas = 1;
-          desbordamiento = false;
-          estadoVisual = "contenedor_estable";
-          confianza = 0.93;
-          drawLabeledBox(octx, [0.02, 0.14, 0.56, 0.97], aw, ah, "#16a34a", "CONTENEDOR GRIS ABIERTO");
-          drawLabeledBox(octx, [0.23, 0.34, 0.50, 0.54], aw, ah, "#06b6d4", "CAVIDAD VACIA (14.2%)");
-          drawLabeledBox(octx, [0.52, 0.30, 0.85, 0.73], aw, ah, "#16a34a", "CONTENEDOR 2 CERRADO");
-          drawLabeledBox(octx, [0.85, 0.46, 0.98, 0.57], aw, ah, "#d97706", "CAJA EN SUELO (1)");
-        } else if (midColorful >= 180) {
-          contenedorDetectado = true;
-          nivelVisual = 58.4;
-          bolsas = 0;
-          desbordamiento = false;
-          estadoVisual = "contenedor_estable";
-          confianza = 0.94;
-          drawLabeledBox(octx, [0.25, 0.30, 0.77, 0.86], aw, ah, "#d97706", "CONTENEDOR GRIS (NIVEL MEDIO)");
-          drawLabeledBox(octx, [0.32, 0.43, 0.67, 0.54], aw, ah, "#06b6d4", "RESIDUOS AL 58.4%");
-        } else {
-          contenedorDetectado = true;
-          const est = 20.0 + (midColorful / 15.0) + (vividMouth / 18.0) + (lowerPlastic / 120.0);
-          nivelVisual = Math.round(Math.min(Math.max(est, 10.0), 96.0) * 10) / 10;
-          bolsas = (whiteGroundLeft >= 800 || lowerPlastic >= 1800) ? 2 : (whiteGroundLeft >= 300 ? 1 : 0);
-          desbordamiento = nivelVisual >= 80.0 || bolsas >= 2;
-          estadoVisual = desbordamiento ? "desbordamiento_detectado" : "contenedor_estable";
-          confianza = 0.89;
-          const boxCol = desbordamiento ? "#dc2626" : (nivelVisual >= 55 ? "#d97706" : "#16a34a");
-          drawLabeledBox(octx, [0.18, 0.20, 0.82, 0.88], aw, ah, boxCol, `CONTENEDOR (${nivelVisual}%)`);
+        const mouthRatio = Math.min(vividMouth / 650.0, 1.25);
+        const plasticGroundRatio = Math.min(effPlastic / 1800.0, 1.25);
+        const whitePileRatio = Math.min(effWhitePile / 2600.0, 1.25);
+        const cavityBagRatio = (greenBody < 1500 && blueMouth < 200 && darkCavity < 600) ? Math.min(midColorful / 210.0, 1.15) : 0.0;
+        const blueGroundScore = greenBody < 1500 ? (Math.min(blueMouth / 600.0, 1.0) * Math.min(whiteGroundMid / 700.0, 1.0)) : 0.0;
+        const emptySuppression = (vividMouth < 100 && effWhitePile === 0) ? Math.min(darkCavity / 900.0, 1.0) : 0.0;
+        const closedDarkSuppression = (effWhitePile === 0 && greenBody < 200) ? Math.min(darkBody / 3800.0, 1.0) : 0.0;
+
+        const rawFill =
+          14.0 +
+          68.0 * mouthRatio +
+          74.0 * plasticGroundRatio +
+          76.0 * whitePileRatio +
+          48.0 * cavityBagRatio +
+          58.0 * blueGroundScore -
+          5.5 * closedDarkSuppression -
+          2.5 * emptySuppression;
+        nivelVisual = Math.round(Math.min(Math.max(rawFill, 6.5), 98.0) * 10) / 10;
+
+        const bagScore =
+          (effPlastic / 320.0) +
+          ((greenBody >= 1500 && effPlastic === 0) ? (vividMouth / 340.0) : 0.0) +
+          (effWhitePile / 420.0) +
+          (2.1 * blueGroundScore) +
+          ((greenBody < 1500 && darkCavity >= 800 && whiteGroundLeft >= 220) ? 1.0 : 0.0);
+        bolsas = Math.round(Math.min(Math.max(bagScore, 0.0), 10.0));
+        desbordamiento = nivelVisual >= 80.0 || bolsas >= 2;
+        estadoVisual = desbordamiento ? "desbordamiento_detectado" : "contenedor_estable";
+        confianza = Math.round(Math.min(0.88 + Math.min(greenBody + darkBody + greyBody, 8000) / 100000.0, 0.97) * 100) / 100;
+
+        const mainCol = desbordamiento ? "#dc2626" : (nivelVisual >= 55 ? "#d97706" : "#16a34a");
+        const structBox = bboxFromCells(structCells, 8) || [0.18, 0.22, 0.80, 0.88];
+        drawLabeledBox(octx, structBox, aw, ah, mainCol, `CONTENEDOR (${nivelVisual}%)`);
+
+        if (vividMouth >= 120 || blueMouth >= 150 || midColorful >= 120) {
+          const topBox = bboxFromCells(topWasteCells, 5);
+          if (topBox) drawLabeledBox(octx, topBox, aw, ah, desbordamiento ? "#dc2626" : "#d97706", "RESIDUOS / BOCA");
+        }
+        if (bolsas > 0) {
+          const gCells = effPlastic > 0 ? groundPlasticCells : groundWhiteCells;
+          const gBox = bboxFromCells(gCells, 6);
+          if (gBox) drawLabeledBox(octx, gBox, aw, ah, "#ef4444", `SUELO (${bolsas} BOLSAS)`);
+        }
+        if (!desbordamiento && nivelVisual < 30.0 && darkCavity >= 500) {
+          const cavBox = bboxFromCells(cavityCells, 6);
+          if (cavBox) drawLabeledBox(octx, cavBox, aw, ah, "#06b6d4", `CAVIDAD VACIA (${nivelVisual}%)`);
         }
         banner = `VISION SMA BAZURTO | Llenado: ${nivelVisual}% | Bolsas suelo: ${bolsas} | Desborde: ${desbordamiento ? "SI" : "NO"}`;
       }
@@ -1156,6 +1152,7 @@
         bolsas_en_suelo: bolsas,
         confianza,
         fuente_imagen: imageBase64 ? "imagen_usuario_o_webcam" : fuenteNombre,
+        telemetria_pixeles: telemetriaPixeles,
         annotated_image_base64: outC.toDataURL("image/png"),
         history_thumb_base64: thumbC.toDataURL("image/jpeg", 0.78)
       };
@@ -1303,7 +1300,7 @@
           z.comunidad_confirma = body.comunidad_confirma ? 1 : 0;
         }
         trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "medirNivelLlenadoContenedores()", detalle: `Consulta a MercadoBazurto(${zid}) -> nivel=${z.nivel_llenado_contenedores}%` });
-        const preset = body.preset_imagen || (z.nivel_llenado_contenedores >= 80 ? "real_tope_173630.png" : (z.nivel_llenado_contenedores >= 45 ? "contenedor_medio.png" : "real_vacio_173721.png"));
+        const preset = body.preset_imagen || (z.nivel_llenado_contenedores >= 80 ? "contenedor_critico.png" : (z.nivel_llenado_contenedores >= 45 ? "contenedor_medio.png" : "contenedor_limpio.png"));
         const vision = await analizarImagenEnNavegador(body.image_base64, preset);
         if (vision.contenedor_detectado !== false && (body.image_base64 || body.preset_imagen)) {
           z.nivel_llenado_contenedores = vision.nivel_llenado_visual;
@@ -1809,11 +1806,16 @@
       const badgeClass = vision.contenedor_detectado === false
         ? "b-err"
         : (vision.desbordamiento ? "b-err" : (vision.nivel_llenado_visual >= 55 ? "b-warn" : "b-ok"));
+      const tel = vision.telemetria_pixeles;
+      const telLine = tel
+        ? `<div style="width:100%;font-size:0.76rem;color:var(--muted);text-align:center;margin-top:4px;">Telemetría HSV (200×200): estructura=${tel.estructura_px}px · boca=${tel.boca_residuos_px}px · cavidad=${tel.cavidad_residuos_px}px · suelo=${tel.suelo_residuos_px}px · vacío=${tel.cavidad_vacia_px}px</div>`
+        : "";
       document.getElementById("visionMetrics").innerHTML = `
         <span class="badge ${badgeClass}">Llenado Visual: ${vision.nivel_llenado_visual}%</span>
         <span class="badge b-acl">Bolsas en Suelo: ${vision.bolsas_en_suelo}</span>
         <span class="badge ${vision.desbordamiento || vision.contenedor_detectado === false ? "b-err" : "b-ok"}">${vision.estado_visual}</span>
         <span class="badge b-met">Confianza: ${Math.round(vision.confianza * 100)}%</span>
+        ${telLine}
       `;
     }
 
