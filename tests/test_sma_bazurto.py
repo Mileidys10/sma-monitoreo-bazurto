@@ -1,5 +1,6 @@
 """Pruebas automatizadas para los 21 métodos MAS-ML, FIPA-ACL y los 2 Casos de Uso."""
 
+import base64
 from pathlib import Path
 from fastapi.testclient import TestClient
 
@@ -177,3 +178,43 @@ def test_panel_comunidad_interactivo_confirmar_y_rechazar() -> None:
     assert resp_fail.status_code == 200
     assert resp_fail.json()["resultado_acl"] == "FAILURE"
     assert resp_fail.json()["confirmada_comunidad"] is False
+
+
+def test_cuatro_imagenes_reales_carpeta_testeo() -> None:
+    samples_dir = STATIC_DIR / "samples"
+    expected_cases = [
+        ("real_vacio_173721.png", True, 12.4, 0, False, "contenedor_estable"),
+        ("real_tope_173630.png", True, 86.5, 2, True, "desbordamiento_detectado"),
+        ("real_desborde_173640.png", True, 96.8, 6, True, "desbordamiento_detectado"),
+        ("real_no_contenedor_174700.png", False, 0.0, 0, False, "sin_contenedor_detectado"),
+    ]
+
+    for filename, exp_det, exp_lvl, exp_bags, exp_ovf, exp_state in expected_cases:
+        raw = (samples_dir / filename).read_bytes()
+        data_url = "data:image/png;base64," + base64.b64encode(raw).decode("ascii")
+        res = analizar_imagen_contenedor(image_input=data_url, static_dir=STATIC_DIR)
+        assert res["contenedor_detectado"] is exp_det
+        assert res["nivel_llenado_visual"] == exp_lvl
+        assert res["bolsas_en_suelo"] == exp_bags
+        assert res["desbordamiento"] is exp_ovf
+        assert res["estado_visual"] == exp_state
+
+    # Verificar vía endpoint /api/vision/analizar que la imagen negativa NO sobrescribe MercadoBazurto
+    client = TestClient(app)
+    assert client.post("/api/reset").status_code == 200
+    estado_antes = client.get("/api/estado").json()
+    zona_3_antes = next(z for z in estado_antes["entorno_zonas"] if z["zona_id"] == "zona_3")
+    nivel_previo = zona_3_antes["nivel_llenado_contenedores"]
+
+    neg_b64 = "data:image/png;base64," + base64.b64encode((samples_dir / "real_no_contenedor_174700.png").read_bytes()).decode("ascii")
+    resp_neg = client.post(
+        "/api/vision/analizar",
+        json={"zona_id": "zona_3", "image_base64": neg_b64, "aplicar_a_entorno": True},
+    )
+    assert resp_neg.status_code == 200
+    assert resp_neg.json()["contenedor_detectado"] is False
+    assert resp_neg.json()["estado_visual"] == "sin_contenedor_detectado"
+
+    estado_despues = client.get("/api/estado").json()
+    zona_3_despues = next(z for z in estado_despues["entorno_zonas"] if z["zona_id"] == "zona_3")
+    assert zona_3_despues["nivel_llenado_contenedores"] == nivel_previo

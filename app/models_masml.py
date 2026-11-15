@@ -196,27 +196,40 @@ class AgenteSensorResiduos(AgenteBase):
             preset_name=chosen_preset,
             umbral_critico=self.umbrales.nivel_residuos_critico,
         )
-        nivel_final = vision["nivel_llenado_visual"] if (tiene_fuente_explicita or actualizar_entorno) else nivel
-        if tiene_fuente_explicita or actualizar_entorno:
-            self.db.update_zona(zona_id, nivel_llenado_contenedores=nivel_final)
+        contenedor_detectado = bool(vision.get("contenedor_detectado", True))
+        if not contenedor_detectado:
+            nivel_final = nivel
+            desbordamiento = False
+            estado_visual = "sin_contenedor_detectado"
+            detalle = (
+                f"Vision real ({vision['fuente_imagen']}) en {zona_id}: sin_contenedor_detectado. "
+                f"Imagen descartada sin alterar MercadoBazurto (se conserva nivel={nivel_final}%)."
+            )
+        else:
+            nivel_final = vision["nivel_llenado_visual"] if (tiene_fuente_explicita or actualizar_entorno) else nivel
+            if tiene_fuente_explicita or actualizar_entorno:
+                self.db.update_zona(zona_id, nivel_llenado_contenedores=nivel_final)
 
-        desbordamiento = bool(vision["desbordamiento"] or nivel_final >= self.umbrales.nivel_residuos_critico)
-        estado_visual = "desbordamiento_detectado" if desbordamiento else "contenedor_estable"
+            desbordamiento = bool(vision["desbordamiento"] or nivel_final >= self.umbrales.nivel_residuos_critico)
+            estado_visual = "desbordamiento_detectado" if desbordamiento else "contenedor_estable"
+            detalle = (
+                f"Vision real ({vision['fuente_imagen']}) en {zona_id}: {estado_visual} "
+                f"(llenado_visual={vision['nivel_llenado_visual']}%, "
+                f"bolsas_suelo={vision['bolsas_en_suelo']}, nivel_usado={nivel_final}%)"
+            )
+
         trace.append(
             {
                 "tipo": "METODO",
                 "agente": self.nombre,
                 "metodo": "analizarImagenes()",
-                "detalle": (
-                    f"Vision real ({vision['fuente_imagen']}) en {zona_id}: {estado_visual} "
-                    f"(llenado_visual={vision['nivel_llenado_visual']}%, "
-                    f"bolsas_suelo={vision['bolsas_en_suelo']}, nivel_usado={nivel_final}%)"
-                ),
+                "detalle": detalle,
             }
         )
         return {
             **vision,
             "zona_id": zona_id,
+            "contenedor_detectado": contenedor_detectado,
             "desbordamiento": desbordamiento,
             "estado_visual": estado_visual,
             "nivel_usado": nivel_final,

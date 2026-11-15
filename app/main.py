@@ -128,7 +128,7 @@ def analyze_vision(req: VisionAnalyzeRequest) -> dict[str, Any]:
             umbral_critico=sma.parametros.nivel_residuos_critico,
         )
         zona_actualizada = None
-        if req.aplicar_a_entorno:
+        if req.aplicar_a_entorno and resultado.get("contenedor_detectado", True):
             zona_actualizada = sma.db.update_zona(
                 zona_id=req.zona_id,
                 nivel_llenado_contenedores=float(resultado["nivel_llenado_visual"]),
