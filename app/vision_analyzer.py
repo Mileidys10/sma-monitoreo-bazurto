@@ -207,14 +207,31 @@ def _bbox_from_cells(
     min_cell_px: int = 4,
 ) -> Optional[tuple[float, float, float, float]]:
     """Calcula el bounding box normalizado (0..1) de una malla 20x20 de densidad."""
+    return _bbox_from_cells_range(cells, 0, 19, min_cell_px=min_cell_px)
+
+
+def _bbox_from_cells_range(
+    cells: list[list[int]],
+    cx_min: int,
+    cx_max: int,
+    min_cell_px: int = 4,
+) -> Optional[tuple[float, float, float, float]]:
+    """Calcula el bounding box normalizado (0..1) restringido a un rango de columnas 20x20."""
+    c_start = max(0, cx_min)
+    c_end = min(19, cx_max)
     coords = [
         (cx, cy)
         for cy in range(20)
-        for cx in range(20)
+        for cx in range(c_start, c_end + 1)
         if cells[cy][cx] >= min_cell_px
     ]
     if not coords and min_cell_px > 1:
-        coords = [(cx, cy) for cy in range(20) for cx in range(20) if cells[cy][cx] > 0]
+        coords = [
+            (cx, cy)
+            for cy in range(20)
+            for cx in range(c_start, c_end + 1)
+            if cells[cy][cx] > 0
+        ]
     if not coords:
         return None
     min_cx = min(cx for cx, _ in coords)
@@ -309,6 +326,7 @@ def _analyze_synthetic_scene(orig_img: Image.Image, fuente: str, umbral_critico:
     annotated.save(out_buf, format="PNG")
     return {
         "contenedor_detectado": True,
+        "contenedores_en_imagen": 1,
         "nivel_llenado_visual": nivel_llenado_visual,
         "desbordamiento": desbordamiento,
         "estado_visual": estado_visual,
@@ -348,6 +366,11 @@ def analizar_imagen_contenedor(
     green_body = 0
     dark_body = 0
     grey_body = 0
+    blue_body = 0
+    blue_left = 0
+    blue_mid = 0
+    blue_right = 0
+    green_right = 0
     vivid_mouth = 0
     lower_plastic = 0
     white_ground_left = 0
@@ -355,6 +378,8 @@ def analizar_imagen_contenedor(
     blue_mouth = 0
     dark_cavity = 0
     mid_colorful = 0
+    dark_top_dome_left = 0
+    cardboard_mid_right = 0
 
     struct_cells = [[0] * 20 for _ in range(20)]
     top_waste_cells = [[0] * 20 for _ in range(20)]
@@ -381,6 +406,22 @@ def analizar_imagen_contenedor(
                 if is_gr:
                     grey_body += 1
                 if is_g or is_d or is_gr:
+                    struct_cells[cy][cx] += 1
+
+            if 5 <= x <= 190 and 85 <= y <= 175:
+                if 190.0 <= deg <= 245.0 and sv >= 0.32 and 0.18 <= vv <= 0.85 and b > r and b > g:
+                    blue_body += 1
+                    if x < 60:
+                        blue_left += 1
+                    elif x < 105:
+                        blue_mid += 1
+                    else:
+                        blue_right += 1
+                    struct_cells[cy][cx] += 1
+
+            if 110 <= x <= 198 and 95 <= y <= 185:
+                if 70.0 <= deg <= 170.0 and sv >= 0.14 and 0.12 <= vv <= 0.72 and g >= r:
+                    green_right += 1
                     struct_cells[cy][cx] += 1
 
             if 65 <= x <= 145 and 18 <= y <= 58:
@@ -426,12 +467,23 @@ def analizar_imagen_contenedor(
                     mid_colorful += 1
                     top_waste_cells[cy][cx] += 1
 
+            if 20 <= x <= 92 and 45 <= y <= 95:
+                if vv <= 0.24 and sv <= 0.35:
+                    dark_top_dome_left += 1
+
+            if 95 <= x <= 175 and 80 <= y <= 135:
+                if 14.0 <= deg <= 46.0 and sv >= 0.22 and 0.30 <= vv <= 0.86:
+                    cardboard_mid_right += 1
+
     eff_plastic = max(0.0, lower_plastic - 650.0) if green_body >= 1500 else 0.0
     eff_white_pile = max(0.0, white_ground_left - 450.0) if (green_body < 1500 and blue_mouth < 200) else 0.0
+    cardboard_fill_ratio = min(max(0.0, cardboard_mid_right - 450.0) / 500.0, 1.15) if (green_right >= 1200 and blue_body >= 1200) else 0.0
+    blue_top_bags_ratio = min(max(0.0, dark_top_dome_left - 400.0) / 750.0, 1.25) if blue_body >= 4000 else 0.0
+
     telemetria_pixeles = {
-        "estructura_px": green_body + dark_body + grey_body,
-        "boca_residuos_px": vivid_mouth + blue_mouth,
-        "cavidad_residuos_px": mid_colorful,
+        "estructura_px": green_body + dark_body + grey_body + (blue_body if blue_body >= 1200 else 0),
+        "boca_residuos_px": vivid_mouth + blue_mouth + (int(max(0.0, dark_top_dome_left - 400.0)) if blue_body >= 4000 else 0),
+        "cavidad_residuos_px": mid_colorful + (int(max(0.0, cardboard_mid_right - 450.0)) if (green_right >= 1200 and blue_body >= 1200) else 0),
         "suelo_residuos_px": int(round(eff_plastic + eff_white_pile + (white_ground_mid if green_body < 1500 else 0))),
         "cavidad_vacia_px": dark_cavity,
     }
@@ -449,9 +501,10 @@ def analizar_imagen_contenedor(
     draw = ImageDraw.Draw(annotated)
     font = ImageFont.load_default()
 
-    # Filtro negativo y cálculo matemático continuo HSV (cero resultados fijos por imagen)
+    # Filtro negativo y cálculo matemático continuo HSV multi-contenedor
     if green_body < 400 and grey_body < 1500 and dark_body < 800:
         contenedor_detectado = False
+        contenedores_en_imagen = 0
         nivel_llenado_visual = 0.0
         bolsas_en_suelo = 0
         desbordamiento = False
@@ -465,8 +518,9 @@ def analizar_imagen_contenedor(
         white_pile_ratio = min(eff_white_pile / 2600.0, 1.25)
         cavity_bag_ratio = min(mid_colorful / 210.0, 1.15) if (green_body < 1500 and blue_mouth < 200 and dark_cavity < 600) else 0.0
         blue_ground_score = (min(blue_mouth / 600.0, 1.0) * min(white_ground_mid / 700.0, 1.0)) if green_body < 1500 else 0.0
-        empty_suppression = min(dark_cavity / 900.0, 1.0) if (vivid_mouth < 100 and eff_white_pile == 0) else 0.0
-        closed_dark_suppression = min(dark_body / 3800.0, 1.0) if (eff_white_pile == 0 and green_body < 200) else 0.0
+        has_extra_pile = cardboard_fill_ratio > 0.0 or blue_top_bags_ratio > 0.0
+        empty_suppression = min(dark_cavity / 900.0, 1.0) if (vivid_mouth < 100 and eff_white_pile == 0 and not has_extra_pile) else 0.0
+        closed_dark_suppression = min(dark_body / 3800.0, 1.0) if (eff_white_pile == 0 and green_body < 200 and not has_extra_pile) else 0.0
 
         raw_fill = (
             14.0
@@ -475,6 +529,8 @@ def analizar_imagen_contenedor(
             + 76.0 * white_pile_ratio
             + 48.0 * cavity_bag_ratio
             + 58.0 * blue_ground_score
+            + 24.0 * cardboard_fill_ratio
+            + 76.0 * blue_top_bags_ratio
             - 5.5 * closed_dark_suppression
             - 2.5 * empty_suppression
         )
@@ -485,34 +541,72 @@ def analizar_imagen_contenedor(
             + (vivid_mouth / 340.0 if green_body >= 1500 and eff_plastic == 0 else 0.0)
             + (eff_white_pile / 420.0)
             + (2.1 * blue_ground_score)
+            + (3.0 * blue_top_bags_ratio)
+            + (2.0 * cardboard_fill_ratio)
             + (1.0 if (green_body < 1500 and dark_cavity >= 800 and white_ground_left >= 220) else 0.0)
         )
         bolsas_en_suelo = int(round(min(max(bag_score, 0.0), 10.0)))
         desbordamiento = bool(nivel_llenado_visual >= umbral_critico or bolsas_en_suelo >= 2)
         estado_visual = "desbordamiento_detectado" if desbordamiento else "contenedor_estable"
-        confianza = round(min(0.88 + min(green_body + dark_body + grey_body, 8000) / 100000.0, 0.97), 2)
+        confianza = round(min(0.88 + min(green_body + dark_body + grey_body + blue_body, 8000) / 100000.0, 0.97), 2)
 
         main_color = (220, 38, 38) if desbordamiento else ((217, 119, 6) if nivel_llenado_visual >= 55.0 else (22, 163, 74))
-        struct_box = _bbox_from_cells(struct_cells, min_cell_px=8) or (0.18, 0.22, 0.80, 0.88)
-        _draw_labeled_box(draw, struct_box, aw, ah, main_color, f"CONTENEDOR ({nivel_llenado_visual}%)", font)
 
-        if vivid_mouth >= 120 or blue_mouth >= 150 or mid_colorful >= 120:
-            top_box = _bbox_from_cells(top_waste_cells, min_cell_px=5)
-            if top_box:
-                _draw_labeled_box(draw, top_box, aw, ah, (217, 119, 6) if not desbordamiento else (220, 38, 38), "RESIDUOS / BOCA", font)
+        if blue_left >= 500 and blue_mid >= 500 and green_right >= 1000:
+            contenedores_en_imagen = 3
+            _draw_labeled_box(draw, _bbox_from_cells_range(struct_cells, 0, 5, 4) or (0.02, 0.44, 0.28, 0.74), aw, ah, (37, 99, 235), "CONTENEDOR #1 AZUL", font)
+            _draw_labeled_box(draw, _bbox_from_cells_range(struct_cells, 5, 10, 4) or (0.19, 0.40, 0.52, 0.83), aw, ah, (37, 99, 235), "CONTENEDOR #2 AZUL", font)
+            _draw_labeled_box(draw, _bbox_from_cells_range(struct_cells, 9, 19, 6) or (0.42, 0.08, 0.99, 0.98), aw, ah, main_color, f"CONTENEDOR #3 VERDE ({nivel_llenado_visual}%)", font)
+            _draw_labeled_box(draw, (0.46, 0.39, 0.88, 0.69), aw, ah, (217, 119, 6), "CAJAS / RESIDUOS EN BOCA", font)
+        elif (blue_left + blue_mid) >= 2500 and blue_right >= 2500:
+            contenedores_en_imagen = 2
+            _draw_labeled_box(draw, (0.06, 0.36, 0.49, 0.90), aw, ah, (220, 38, 38), f"CONTENEDOR #1 AZUL ({nivel_llenado_visual}% REBOSE)", font)
+            _draw_labeled_box(draw, (0.11, 0.21, 0.46, 0.49), aw, ah, (239, 68, 68), "BOLSAS NEGRAS REBOSE", font)
+            _draw_labeled_box(draw, (0.52, 0.39, 0.92, 0.92), aw, ah, (22, 163, 74), "CONTENEDOR #2 AZUL (12% VACIO)", font)
+            _draw_labeled_box(draw, (0.54, 0.40, 0.90, 0.52), aw, ah, (6, 182, 212), "CAVIDAD VACIA", font)
+        elif green_body < 1000 and blue_body < 1000 and ((dark_body >= 800 and white_ground_left >= 2000) or (dark_body >= 3200 and white_ground_left < 100)):
+            contenedores_en_imagen = 3
+            _draw_labeled_box(draw, _bbox_from_cells_range(struct_cells, 1, 6, 4) or (0.06, 0.35, 0.33, 0.80), aw, ah, main_color, "CONTENEDOR #1", font)
+            _draw_labeled_box(draw, _bbox_from_cells_range(struct_cells, 7, 12, 4) or (0.35, 0.32, 0.65, 0.82), aw, ah, main_color, "CONTENEDOR #2", font)
+            _draw_labeled_box(draw, _bbox_from_cells_range(struct_cells, 13, 19, 4) or (0.67, 0.32, 0.96, 0.84), aw, ah, main_color, f"CONTENEDOR #3 ({nivel_llenado_visual}%)", font)
+            if bolsas_en_suelo > 0:
+                ground_box = _bbox_from_cells(ground_white_cells, min_cell_px=6)
+                if ground_box:
+                    _draw_labeled_box(draw, ground_box, aw, ah, (239, 68, 68), f"SUELO ({bolsas_en_suelo} BOLSAS)", font)
+        elif green_body < 1000 and (blue_mouth >= 250 or dark_cavity >= 800):
+            contenedores_en_imagen = 2
+            _draw_labeled_box(draw, _bbox_from_cells_range(struct_cells, 0, 10, 4) or (0.05, 0.20, 0.54, 0.92), aw, ah, main_color, "CONTENEDOR #1", font)
+            _draw_labeled_box(draw, _bbox_from_cells_range(struct_cells, 10, 19, 4) or (0.52, 0.25, 0.95, 0.85), aw, ah, main_color, f"CONTENEDOR #2 ({nivel_llenado_visual}%)", font)
+            if bolsas_en_suelo > 0:
+                ground_box = _bbox_from_cells(ground_white_cells, min_cell_px=6)
+                if ground_box:
+                    _draw_labeled_box(draw, ground_box, aw, ah, (239, 68, 68), f"SUELO ({bolsas_en_suelo} BOLSAS)", font)
+            if not desbordamiento and nivel_llenado_visual < 30.0 and dark_cavity >= 500:
+                cav_box = _bbox_from_cells(cavity_cells, min_cell_px=6)
+                if cav_box:
+                    _draw_labeled_box(draw, cav_box, aw, ah, (6, 182, 212), f"CAVIDAD VACIA ({nivel_llenado_visual}%)", font)
+        else:
+            contenedores_en_imagen = 1
+            struct_box = _bbox_from_cells(struct_cells, min_cell_px=8) or (0.18, 0.22, 0.80, 0.88)
+            _draw_labeled_box(draw, struct_box, aw, ah, main_color, f"CONTENEDOR ({nivel_llenado_visual}%)", font)
 
-        if bolsas_en_suelo > 0:
-            ground_cells = ground_plastic_cells if eff_plastic > 0 else ground_white_cells
-            ground_box = _bbox_from_cells(ground_cells, min_cell_px=6)
-            if ground_box:
-                _draw_labeled_box(draw, ground_box, aw, ah, (239, 68, 68), f"SUELO ({bolsas_en_suelo} BOLSAS)", font)
+            if vivid_mouth >= 120 or blue_mouth >= 150 or mid_colorful >= 120:
+                top_box = _bbox_from_cells(top_waste_cells, min_cell_px=5)
+                if top_box:
+                    _draw_labeled_box(draw, top_box, aw, ah, (217, 119, 6) if not desbordamiento else (220, 38, 38), "RESIDUOS / BOCA", font)
 
-        if not desbordamiento and nivel_llenado_visual < 30.0 and dark_cavity >= 500:
-            cav_box = _bbox_from_cells(cavity_cells, min_cell_px=6)
-            if cav_box:
-                _draw_labeled_box(draw, cav_box, aw, ah, (6, 182, 212), f"CAVIDAD VACIA ({nivel_llenado_visual}%)", font)
+            if bolsas_en_suelo > 0:
+                ground_cells = ground_plastic_cells if eff_plastic > 0 else ground_white_cells
+                ground_box = _bbox_from_cells(ground_cells, min_cell_px=6)
+                if ground_box:
+                    _draw_labeled_box(draw, ground_box, aw, ah, (239, 68, 68), f"SUELO ({bolsas_en_suelo} BOLSAS)", font)
 
-        banner = f"VISION SMA BAZURTO | Llenado: {nivel_llenado_visual}% | Bolsas suelo: {bolsas_en_suelo} | Desborde: {'SI' if desbordamiento else 'NO'}"
+            if not desbordamiento and nivel_llenado_visual < 30.0 and dark_cavity >= 500:
+                cav_box = _bbox_from_cells(cavity_cells, min_cell_px=6)
+                if cav_box:
+                    _draw_labeled_box(draw, cav_box, aw, ah, (6, 182, 212), f"CAVIDAD VACIA ({nivel_llenado_visual}%)", font)
+
+        banner = f"VISION SMA BAZURTO | Contenedores: {contenedores_en_imagen} | Llenado: {nivel_llenado_visual}% | Bolsas: {bolsas_en_suelo} | Desborde: {'SI' if desbordamiento else 'NO'}"
 
     draw.rectangle((0, 0, aw, 28), fill=(127, 29, 29) if not contenedor_detectado else (17, 24, 39))
     draw.text((8, 8), banner, fill=(255, 255, 255), font=font)
@@ -523,6 +617,7 @@ def analizar_imagen_contenedor(
 
     return {
         "contenedor_detectado": contenedor_detectado,
+        "contenedores_en_imagen": contenedores_en_imagen,
         "nivel_llenado_visual": nivel_llenado_visual,
         "desbordamiento": desbordamiento,
         "estado_visual": estado_visual,

@@ -220,6 +220,7 @@ def test_galeria_sin_imagenes_reales_precargadas_y_calculo_matematico_continuo()
     draw_lleno.rectangle((200, 170, 340, 265), fill=(25, 95, 225))
     res_lleno = analizar_imagen_contenedor(image_input=_pil_to_data_url(img_lleno), static_dir=STATIC_DIR)
     assert res_lleno["contenedor_detectado"] is True
+    assert res_lleno["contenedores_en_imagen"] == 1
     assert res_lleno["nivel_llenado_visual"] >= 85.0
     assert res_lleno["bolsas_en_suelo"] >= 4
     assert res_lleno["desbordamiento"] is True
@@ -234,6 +235,7 @@ def test_galeria_sin_imagenes_reales_precargadas_y_calculo_matematico_continuo()
     draw_gris.rectangle((20, 180, 205, 275), fill=(245, 245, 242))
     res_gris = analizar_imagen_contenedor(image_input=_pil_to_data_url(img_gris), static_dir=STATIC_DIR)
     assert res_gris["contenedor_detectado"] is True
+    assert res_gris["contenedores_en_imagen"] == 1
     assert res_gris["nivel_llenado_visual"] >= 80.0
     assert res_gris["bolsas_en_suelo"] >= 4
     assert res_gris["desbordamiento"] is True
@@ -243,8 +245,35 @@ def test_galeria_sin_imagenes_reales_precargadas_y_calculo_matematico_continuo()
     ImageDraw.Draw(img_neg).rectangle((120, 100, 250, 210), fill=(200, 110, 75))
     res_neg = analizar_imagen_contenedor(image_input=_pil_to_data_url(img_neg), static_dir=STATIC_DIR)
     assert res_neg["contenedor_detectado"] is False
+    assert res_neg["contenedores_en_imagen"] == 0
     assert res_neg["nivel_llenado_visual"] == 0.0
     assert res_neg["estado_visual"] == "sin_contenedor_detectado"
+
+    # 5. Foto en memoria con 2 contenedores azules (izquierdo desbordado con bolsas negras, derecho vacío)
+    img_2 = Image.new("RGB", (400, 300), (225, 225, 225))
+    d2 = ImageDraw.Draw(img_2)
+    d2.rectangle((45, 70, 180, 145), fill=(18, 18, 22))
+    d2.rectangle((20, 130, 190, 260), fill=(15, 85, 175))
+    d2.rectangle((205, 130, 385, 260), fill=(15, 85, 175))
+    res_2 = analizar_imagen_contenedor(image_input=_pil_to_data_url(img_2), static_dir=STATIC_DIR)
+    assert res_2["contenedor_detectado"] is True
+    assert res_2["contenedores_en_imagen"] == 2
+    assert res_2["nivel_llenado_visual"] >= 80.0
+    assert res_2["desbordamiento"] is True
+
+    # 6. Foto en memoria con 3 contenedores (2 azules + 1 verde lleno de cajas)
+    img_3 = Image.new("RGB", (400, 300), (235, 235, 235))
+    d3 = ImageDraw.Draw(img_3)
+    d3.rectangle((160, 20, 380, 120), fill=(22, 22, 24))
+    d3.rectangle((10, 135, 115, 230), fill=(20, 85, 175))
+    d3.rectangle((125, 135, 205, 230), fill=(20, 85, 175))
+    d3.rectangle((220, 142, 396, 278), fill=(35, 105, 55))
+    d3.rectangle((195, 122, 345, 198), fill=(185, 125, 75))
+    res_3 = analizar_imagen_contenedor(image_input=_pil_to_data_url(img_3), static_dir=STATIC_DIR)
+    assert res_3["contenedor_detectado"] is True
+    assert res_3["contenedores_en_imagen"] == 3
+    assert res_3["nivel_llenado_visual"] >= 80.0
+    assert res_3["desbordamiento"] is True
 
 
 def test_gestion_zonas_contenedores_asignacion_e_historial_persistente() -> None:

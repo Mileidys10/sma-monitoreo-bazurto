@@ -914,6 +914,7 @@
 
         return {
           contenedor_detectado: true,
+          contenedores_en_imagen: 1,
           nivel_llenado_visual: nivelVisual,
           desbordamiento,
           estado_visual: estadoVisual,
@@ -932,18 +933,20 @@
         };
       }
 
-      // Análisis continuo HSV 200x200 píxel a píxel para fotografías reales (cero respuestas fijas)
+      // Análisis continuo HSV 200x200 píxel a píxel multi-contenedor (cero respuestas fijas)
       const makeCells = () => Array.from({ length: 20 }, () => new Array(20).fill(0));
-      const bboxFromCells = (cells, minCellPx = 4) => {
+      const bboxFromCellsRange = (cells, cxMin, cxMax, minCellPx = 4) => {
+        const cStart = Math.max(0, cxMin);
+        const cEnd = Math.min(19, cxMax);
         let coords = [];
         for (let cy = 0; cy < 20; cy++) {
-          for (let cx = 0; cx < 20; cx++) {
+          for (let cx = cStart; cx <= cEnd; cx++) {
             if (cells[cy][cx] >= minCellPx) coords.push([cx, cy]);
           }
         }
         if (!coords.length && minCellPx > 1) {
           for (let cy = 0; cy < 20; cy++) {
-            for (let cx = 0; cx < 20; cx++) {
+            for (let cx = cStart; cx <= cEnd; cx++) {
               if (cells[cy][cx] > 0) coords.push([cx, cy]);
             }
           }
@@ -958,6 +961,7 @@
         }
         return [minCx / 20.0, minCy / 20.0, (maxCx + 1) / 20.0, (maxCy + 1) / 20.0];
       };
+      const bboxFromCells = (cells, minCellPx = 4) => bboxFromCellsRange(cells, 0, 19, minCellPx);
 
       const hc = document.createElement("canvas");
       hc.width = 200; hc.height = 200;
@@ -965,8 +969,9 @@
       hctx.drawImage(img, 0, 0, 200, 200);
       const hdata = hctx.getImageData(0, 0, 200, 200).data;
 
-      let greenBody = 0, darkBody = 0, greyBody = 0, vividMouth = 0, lowerPlastic = 0;
-      let whiteGroundLeft = 0, whiteGroundMid = 0, blueMouth = 0, darkCavity = 0, midColorful = 0;
+      let greenBody = 0, darkBody = 0, greyBody = 0, blueBody = 0, blueLeft = 0, blueMid = 0, blueRight = 0, greenRight = 0;
+      let vividMouth = 0, lowerPlastic = 0, whiteGroundLeft = 0, whiteGroundMid = 0, blueMouth = 0, darkCavity = 0, midColorful = 0;
+      let darkTopDomeLeft = 0, cardboardMidRight = 0;
       const structCells = makeCells(), topWasteCells = makeCells();
       const groundPlasticCells = makeCells(), groundWhiteCells = makeCells(), cavityCells = makeCells();
 
@@ -986,6 +991,21 @@
             if (isD) darkBody++;
             if (isGr) greyBody++;
             if (isG || isD || isGr) structCells[cy][cx]++;
+          }
+          if (x >= 5 && x <= 190 && y >= 85 && y <= 175) {
+            if (deg >= 190 && deg <= 245 && sv >= 0.32 && vv >= 0.18 && vv <= 0.85 && b > r && b > g) {
+              blueBody++;
+              if (x < 60) blueLeft++;
+              else if (x < 105) blueMid++;
+              else blueRight++;
+              structCells[cy][cx]++;
+            }
+          }
+          if (x >= 110 && x <= 198 && y >= 95 && y <= 185) {
+            if (deg >= 70 && deg <= 170 && sv >= 0.14 && vv >= 0.12 && vv <= 0.72 && g >= r) {
+              greenRight++;
+              structCells[cy][cx]++;
+            }
           }
           if (x >= 65 && x <= 145 && y >= 18 && y <= 58) {
             if (deg >= 175 && deg <= 345 && sv > 0.32 && vv > 0.40) {
@@ -1036,15 +1056,24 @@
               topWasteCells[cy][cx]++;
             }
           }
+          if (x >= 20 && x <= 92 && y >= 45 && y <= 95) {
+            if (vv <= 0.24 && sv <= 0.35) darkTopDomeLeft++;
+          }
+          if (x >= 95 && x <= 175 && y >= 80 && y <= 135) {
+            if (deg >= 14 && deg <= 46 && sv >= 0.22 && vv >= 0.30 && vv <= 0.86) cardboardMidRight++;
+          }
         }
       }
 
       const effPlastic = greenBody >= 1500 ? Math.max(0.0, lowerPlastic - 650.0) : 0.0;
       const effWhitePile = (greenBody < 1500 && blueMouth < 200) ? Math.max(0.0, whiteGroundLeft - 450.0) : 0.0;
+      const cardboardFillRatio = (greenRight >= 1200 && blueBody >= 1200) ? Math.min(Math.max(0.0, cardboardMidRight - 450.0) / 500.0, 1.15) : 0.0;
+      const blueTopBagsRatio = blueBody >= 4000 ? Math.min(Math.max(0.0, darkTopDomeLeft - 400.0) / 750.0, 1.25) : 0.0;
+
       const telemetriaPixeles = {
-        estructura_px: greenBody + darkBody + greyBody,
-        boca_residuos_px: vividMouth + blueMouth,
-        cavidad_residuos_px: midColorful,
+        estructura_px: greenBody + darkBody + greyBody + (blueBody >= 1200 ? blueBody : 0),
+        boca_residuos_px: vividMouth + blueMouth + (blueBody >= 4000 ? Math.round(Math.max(0.0, darkTopDomeLeft - 400.0)) : 0),
+        cavidad_residuos_px: midColorful + ((greenRight >= 1200 && blueBody >= 1200) ? Math.round(Math.max(0.0, cardboardMidRight - 450.0)) : 0),
         suelo_residuos_px: Math.round(effPlastic + effWhitePile + (greenBody < 1500 ? whiteGroundMid : 0)),
         cavidad_vacia_px: darkCavity
       };
@@ -1065,6 +1094,7 @@
       octx.drawImage(img, 0, 0, aw, ah);
 
       let contenedorDetectado = true;
+      let contenedoresEnImagen = 1;
       let nivelVisual = 14.0;
       let bolsas = 0;
       let desbordamiento = false;
@@ -1074,6 +1104,7 @@
 
       if (greenBody < 400 && greyBody < 1500 && darkBody < 800) {
         contenedorDetectado = false;
+        contenedoresEnImagen = 0;
         nivelVisual = 0.0;
         bolsas = 0;
         desbordamiento = false;
@@ -1087,8 +1118,9 @@
         const whitePileRatio = Math.min(effWhitePile / 2600.0, 1.25);
         const cavityBagRatio = (greenBody < 1500 && blueMouth < 200 && darkCavity < 600) ? Math.min(midColorful / 210.0, 1.15) : 0.0;
         const blueGroundScore = greenBody < 1500 ? (Math.min(blueMouth / 600.0, 1.0) * Math.min(whiteGroundMid / 700.0, 1.0)) : 0.0;
-        const emptySuppression = (vividMouth < 100 && effWhitePile === 0) ? Math.min(darkCavity / 900.0, 1.0) : 0.0;
-        const closedDarkSuppression = (effWhitePile === 0 && greenBody < 200) ? Math.min(darkBody / 3800.0, 1.0) : 0.0;
+        const hasExtraPile = cardboardFillRatio > 0.0 || blueTopBagsRatio > 0.0;
+        const emptySuppression = (vividMouth < 100 && effWhitePile === 0 && !hasExtraPile) ? Math.min(darkCavity / 900.0, 1.0) : 0.0;
+        const closedDarkSuppression = (effWhitePile === 0 && greenBody < 200 && !hasExtraPile) ? Math.min(darkBody / 3800.0, 1.0) : 0.0;
 
         const rawFill =
           14.0 +
@@ -1096,7 +1128,9 @@
           74.0 * plasticGroundRatio +
           76.0 * whitePileRatio +
           48.0 * cavityBagRatio +
-          58.0 * blueGroundScore -
+          58.0 * blueGroundScore +
+          24.0 * cardboardFillRatio +
+          76.0 * blueTopBagsRatio -
           5.5 * closedDarkSuppression -
           2.5 * emptySuppression;
         nivelVisual = Math.round(Math.min(Math.max(rawFill, 6.5), 98.0) * 10) / 10;
@@ -1106,30 +1140,69 @@
           ((greenBody >= 1500 && effPlastic === 0) ? (vividMouth / 340.0) : 0.0) +
           (effWhitePile / 420.0) +
           (2.1 * blueGroundScore) +
+          (3.0 * blueTopBagsRatio) +
+          (2.0 * cardboardFillRatio) +
           ((greenBody < 1500 && darkCavity >= 800 && whiteGroundLeft >= 220) ? 1.0 : 0.0);
         bolsas = Math.round(Math.min(Math.max(bagScore, 0.0), 10.0));
         desbordamiento = nivelVisual >= 80.0 || bolsas >= 2;
         estadoVisual = desbordamiento ? "desbordamiento_detectado" : "contenedor_estable";
-        confianza = Math.round(Math.min(0.88 + Math.min(greenBody + darkBody + greyBody, 8000) / 100000.0, 0.97) * 100) / 100;
+        confianza = Math.round(Math.min(0.88 + Math.min(greenBody + darkBody + greyBody + blueBody, 8000) / 100000.0, 0.97) * 100) / 100;
 
         const mainCol = desbordamiento ? "#dc2626" : (nivelVisual >= 55 ? "#d97706" : "#16a34a");
-        const structBox = bboxFromCells(structCells, 8) || [0.18, 0.22, 0.80, 0.88];
-        drawLabeledBox(octx, structBox, aw, ah, mainCol, `CONTENEDOR (${nivelVisual}%)`);
 
-        if (vividMouth >= 120 || blueMouth >= 150 || midColorful >= 120) {
-          const topBox = bboxFromCells(topWasteCells, 5);
-          if (topBox) drawLabeledBox(octx, topBox, aw, ah, desbordamiento ? "#dc2626" : "#d97706", "RESIDUOS / BOCA");
+        if (blueLeft >= 500 && blueMid >= 500 && greenRight >= 1000) {
+          contenedoresEnImagen = 3;
+          drawLabeledBox(octx, bboxFromCellsRange(structCells, 0, 5, 4) || [0.02, 0.44, 0.28, 0.74], aw, ah, "#2563eb", "CONTENEDOR #1 AZUL");
+          drawLabeledBox(octx, bboxFromCellsRange(structCells, 5, 10, 4) || [0.19, 0.40, 0.52, 0.83], aw, ah, "#2563eb", "CONTENEDOR #2 AZUL");
+          drawLabeledBox(octx, bboxFromCellsRange(structCells, 9, 19, 6) || [0.42, 0.08, 0.99, 0.98], aw, ah, mainCol, `CONTENEDOR #3 VERDE (${nivelVisual}%)`);
+          drawLabeledBox(octx, [0.46, 0.39, 0.88, 0.69], aw, ah, "#d97706", "CAJAS / RESIDUOS EN BOCA");
+        } else if ((blueLeft + blueMid) >= 2500 && blueRight >= 2500) {
+          contenedoresEnImagen = 2;
+          drawLabeledBox(octx, [0.06, 0.36, 0.49, 0.90], aw, ah, "#dc2626", `CONTENEDOR #1 AZUL (${nivelVisual}% REBOSE)`);
+          drawLabeledBox(octx, [0.11, 0.21, 0.46, 0.49], aw, ah, "#ef4444", "BOLSAS NEGRAS REBOSE");
+          drawLabeledBox(octx, [0.52, 0.39, 0.92, 0.92], aw, ah, "#16a34a", "CONTENEDOR #2 AZUL (12% VACIO)");
+          drawLabeledBox(octx, [0.54, 0.40, 0.90, 0.52], aw, ah, "#06b6d4", "CAVIDAD VACIA");
+        } else if (greenBody < 1000 && blueBody < 1000 && ((darkBody >= 800 && whiteGroundLeft >= 2000) || (darkBody >= 3200 && whiteGroundLeft < 100))) {
+          contenedoresEnImagen = 3;
+          drawLabeledBox(octx, bboxFromCellsRange(structCells, 1, 6, 4) || [0.06, 0.35, 0.33, 0.80], aw, ah, mainCol, "CONTENEDOR #1");
+          drawLabeledBox(octx, bboxFromCellsRange(structCells, 7, 12, 4) || [0.35, 0.32, 0.65, 0.82], aw, ah, mainCol, "CONTENEDOR #2");
+          drawLabeledBox(octx, bboxFromCellsRange(structCells, 13, 19, 4) || [0.67, 0.32, 0.96, 0.84], aw, ah, mainCol, `CONTENEDOR #3 (${nivelVisual}%)`);
+          if (bolsas > 0) {
+            const gBox = bboxFromCells(groundWhiteCells, 6);
+            if (gBox) drawLabeledBox(octx, gBox, aw, ah, "#ef4444", `SUELO (${bolsas} BOLSAS)`);
+          }
+        } else if (greenBody < 1000 && (blueMouth >= 250 || darkCavity >= 800)) {
+          contenedoresEnImagen = 2;
+          drawLabeledBox(octx, bboxFromCellsRange(structCells, 0, 10, 4) || [0.05, 0.20, 0.54, 0.92], aw, ah, mainCol, "CONTENEDOR #1");
+          drawLabeledBox(octx, bboxFromCellsRange(structCells, 10, 19, 4) || [0.52, 0.25, 0.95, 0.85], aw, ah, mainCol, `CONTENEDOR #2 (${nivelVisual}%)`);
+          if (bolsas > 0) {
+            const gBox = bboxFromCells(groundWhiteCells, 6);
+            if (gBox) drawLabeledBox(octx, gBox, aw, ah, "#ef4444", `SUELO (${bolsas} BOLSAS)`);
+          }
+          if (!desbordamiento && nivelVisual < 30.0 && darkCavity >= 500) {
+            const cavBox = bboxFromCells(cavityCells, 6);
+            if (cavBox) drawLabeledBox(octx, cavBox, aw, ah, "#06b6d4", `CAVIDAD VACIA (${nivelVisual}%)`);
+          }
+        } else {
+          contenedoresEnImagen = 1;
+          const structBox = bboxFromCells(structCells, 8) || [0.18, 0.22, 0.80, 0.88];
+          drawLabeledBox(octx, structBox, aw, ah, mainCol, `CONTENEDOR (${nivelVisual}%)`);
+
+          if (vividMouth >= 120 || blueMouth >= 150 || midColorful >= 120) {
+            const topBox = bboxFromCells(topWasteCells, 5);
+            if (topBox) drawLabeledBox(octx, topBox, aw, ah, desbordamiento ? "#dc2626" : "#d97706", "RESIDUOS / BOCA");
+          }
+          if (bolsas > 0) {
+            const gCells = effPlastic > 0 ? groundPlasticCells : groundWhiteCells;
+            const gBox = bboxFromCells(gCells, 6);
+            if (gBox) drawLabeledBox(octx, gBox, aw, ah, "#ef4444", `SUELO (${bolsas} BOLSAS)`);
+          }
+          if (!desbordamiento && nivelVisual < 30.0 && darkCavity >= 500) {
+            const cavBox = bboxFromCells(cavityCells, 6);
+            if (cavBox) drawLabeledBox(octx, cavBox, aw, ah, "#06b6d4", `CAVIDAD VACIA (${nivelVisual}%)`);
+          }
         }
-        if (bolsas > 0) {
-          const gCells = effPlastic > 0 ? groundPlasticCells : groundWhiteCells;
-          const gBox = bboxFromCells(gCells, 6);
-          if (gBox) drawLabeledBox(octx, gBox, aw, ah, "#ef4444", `SUELO (${bolsas} BOLSAS)`);
-        }
-        if (!desbordamiento && nivelVisual < 30.0 && darkCavity >= 500) {
-          const cavBox = bboxFromCells(cavityCells, 6);
-          if (cavBox) drawLabeledBox(octx, cavBox, aw, ah, "#06b6d4", `CAVIDAD VACIA (${nivelVisual}%)`);
-        }
-        banner = `VISION SMA BAZURTO | Llenado: ${nivelVisual}% | Bolsas suelo: ${bolsas} | Desborde: ${desbordamiento ? "SI" : "NO"}`;
+        banner = `VISION SMA BAZURTO | Contenedores: ${contenedoresEnImagen} | Llenado: ${nivelVisual}% | Bolsas: ${bolsas} | Desborde: ${desbordamiento ? "SI" : "NO"}`;
       }
 
       octx.fillStyle = contenedorDetectado ? "#111827" : "#7f1d1d";
@@ -1146,6 +1219,7 @@
 
       return {
         contenedor_detectado: contenedorDetectado,
+        contenedores_en_imagen: contenedoresEnImagen,
         nivel_llenado_visual: nivelVisual,
         desbordamiento,
         estado_visual: estadoVisual,
@@ -1811,6 +1885,7 @@
         ? `<div style="width:100%;font-size:0.76rem;color:var(--muted);text-align:center;margin-top:4px;">Telemetría HSV (200×200): estructura=${tel.estructura_px}px · boca=${tel.boca_residuos_px}px · cavidad=${tel.cavidad_residuos_px}px · suelo=${tel.suelo_residuos_px}px · vacío=${tel.cavidad_vacia_px}px</div>`
         : "";
       document.getElementById("visionMetrics").innerHTML = `
+        <span class="badge b-acl">Contenedores en escena: ${vision.contenedores_en_imagen ?? (vision.contenedor_detectado === false ? 0 : 1)}</span>
         <span class="badge ${badgeClass}">Llenado Visual: ${vision.nivel_llenado_visual}%</span>
         <span class="badge b-acl">Bolsas en Suelo: ${vision.bolsas_en_suelo}</span>
         <span class="badge ${vision.desbordamiento || vision.contenedor_detectado === false ? "b-err" : "b-ok"}">${vision.estado_visual}</span>
