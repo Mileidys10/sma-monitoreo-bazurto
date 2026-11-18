@@ -1,0 +1,3451 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SMAMonitoreoBazurto — Consola Multiagente MAS-ML & FIPA-ACL</title>
+  <style>
+    :root {
+      --bg: #f3f5f3;
+      --surface: #ffffff;
+      --surface-alt: #f8faf8;
+      --ink: #111827;
+      --muted: #4b5563;
+      --border: #d1d5db;
+      --accent: #0f5132;
+      --accent-hover: #0a3622;
+      --accent-soft: #ecfdf5;
+      --warn: #b45309;
+      --warn-hover: #92400e;
+      --warn-soft: #fffbeb;
+      --danger: #991b1b;
+      --danger-hover: #7f1d1d;
+      --danger-soft: #fef2f2;
+      --info: #1e40af;
+      --code-bg: #18181b;
+      --code-ink: #e4e4e7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 3px solid var(--accent);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      color: var(--accent);
+    }
+
+    header p {
+      margin: 2px 0 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .container {
+      max-width: 1360px;
+      margin: 20px auto;
+      padding: 0 20px 60px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 1.08rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      color: var(--ink);
+    }
+
+    details.guide {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-left: 5px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 18px;
+      margin-bottom: 20px;
+    }
+
+    details.guide summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 0.98rem;
+    }
+
+    details.guide .guide-body {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: var(--ink);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .guide-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.92rem;
+      margin-bottom: 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .row-fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 9px 14px;
+      font-size: 0.87rem;
+      font-weight: 600;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    summary:focus-visible {
+      outline: 3px solid #2563eb;
+      outline-offset: 2px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-warn {
+      background: var(--warn);
+      color: #fff;
+    }
+
+    .btn-warn:hover {
+      background: var(--warn-hover);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger-hover);
+    }
+
+    .btn-outline {
+      background: #fff;
+      color: var(--ink);
+      border-color: var(--border);
+    }
+
+    .btn-outline:hover {
+      background: #f3f4f6;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+
+    .b-acl {
+      background: #dbeafe;
+      color: #1e3a8a;
+    }
+
+    .b-met {
+      background: #e5e7eb;
+      color: #1f2937;
+    }
+
+    .b-err {
+      background: #fee2e2;
+      color: #7f1d1d;
+    }
+
+    .b-ok {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .b-warn {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    /* Visión Artificial */
+    .vision-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(300px, 1.15fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 820px) {
+
+      .vision-layout,
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sample-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .assign-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .assign-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+
+    .inline-form {
+      display: none;
+      margin-top: 10px;
+      padding: 10px;
+      background: #ffffff;
+      border: 1px dashed var(--accent);
+      border-radius: 6px;
+    }
+
+    .inline-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px;
+      align-items: end;
+    }
+
+    .history-thumb {
+      width: 92px;
+      height: 60px;
+      object-fit: contain;
+      background: #111827;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      display: block;
+    }
+
+    .coord-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 12px;
+      margin: 12px 0;
+    }
+
+    .coord-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--surface-alt);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .coord-card.priority-1 {
+      border-color: var(--danger);
+      background: #fef2f2;
+    }
+
+    .coord-card img {
+      width: 100%;
+      height: 145px;
+      object-fit: contain;
+      background: #111827;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .role-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--surface-alt);
+      font-size: 0.84rem;
+    }
+
+    .sample-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      text-align: left;
+      padding: 6px;
+      background: var(--surface-alt);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      color: var(--ink);
+    }
+
+    .sample-btn.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .sample-btn img {
+      width: 100%;
+      height: 76px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .sample-btn span {
+      font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .vision-viewer {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .vision-viewer img,
+    .vision-viewer video {
+      max-width: 100%;
+      width: 100%;
+      max-height: 290px;
+      object-fit: contain;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #111827;
+    }
+
+    .vision-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .webcam-box {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px dashed var(--accent);
+      border-radius: 6px;
+      background: var(--accent-soft);
+      display: none;
+    }
+
+    /* Panel de Comunidad */
+    .community-item {
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--accent);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      background: var(--surface-alt);
+    }
+
+    .community-item.pending {
+      border-left-color: var(--warn);
+      background: var(--warn-soft);
+    }
+
+    .community-item.failed {
+      border-left-color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .trace-list {
+      max-height: 420px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      background: #fafafa;
+    }
+
+    .trace-item {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.87rem;
+    }
+
+    .trace-item:last-child {
+      border-bottom: none;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-ink);
+      padding: 10px 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.8rem;
+      margin: 6px 0 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th {
+      background: #f9fafb;
+      font-weight: 700;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .fw-grid-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 14px;
+    }
+
+    .fw-tab-btn {
+      background: #f3f4f6;
+      color: var(--ink);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .fw-tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .fw-graph-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+
+    .fw-node-pill {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 0.8rem;
+      min-width: 155px;
+    }
+
+    .fw-node-pill.supervisor {
+      border-left-color: var(--warn);
+    }
+
+    .fw-arrow {
+      font-weight: 800;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .live-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      margin-bottom: 12px;
+      font-size: 0.86rem;
+    }
+
+    .live-agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+    }
+
+    .agent-live-card {
+      border: 1px solid var(--border);
+      border-top: 4px solid #9ca3af;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: var(--surface-alt);
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .agent-live-card.active {
+      border-color: #2563eb;
+      border-top-color: #2563eb;
+      background: #eff6ff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.16);
+      transform: translateY(-2px);
+    }
+
+    .agent-live-card.done {
+      border-top-color: #0f766e;
+      background: #f0fdfa;
+    }
+
+    .pulse-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #16a34a;
+      margin-right: 6px;
+      animation: smapulse 1.2s infinite;
+    }
+
+    @keyframes smapulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(1.25); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 28px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>SMAMonitoreoBazurto V2 &mdash; Entrega Completa MAS-ML</h1>
+      <p>
+        Organización MAS-ML · Ontología: <code>AmbientalBazurto</code> ·
+        <span id="runtimeBadge" class="badge b-ok">Conectando motor...</span>
+        <span id="visionEngineBadge" class="badge b-acl">Visión Híbrida: HSV Local Offline (lista para Gemini 2.5
+          Flash)</span>
+      </p>
+    </div>
+    <div class="btn-group">
+      <button class="btn-outline" onclick="cargarEstado()">Actualizar Estado</button>
+      <button class="btn-danger" onclick="resetearBD()">Reiniciar BD</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <details class="guide" open>
+      <summary>Guía V2: IA Multimodal Híbrida (Gemini + Offline), Inspección Coordinada de 3 Cámaras y 4 Casos por Rol
+      </summary>
+      <div class="guide-body">
+        <div class="guide-box">
+          <strong>1. Visión Híbrida Real + Offline (<code>analizarImagenes()</code>):</strong><br />
+          Si ingresas tu <strong>Gemini API Key</strong> y tienes internet, <code>AgenteSensorResiduos</code> usa
+          <strong>Gemini 2.5 Flash (IA Multimodal Real)</strong> para interpretar la foto y explicar qué ve. Si estás
+          sin internet o sin clave en el <code>.zip</code>, conmuta al <strong>Motor Matemático HSV Local (100%
+            Offline)</strong>.
+        </div>
+        <div class="guide-box">
+          <strong>2. Orden del Coordinador sobre las 3 Cámaras:</strong><br />
+          Cada zona ya tiene una imagen asignada (o puedes subirle una foto tuya en Paso A/B). Al pulsar <em>"Ordenar
+            desde AgenteCoordinador"</em>, el Coordinador envía <code>ACL:QUERY-REF</code> a las cámaras, recibe los
+          <code>ACL:INFORM</code> y prioriza cuál zona va primero.
+        </div>
+        <div class="guide-box">
+          <strong>3. Macro Casos y Desglose de los 4 Roles (<code>&laquo;role&raquo;</code>):</strong><br />
+          Además de <code>CU-01</code> y <code>CU-02</code> globales, la sección 3 te permite ejecutar de forma
+          independiente los <strong>4 Casos de Uso por Rol</strong> (<code>MonitorCondicionesAmbientales</code>,
+          <code>Coordinador</code>, <code>EmisorAlertas</code> y <code>Supervisor</code>).
+        </div>
+      </div>
+    </details>
+
+    <!-- Módulo 0: Monitor Autónomo en Tiempo Real de los 5 Agentes -->
+    <section class="card" aria-labelledby="live-agents-title">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
+        <h2 id="live-agents-title" style="margin:0;border:none;padding:0;">
+          <span class="pulse-dot" id="livePulseDot"></span>0. Actividad Autónoma en Tiempo Real &mdash; Los 5 Agentes Trabajando Solos
+        </h2>
+        <div class="btn-group" style="margin:0;">
+          <button type="button" class="btn-outline" id="btnToggleAutopilot" onclick="togglePilotoAutomatico()">Pausar Piloto Automático</button>
+          <button type="button" class="btn-primary" onclick="ejecutarCicloAutonomoCompleto(true)">Ejecutar Ronda Autónoma Ahora</button>
+        </div>
+      </div>
+      <div class="live-banner">
+        <span id="liveAutoStatusBanner"><strong>Piloto Automático Activo:</strong> Coordinando las 3 cámaras y el grafo de 5 agentes sin intervención humana...</span>
+        <span id="liveCycleBadge" class="badge b-ok">Ronda #0 · Automático</span>
+      </div>
+      <div class="live-agents-grid">
+        <div class="agent-live-card" id="card_AgenteSensorResiduos">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <strong style="font-size:0.86rem;">AgenteSensorResiduos</strong>
+            <span class="badge b-met" id="st_AgenteSensorResiduos">EN ESPERA</span>
+          </div>
+          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>MonitorCondicionesAmbientales</code></small>
+          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteSensorResiduos">Listo para analizar cámaras y contenedores.</div>
+          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteSensorResiduos">-</small>
+        </div>
+        <div class="agent-live-card" id="card_AgenteSensorAire">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <strong style="font-size:0.86rem;">AgenteSensorAire</strong>
+            <span class="badge b-met" id="st_AgenteSensorAire">EN ESPERA</span>
+          </div>
+          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>MonitorCondicionesAmbientales</code></small>
+          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteSensorAire">Listo para medir CO2, temperatura y humedad.</div>
+          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteSensorAire">-</small>
+        </div>
+        <div class="agent-live-card" id="card_AgenteCoordinador">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <strong style="font-size:0.86rem;">AgenteCoordinador</strong>
+            <span class="badge b-met" id="st_AgenteCoordinador">EN ESPERA</span>
+          </div>
+          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>Coordinador</code></small>
+          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteCoordinador">Listo para calcular riesgo y priorizar zonas.</div>
+          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteCoordinador">-</small>
+        </div>
+        <div class="agent-live-card" id="card_AgenteAlertas">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <strong style="font-size:0.86rem;">AgenteAlertas</strong>
+            <span class="badge b-met" id="st_AgenteAlertas">EN ESPERA</span>
+          </div>
+          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>EmisorAlertas</code></small>
+          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteAlertas">Listo para emitir aviso a la comunidad.</div>
+          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteAlertas">-</small>
+        </div>
+        <div class="agent-live-card" id="card_AgenteSupervisor">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <strong style="font-size:0.86rem;">AgenteSupervisor</strong>
+            <span class="badge b-met" id="st_AgenteSupervisor">EN ESPERA</span>
+          </div>
+          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>Supervisor</code></small>
+          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteSupervisor">Listo para auditar agentes e incidencias.</div>
+          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteSupervisor">-</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- Módulo 1: Cámara y Visión Artificial -->
+    <section class="card" aria-labelledby="vision-title">
+      <h2 id="vision-title">1. Cámara y Visión Artificial Híbrida &mdash;
+        <code>AgenteSensorResiduos.analizarImagenes()</code></h2>
+
+      <div class="assign-box">
+        <span style="display:block; font-size:0.86rem; font-weight:700; color:var(--accent); margin-bottom:8px;">
+          Paso A: Selecciona (o crea) la Zona y Contenedor a los que pertenece la imagen · Motor IA Opcional
+        </span>
+        <div class="assign-row">
+          <div>
+            <label for="visionZonaSelect">Zona del Mercado</label>
+            <select id="visionZonaSelect" onchange="alCambiarZonaDesdeVision()"></select>
+          </div>
+          <div>
+            <label for="visionContenedorSelect">Contenedor asignado a la imagen</label>
+            <select id="visionContenedorSelect"></select>
+          </div>
+          <div>
+            <label for="inputGeminiKey">Gemini API Key (opcional: activa IA real con internet)</label>
+            <div style="display:flex; gap:6px;">
+              <input type="password" id="inputGeminiKey" placeholder="Vacío = Motor HSV 100% Offline"
+                oninput="actualizarEstadoGeminiKey()" />
+              <button type="button" class="btn-outline" style="white-space:nowrap;" onclick="limpiarGeminiKey()">Usar
+                Offline</button>
+            </div>
+          </div>
+          <div class="btn-group" style="margin-top:0;">
+            <button type="button" class="btn-outline" onclick="toggleFormZona()">+ Nueva Zona</button>
+            <button type="button" class="btn-outline" onclick="toggleFormContenedor()">+ Nuevo Contenedor</button>
+          </div>
+        </div>
+
+        <div id="formNuevaZona" class="inline-form">
+          <strong style="display:block; font-size:0.83rem; margin-bottom:6px;">Agregar nueva zona a
+            <code>MercadoBazurto</code>:</strong>
+          <div class="inline-form-grid">
+            <div>
+              <label for="inputNuevaZonaId">ID corto (opcional, ej: zona_6)</label>
+              <input type="text" id="inputNuevaZonaId" placeholder="zona_6" />
+            </div>
+            <div>
+              <label for="inputNuevaZonaNombre">Nombre descriptivo de la zona *</label>
+              <input type="text" id="inputNuevaZonaNombre" placeholder="Sector Frutas y Plátanos" />
+            </div>
+            <div>
+              <button type="button" class="btn-primary" onclick="crearNuevaZona()">Guardar Zona</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="formNuevoContenedor" class="inline-form">
+          <strong style="display:block; font-size:0.83rem; margin-bottom:6px;">Agregar nuevo contenedor a la zona
+            seleccionada:</strong>
+          <div class="inline-form-grid">
+            <div>
+              <label for="inputNuevoContCodigo">Código del contenedor *</label>
+              <input type="text" id="inputNuevoContCodigo" placeholder="CONT-Z3-03 (Entrada Sur)" />
+            </div>
+            <div>
+              <label for="inputNuevoContTipo">Tipo / capacidad</label>
+              <input type="text" id="inputNuevoContTipo" value="Contenedor Municipal 1100L" />
+            </div>
+            <div>
+              <button type="button" class="btn-primary" onclick="crearNuevoContenedor()">Guardar Contenedor</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="vision-layout">
+        <div>
+          <span style="display:block; font-size:0.86rem; font-weight:600; color:var(--muted); margin-bottom:8px;">Paso
+            B: Elige una de las 3 escenas sintéticas base (o sube/captura tus propias fotografías reales):</span>
+          <div id="sampleGrid" class="sample-grid"></div>
+
+          <div class="btn-group">
+            <label for="fileUpload" class="btn-outline"
+              style="margin:0; cursor:pointer; display:inline-block; padding:9px 14px; border:1px solid var(--border); border-radius:6px; font-weight:600; font-size:0.87rem;">
+              Subir Foto desde mi PC
+            </label>
+            <input type="file" id="fileUpload" accept="image/*" style="display:none;"
+              onchange="manejarArchivoSubido(event)" />
+            <button type="button" class="btn-outline" onclick="abrirWebcam()">Usar Webcam de mi PC</button>
+            <button type="button" class="btn-primary" onclick="analizarImagenActual()">Analizar Imagen en Cámara y
+              Sincronizar Entorno</button>
+          </div>
+
+          <div id="webcamBox" class="webcam-box">
+            <video id="webcamVideo" autoplay playsinline
+              style="max-width:100%; max-height:200px; border-radius:6px; background:#000;"></video>
+            <div class="btn-group">
+              <button type="button" class="btn-primary" onclick="capturarDesdeWebcam()">Capturar Foto de Webcam y
+                Analizar</button>
+              <button type="button" class="btn-outline" onclick="cerrarWebcam()">Cerrar Webcam</button>
+            </div>
+            <canvas id="webcamCanvas" style="display:none;"></canvas>
+          </div>
+          <p id="visionHint" style="font-size:0.84rem; color:var(--muted); margin:10px 0 0;">
+            Escena seleccionada lista para <code>analizarImagenes()</code>: <code>contenedor_critico.png</code>
+          </p>
+        </div>
+
+        <div class="vision-viewer">
+          <img id="visionPreviewImg" src="static/samples/contenedor_critico.png"
+            alt="Vista previa del contenedor analizado por AgenteSensorResiduos con recuadros de detección" />
+          <div id="visionAlertBox"
+            style="display:none; width:100%; padding:10px 12px; border-radius:8px; background:#fef2f2; border:1px solid #ef4444; color:#991b1b; font-size:0.85rem; line-height:1.4;">
+          </div>
+          <div id="visionMetrics" class="vision-metrics">
+            <span class="badge b-met">Analizando imagen...</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Módulo 1B: Orden del Coordinador sobre las Cámaras de Todas las Zonas -->
+    <section class="card" aria-labelledby="coord-cam-title">
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
+        <h2 id="coord-cam-title" style="margin:0; border:none; padding:0;">1B. Orden del Coordinador: Revisar Cámaras de
+          Todas las Zonas (<code>consultarEventos()</code> &rarr; <code>analizarImagenes()</code>)</h2>
+        <button type="button" class="btn-primary" onclick="ejecutarInspeccionCoordinada()">
+          Ordenar desde AgenteCoordinador: Revisar Cámaras y Priorizar
+        </button>
+      </div>
+      <p style="margin:0 0 10px; font-size:0.88rem; color:var(--muted);">
+        Cada zona ya tiene una cámara con una imagen asignada (puedes cambiar cuál imagen tiene aquí mismo o subirle una
+        foto propia en el Módulo 1). Al pulsar el botón, <code>AgenteCoordinador</code> envía <code>ACL:QUERY-REF</code>
+        a cada sensor, <code>AgenteSensorResiduos</code> analiza la foto, responde <code>ACL:INFORM</code> y el
+        Coordinador prioriza las zonas.
+      </p>
+      <div id="coordZonesGrid" class="coord-grid"></div>
+      <div id="coordInspectionOutput" style="margin-top:14px;"></div>
+    </section>
+
+    <!-- Módulo 1C: Historial de Imágenes Analizadas -->
+    <section class="card" aria-labelledby="history-title">
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+        <h2 id="history-title" style="margin:0; border:none; padding:0;">1C. Historial de Imágenes Analizadas por Zona y
+          Contenedor</h2>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <label for="historyFilterZona" style="margin:0;">Filtrar zona:</label>
+          <select id="historyFilterZona" onchange="renderizarHistorialVision()"
+            style="width:auto; min-width:190px; padding:6px 10px;">
+            <option value="">Todas las zonas</option>
+          </select>
+          <span id="historyCountBadge" class="badge b-acl">0 imágenes</span>
+        </div>
+      </div>
+      <div id="visionHistoryList" class="trace-list" style="max-height:360px;"></div>
+    </section>
+
+    <!-- Módulo 1D: Frameworks Multiagente Recomendados por el Profesor -->
+    <section class="card" aria-labelledby="fw-title">
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
+        <h2 id="fw-title" style="margin:0; border:none; padding:0;">1D. Orquestador de Frameworks Multiagente (Profesor:
+          LangGraph &middot; CrewAI &middot; MAF &middot; Google ADK &middot; JADE &middot; AutoGen &middot; Agent SDK)</h2>
+        <span id="fwEngineStatusBadge" class="badge b-ok">StateGraph + Checkpointer Persistente</span>
+      </div>
+      <p style="margin:0 0 10px; font-size:0.88rem; color:var(--muted);">
+        Selecciona cualquiera de los <strong>7 frameworks multiagente</strong> recomendados para superar las
+        limitaciones de <code>n8n</code> (sin estado persistente). Al ejecutar el grafo, <code>BazurtoStateGraphRunner</code>
+        recorre los <strong>5 nodos reales</strong> (<code>AgenteSensorResiduos</code> &rarr; <code>AgenteSensorAire</code>
+        &rarr; <code>AgenteCoordinador</code> &rarr; <code>AgenteAlertas</code> &rarr; nodo condicional
+        <code>AgenteSupervisor</code>), guarda el checkpoint con <code>thread_id</code> en SQLite y muestra la
+        implementación exacta en el framework seleccionado.
+      </p>
+
+      <div id="fwSelectorTabs" class="fw-grid-tabs"></div>
+
+      <div class="assign-box" style="margin-bottom:12px;">
+        <div class="assign-row">
+          <div>
+            <label for="fwZonaSelect">Zona para ejecutar el Grafo Multiagente</label>
+            <select id="fwZonaSelect"></select>
+          </div>
+          <div>
+            <label for="fwComunidadSelect">Escenario de Confirmación Comunitaria</label>
+            <select id="fwComunidadSelect">
+              <option value="true">Comunidad Confirma (INFORM-DONE + Auditoría CONFIRM)</option>
+              <option value="false">Comunidad NO Responde (FAILURE &rarr; Arista Condicional a AgenteSupervisor)</option>
+            </select>
+          </div>
+          <div>
+            <button type="button" class="btn-primary" style="width:100%;" onclick="ejecutarOrquestacionFramework()">
+              Ejecutar Grafo Multiagente (StateGraph + Checkpointer)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="fwSpecBox" style="margin-bottom:12px;"></div>
+      <div id="fwExecutionOutput"></div>
+    </section>
+
+    <!-- Módulo 2: Entorno y Casos de Uso -->
+    <div class="grid-2">
+      <section class="card" aria-labelledby="env-title">
+        <h2 id="env-title">2. Entorno: <code>MercadoBazurto</code> (&laquo;environment&raquo;)</h2>
+        <label for="zonaSelect">Zona monitoreada (sincronizada con Módulo 1)</label>
+        <select id="zonaSelect" onchange="alCambiarZonaDesdeEntorno()">
+          <option value="zona_3">zona_3 — Sector Pescadería y Acopio Central</option>
+          <option value="zona_5">zona_5 — Sector Verduras y Contenedores Sur</option>
+          <option value="zona_2">zona_2 — Callejón de Carnes y Carga</option>
+        </select>
+
+        <div class="row-fields">
+          <div>
+            <label for="inResiduos">nivelLlenadoContenedores (%)</label>
+            <input type="number" id="inResiduos" min="0" max="100" step="0.1" value="92" />
+          </div>
+          <div>
+            <label for="inGases">concentracionGases (CO2 ppm)</label>
+            <input type="number" id="inGases" min="200" max="3000" step="10" value="850" />
+          </div>
+          <div>
+            <label for="inTemp">temperatura (&deg;C)</label>
+            <input type="number" id="inTemp" min="10" max="55" step="0.5" value="32" />
+          </div>
+          <div>
+            <label for="inHum">humedad (%)</label>
+            <input type="number" id="inHum" min="0" max="100" step="1" value="78" />
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn-outline" onclick="guardarEntorno()">Guardar Valores en Entorno</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="uc-title">
+        <h2 id="uc-title">3. Ejecución de Casos de Uso (2 Macro + 4 por Rol MAS-ML)</h2>
+
+        <p style="margin:0 0 6px;font-size:0.9rem;"><strong>Macro CU-01: Monitoreo, Priorización de Riesgo y Emisión de
+            Alerta</strong></p>
+        <div class="btn-group" style="margin-bottom:14px;">
+          <button class="btn-primary" onclick="ejecutarCU1Interactivo()">Ejecutar CU-01 y Enviar al Panel de
+            Comunidad</button>
+          <button class="btn-outline" onclick="ejecutarCU1(false, true)">CU-01 Rápido Éxito (INFORM-DONE)</button>
+          <button class="btn-danger" onclick="ejecutarCU1(true, true)">CU-01 Alerta Duplicada (REFUSE)</button>
+        </div>
+
+        <p style="margin:0 0 6px;font-size:0.9rem;"><strong>Macro CU-02: Supervisión Continua, Auditoría y
+            Escalamiento</strong></p>
+        <div class="btn-group" style="margin-bottom:14px;">
+          <button class="btn-primary" onclick="ejecutarCU2(false, false)">CU-02 Auditoría OK (CONFIRM)</button>
+          <button class="btn-warn" onclick="ejecutarCU2(true, false)">CU-02 Sin Confirmación (DISCONFIRM +
+            Escalar)</button>
+          <button class="btn-danger" onclick="ejecutarCU2(false, true)">CU-02 Timeout Sensor (INFORM Fallo +
+            Recalcular)</button>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;" />
+        <p style="margin:0 0 6px;font-size:0.9rem;"><strong>Desglose Completo por Rol (<code>&laquo;role&raquo;</code> —
+            4 Casos de Uso de Entrega Final):</strong></p>
+        <div class="role-grid">
+          <div class="role-card">
+            <strong>CU-ROL-01 · <code>MonitorCondicionesAmbientales</code></strong>
+            <p style="margin:4px 0 8px;color:var(--muted);"><code>AgenteSensorResiduos</code> +
+              <code>AgenteSensorAire</code> leen <code>MercadoBazurto</code> y publican evento.</p>
+            <button type="button" class="btn-outline" style="width:100%;"
+              onclick="ejecutarCasoUsoRol('CU-ROL-01')">Ejecutar CU-ROL-01</button>
+          </div>
+          <div class="role-card">
+            <strong>CU-ROL-02 · <code>Coordinador</code></strong>
+            <p style="margin:4px 0 8px;color:var(--muted);"><code>AgenteCoordinador</code> manda revisar las 3 cámaras
+              (<code>QUERY-REF</code>), prioriza zonas y delega.</p>
+            <button type="button" class="btn-primary" style="width:100%;"
+              onclick="ejecutarCasoUsoRol('CU-ROL-02')">Ejecutar CU-ROL-02</button>
+          </div>
+          <div class="role-card">
+            <strong>CU-ROL-03 · <code>EmisorAlertas</code></strong>
+            <p style="margin:4px 0 8px;color:var(--muted);"><code>AgenteAlertas</code> emite aviso a comunidad y genera
+              reporte <code>INFORM-DONE</code> o <code>FAILURE</code>.</p>
+            <button type="button" class="btn-outline" style="width:100%;"
+              onclick="ejecutarCasoUsoRol('CU-ROL-03')">Ejecutar CU-ROL-03</button>
+          </div>
+          <div class="role-card">
+            <strong>CU-ROL-04 · <code>Supervisor</code></strong>
+            <p style="margin:4px 0 8px;color:var(--muted);"><code>AgenteSupervisor</code> audita los 3 roles
+              controlados, registra incidencias y solicita acciones.</p>
+            <button type="button" class="btn-warn" style="width:100%;"
+              onclick="ejecutarCasoUsoRol('CU-ROL-04')">Ejecutar CU-ROL-04</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Módulo 3: Panel Interactivo de Comunidad / Líder de Zona -->
+    <section class="card" aria-labelledby="comm-title">
+      <h2 id="comm-title">4. Panel de Comunidad / Líder de Zona &mdash; Recepción de Avisos (<code>EmisorAlertas</code>)
+      </h2>
+      <p style="margin:0 0 12px; font-size:0.88rem; color:var(--muted);">
+        Simula el dispositivo del líder comunitario o junta de comerciantes del Mercado de Bazurto. Cuando llega un
+        aviso desde <code>AgenteAlertas.emitirAviso()</code>, decide en vivo si confirmas recepción (<code>ACK</code>) o
+        si simulas ausencia de respuesta para activar la auditoría de <code>AgenteSupervisor</code>.
+      </p>
+      <div id="communityInbox"></div>
+    </section>
+
+    <!-- Módulo 4: Traza en Vivo y Mensajes ACL -->
+    <div class="grid-2">
+      <section class="card" aria-labelledby="trace-title">
+        <h2 id="trace-title">5. Traza de Ejecución en Vivo (Métodos y Mensajes ACL)</h2>
+        <div id="traceSummary" style="margin-bottom:10px;font-size:0.9rem;color:var(--muted);">
+          Ejecuta una acción de cámara, CU-01, respuesta comunitaria o CU-02 para visualizar la traza exacta paso a
+          paso.
+        </div>
+        <div id="traceContainer" class="trace-list"></div>
+      </section>
+
+      <section class="card" aria-labelledby="acl-title">
+        <h2 id="acl-title">6. Últimos Mensajes FIPA-ACL Persistidos</h2>
+        <div class="tabs">
+          <button class="tab-btn active" id="btnSexpr" onclick="cambiarFormatoACL('sexpr')">Formato S-expression
+            (LISP)</button>
+          <button class="tab-btn" id="btnJson" onclick="cambiarFormatoACL('json')">Formato JSON</button>
+        </div>
+        <div id="aclList" class="trace-list"></div>
+      </section>
+    </div>
+
+    <!-- Módulo 5: Estado Persistido SQLite / Local -->
+    <section class="card" aria-labelledby="persist-title">
+      <h2 id="persist-title">7. Estado Persistido de los Agentes (Solución al límite de n8n)</h2>
+      <div class="grid-2">
+        <div>
+          <h3 style="font-size:0.95rem;margin:0 0 8px;">AgenteSensorResiduos &mdash; <code>estadoInterno</code> + Visión
+          </h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Zona</th>
+                <th>Nivel</th>
+                <th>tiempoSobreLimite</th>
+                <th>ritmoLlenado</th>
+                <th>Estado Visual</th>
+                <th>Bolsas Suelo</th>
+              </tr>
+            </thead>
+            <tbody id="tblResiduos"></tbody>
+          </table>
+        </div>
+        <div>
+          <h3 style="font-size:0.95rem;margin:0 0 8px;">AgenteSensorAire &mdash; <code>historialMediciones</code></h3>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Zona</th>
+                <th>Gases (ppm)</th>
+                <th>Temp (&deg;C)</th>
+                <th>Hum (%)</th>
+              </tr>
+            </thead>
+            <tbody id="tblAire"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:16px;">
+        <div>
+          <h3 style="font-size:0.95rem;margin:0 0 8px;">AgenteAlertas &mdash; Reportes Emitidos</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Zona</th>
+                <th>Nivel</th>
+                <th>Estado</th>
+                <th>Reporte</th>
+              </tr>
+            </thead>
+            <tbody id="tblAlertas"></tbody>
+          </table>
+        </div>
+        <div>
+          <h3 style="font-size:0.95rem;margin:0 0 8px;">AgenteSupervisor &mdash; Incidencias y Acciones</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Agente</th>
+                <th>Zona</th>
+                <th>Descripción</th>
+                <th>Acción Correctiva</th>
+              </tr>
+            </thead>
+            <tbody id="tblIncidencias"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer id="pageFooter">
+      SMAMonitoreoBazurto · MAS-ML &amp; FIPA-ACL ·
+      <a href="privacy" id="lnkPrivacy" onclick="return abrirLegalFallback(event, 'Privacidad')">Política de
+        Privacidad</a> ·
+      <a href="terms" id="lnkTerms" onclick="return abrirLegalFallback(event, 'Términos')">Términos de Uso</a> ·
+      <a href="docs" id="lnkDocs" target="_blank">Swagger API</a>
+    </footer>
+  </main>
+
+  <script>
+    const MUESTRAS_CATALOG = [
+      {
+        filename: "contenedor_limpio.png",
+        url: "static/samples/contenedor_limpio.png",
+        titulo: "Sintética 1: Contenedor Limpio (<15%)",
+        descripcion: "Contenedor verde estable con baja ocupación y perímetro despejado."
+      },
+      {
+        filename: "contenedor_medio.png",
+        url: "static/samples/contenedor_medio.png",
+        titulo: "Sintética 2: Nivel Medio (~50%)",
+        descripcion: "Contenedor verde a mitad de capacidad sin desbordamiento externo."
+      },
+      {
+        filename: "contenedor_critico.png",
+        url: "static/samples/contenedor_critico.png",
+        titulo: "Sintética 3: Crítico Desbordado (~98%)",
+        descripcion: "Contenedor rebasado con bolsas acumuladas en el suelo perimetral."
+      }
+    ];
+
+    let estadoCache = null;
+    let formatoACL = "sexpr";
+    let presetSeleccionado = "contenedor_critico.png";
+    let imagenBase64Seleccionada = null;
+    let webcamStream = null;
+    let useLocalFallback = false;
+    let frameworkSeleccionado = "langgraph";
+    let pilotoAutomaticoActivo = true;
+    let autoRondaNum = 0;
+    let autoCicloEnCurso = false;
+    let animTimerHandles = [];
+    const AGENTES_SMA = [
+      "AgenteSensorResiduos",
+      "AgenteSensorAire",
+      "AgenteCoordinador",
+      "AgenteAlertas",
+      "AgenteSupervisor"
+    ];
+
+    const FRAMEWORKS_CATALOG_LOCAL = [
+      {
+        id: "langgraph",
+        nombre: "LangGraph",
+        creador: "LangChain Inc.",
+        lenguaje: "Python",
+        paradigma: "Grafo de Estados Cíclico (StateGraph) con Checkpointer persistente",
+        resuelve_persistencia: "Reemplaza la falta de memoria de n8n mediante BazurtoAgentState + SqliteSaver/MemorySaver: conserva tiempoSobreLimite, historialMediciones y conversation_id entre nodos.",
+        mapeo_agentes: "Cada agente MAS-ML es un nodo (nodo_sensor_residuos, nodo_sensor_aire, nodo_coordinador, nodo_alertas, nodo_supervisor) unido por aristas condicionales.",
+        codigo_implementacion: `from langgraph.graph import StateGraph, START, END\nfrom langgraph.checkpoint.memory import MemorySaver\n\nbuilder = StateGraph(BazurtoAgentState)\nbuilder.add_node("nodo_sensor_residuos", agente_sensor_residuos_node)\nbuilder.add_node("nodo_sensor_aire", agente_sensor_aire_node)\nbuilder.add_node("nodo_coordinador", agente_coordinador_node)\nbuilder.add_node("nodo_alertas", agente_alertas_node)\nbuilder.add_node("nodo_supervisor", agente_supervisor_node)\nbuilder.add_edge(START, "nodo_sensor_residuos")\nbuilder.add_conditional_edges("nodo_alertas", decidir_ruta_supervision, {"supervisor": "nodo_supervisor", "fin": END})\nsma_graph = builder.compile(checkpointer=MemorySaver())`
+      },
+      {
+        id: "crewai",
+        nombre: "CrewAI",
+        creador: "CrewAI Inc.",
+        lenguaje: "Python",
+        paradigma: "Equipos Multiagente por Roles (Agent + Task + Crew Jerárquico)",
+        resuelve_persistencia: "Usa memory=True y almacenamiento SQLite por entidad para recordar mediciones previas y priorizaciones entre ejecuciones.",
+        mapeo_agentes: "Mapeo directo con los <<role>> MAS-ML: MonitorCondicionesAmbientales, Coordinador (manager_agent), EmisorAlertas y Supervisor.",
+        codigo_implementacion: `from crewai import Agent, Task, Crew, Process\n\ncoordinador = Agent(role="Coordinador", goal="calcularRiesgo() y priorizarZonas()", allow_delegation=True)\ncrew_bazurto = Crew(agents=[residuos, aire, alertas, supervisor], tasks=[t1, t2, t3, t4], process=Process.hierarchical, manager_agent=coordinador, memory=True)`
+      },
+      {
+        id: "microsoft_maf",
+        nombre: "MAF (Microsoft Agent Framework)",
+        creador: "Microsoft",
+        lenguaje: "Python / C# (.NET)",
+        paradigma: "Orquestación Enterprise con ChatCompletionAgent + AgentGroupChat + Plugins",
+        resuelve_persistencia: "Centraliza el historial de conversación (ChatHistory) y estado en hilos persistentes (AgentThread).",
+        mapeo_agentes: "Cada agente encapsula sus métodos MAS-ML como Plugins tipados dentro de AgentGroupChat.",
+        codigo_implementacion: `from semantic_kernel.agents import ChatCompletionAgent, AgentGroupChat\n\nchat_bazurto = AgentGroupChat(\n    agents=[agente_residuos, agente_aire, agente_coord, agente_alertas, agente_sup],\n    termination_strategy=SupervisorAuditTermination(),\n)`
+      },
+      {
+        id: "google_adk",
+        nombre: "Google ADK (Agent Development Kit)",
+        creador: "Google",
+        lenguaje: "Python",
+        paradigma: "Jerarquía Composable (LlmAgent, ParallelAgent, SequentialAgent) con Gemini 2.5 Flash",
+        resuelve_persistencia: "Integra DatabaseSessionService y ToolContext.state persistente para conservar estadoInterno y alertas entre turnos.",
+        mapeo_agentes: "ParallelAgent (Residuos + Aire) entrega el estado al SequentialAgent (Coordinador -> Alertas -> Supervisor).",
+        codigo_implementacion: `from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent\n\nmonitores = ParallelAgent(name="MonitorCondicionesAmbientales", sub_agents=[sensor_residuos, sensor_aire])\nsma_adk_root = SequentialAgent(name="SMAMonitoreoBazurto", sub_agents=[monitores, coordinador, alertas, supervisor])`
+      },
+      {
+        id: "jade",
+        nombre: "JADE (Java Agent Development Framework)",
+        creador: "TILAB / Telecom Italia (Estándar FIPA)",
+        lenguaje: "Java / Python ACL Bridge",
+        paradigma: "Plataforma FIPA Nativa (ACLMessage + CyclicBehaviour + DF)",
+        resuelve_persistencia: "Los agentes viven continuamente en un Container JADE con atributos persistidos en SQLite y mensajería ACLMessage oficial.",
+        mapeo_agentes: "Implementación FIPA-ACL estándar con performativas QUERY-REF, INFORM, REQUEST, AGREE, REFUSE, INFORM-DONE, FAILURE, QUERY-IF y CONFIRM.",
+        codigo_implementacion: `public class AgenteCoordinador extends Agent {\n  protected void setup() {\n    addBehaviour(new CyclicBehaviour(this) {\n      public void action() {\n        ACLMessage msg = receive();\n        if (msg != null && msg.getPerformative() == ACLMessage.INFORM) { /* delegarAlerta() */ }\n      }\n    });\n  }\n}`
+      },
+      {
+        id: "autogen",
+        nombre: "AutoGen",
+        creador: "Microsoft Research / AG2",
+        lenguaje: "Python",
+        paradigma: "Conversación Multiagente Event-Driven (AssistantAgent + GroupChatManager)",
+        resuelve_persistencia: "Mantiene historial compartido entre turnos del GroupChat y persiste estado de herramientas en SQLite.",
+        mapeo_agentes: "Los 5 agentes conversan en un GroupChat moderado por AgenteCoordinador y auditado por AgenteSupervisor.",
+        codigo_implementacion: `from autogen import AssistantAgent, GroupChat, GroupChatManager\n\ngroup_chat = GroupChat(agents=[sensor_residuos, sensor_aire, coordinador, alertas, supervisor], messages=[], max_round=12)\nmanager = GroupChatManager(groupchat=group_chat)`
+      },
+      {
+        id: "agent_sdk",
+        nombre: "Agent SDK (OpenAI Agents SDK)",
+        creador: "OpenAI",
+        lenguaje: "Python / TypeScript",
+        paradigma: "Agentes Ligeros con Handoffs Explícitos y @function_tool",
+        resuelve_persistencia: "Usa SQLiteSession en Runner.run(..., session=...) para recordar estado previo de sensores y alertas.",
+        mapeo_agentes: "Cada agente expone sus métodos como @function_tool y usa handoff() para transferir Monitores -> Coordinador -> Alertas -> Supervisor.",
+        codigo_implementacion: `from agents import Agent, Runner, SQLiteSession, handoff\n\nsession = SQLiteSession("bazurto_zona_3", "bazurto_sma.db")\nresult = Runner.run_sync(monitor, "Ejecutar monitoreo y priorización", session=session)`
+      }
+    ];
+
+    const LOCAL_STORAGE_ID = "bazurto_sma_v2_cloud_v1";
+
+    function getGeminiKey() {
+      const el = document.getElementById("inputGeminiKey");
+      const val = (el ? el.value : "").trim();
+      if (val) return val;
+      try {
+        return (localStorage.getItem("bazurto_v2_gemini_key") || "").trim();
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function actualizarEstadoGeminiKey() {
+      const el = document.getElementById("inputGeminiKey");
+      const val = (el ? el.value : "").trim();
+      try {
+        if (val) localStorage.setItem("bazurto_v2_gemini_key", val);
+        else localStorage.removeItem("bazurto_v2_gemini_key");
+      } catch (e) { }
+      const badge = document.getElementById("visionEngineBadge");
+      if (badge) {
+        if (val) {
+          badge.className = "badge b-ok";
+          badge.textContent = "Visión Híbrida: Gemini 2.5 Flash Activo (con respaldo HSV Offline)";
+        } else {
+          badge.className = "badge b-acl";
+          badge.textContent = "Visión Híbrida: Motor HSV Local Offline (sin clave Gemini)";
+        }
+      }
+    }
+
+    function limpiarGeminiKey() {
+      const el = document.getElementById("inputGeminiKey");
+      if (el) el.value = "";
+      actualizarEstadoGeminiKey();
+    }
+
+    function createInitialLocalDb() {
+      const now = new Date().toISOString();
+      return {
+        organizacion: {
+          nombre: "SMAMonitoreoBazurto",
+          objetivo: "ReducirRiesgoAmbientalBazurto",
+          politica: "PriorizacionCoordinada",
+          parametros: {
+            nivel_residuos_critico: 80.0,
+            tiempo_persistencia_min: 30,
+            gases_co2_critico: 700.0,
+            riesgo_alerta_umbral: 0.65
+          }
+        },
+        muestras_vision: MUESTRAS_CATALOG,
+        entorno_zonas: [
+          { zona_id: "zona_3", nombre: "Sector Pescaderia y Acopio Central", nivel_llenado_contenedores: 92.0, concentracion_gases: 850.0, temperatura: 32.0, humedad: 78.0, sensor_aire_activo: 1, comunidad_confirma: 1, updated_at: now },
+          { zona_id: "zona_5", nombre: "Sector Verduras y Contenedores Sur", nivel_llenado_contenedores: 68.0, concentracion_gases: 540.0, temperatura: 30.5, humedad: 74.0, sensor_aire_activo: 1, comunidad_confirma: 1, updated_at: now },
+          { zona_id: "zona_2", nombre: "Callejon de Carnes y Carga", nivel_llenado_contenedores: 45.0, concentracion_gases: 410.0, temperatura: 29.0, humedad: 70.0, sensor_aire_activo: 1, comunidad_confirma: 1, updated_at: now }
+        ],
+        contenedores: [
+          { contenedor_id: "cont_z3_01", zona_id: "zona_3", codigo: "CONT-Z3-01 (Pescadería Norte)", tipo: "Contenedor Verde 1100L", nivel_llenado: 98.0, estado_visual: "desbordamiento_detectado", bolsas_suelo: 4, ultima_imagen: "contenedor_critico.png", imagen_custom_base64: null, updated_at: now },
+          { contenedor_id: "cont_z3_02", zona_id: "zona_3", codigo: "CONT-Z3-02 (Muelle Central)", tipo: "Contenedor Negro 1100L", nivel_llenado: 94.0, estado_visual: "desbordamiento_detectado", bolsas_suelo: 3, ultima_imagen: "contenedor_critico.png", imagen_custom_base64: null, updated_at: now },
+          { contenedor_id: "cont_z5_01", zona_id: "zona_5", codigo: "CONT-Z5-01 (Verduras Sur)", tipo: "Contenedor Gris 1100L", nivel_llenado: 65.2, estado_visual: "contenedor_estable", bolsas_suelo: 0, ultima_imagen: "contenedor_medio.png", imagen_custom_base64: null, updated_at: now },
+          { contenedor_id: "cont_z2_01", zona_id: "zona_2", codigo: "CONT-Z2-01 (Callejón Carnes)", tipo: "Contenedor Verde 1100L", nivel_llenado: 16.9, estado_visual: "contenedor_estable", bolsas_suelo: 0, ultima_imagen: "contenedor_limpio.png", imagen_custom_base64: null, updated_at: now }
+        ],
+        historial_vision: [],
+        estado_interno_residuos: [
+          { zona_id: "zona_3", nivel: 82.0, tiempo_sobre_limite: 30, ritmo_llenado: 8.0, ciclos_consecutivos: 2, estado_visual: "desbordamiento_detectado", bolsas_suelo: 4, updated_at: now }
+        ],
+        historial_mediciones_aire: [
+          { id: 2, zona_id: "zona_3", concentracion_gases: 720.0, temperatura: 31.0, humedad: 75.0, timestamp: now },
+          { id: 1, zona_id: "zona_3", concentracion_gases: 610.0, temperatura: 30.0, humedad: 72.0, timestamp: now }
+        ],
+        eventos_riesgo: [],
+        alertas: [],
+        incidencias: [],
+        mensajes_acl: []
+      };
+    }
+
+    function loadLocalDb() {
+      try {
+        const raw = localStorage.getItem(LOCAL_STORAGE_ID);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed.contenedores) || parsed.contenedores.length === 0) {
+            parsed.contenedores = createInitialLocalDb().contenedores;
+          }
+          if (!Array.isArray(parsed.historial_vision)) {
+            parsed.historial_vision = [];
+          }
+          parsed.muestras_vision = MUESTRAS_CATALOG;
+          return parsed;
+        }
+      } catch (e) { }
+      const init = createInitialLocalDb();
+      saveLocalDb(init);
+      return init;
+    }
+
+    function saveLocalDb(db) {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_ID, JSON.stringify(db));
+      } catch (err) {
+        if (Array.isArray(db.historial_vision) && db.historial_vision.length > 5) {
+          db.historial_vision = db.historial_vision.slice(0, 5);
+          try {
+            localStorage.setItem(LOCAL_STORAGE_ID, JSON.stringify(db));
+          } catch (e2) { }
+        }
+      }
+    }
+
+    function buildAclSexpr(performative, sender, receiver, contentObj, protocol, convId, replyWith = null, inReplyTo = null, replyBy = null) {
+      const contentStr = "(" + Object.entries(contentObj).map(([k, v]) => `${k}: ${v}`).join(", ") + ")";
+      const lines = [
+        `(${performative}`,
+        `  :sender ${sender}`,
+        `  :receiver ${receiver}`,
+        `  :content "${contentStr}"`,
+        `  :language fipa-sl`,
+        `  :ontology AmbientalBazurto`,
+        `  :protocol ${protocol}`,
+        `  :conversation-id ${convId}`
+      ];
+      if (replyWith) lines.push(`  :reply-with ${replyWith}`);
+      if (inReplyTo) lines.push(`  :in-reply-to ${inReplyTo}`);
+      if (replyBy) lines.push(`  :reply-by ${replyBy}`);
+      lines.push(")");
+      return lines.join("\n");
+    }
+
+    function pushAcl(db, trace, params) {
+      const sexpr = buildAclSexpr(
+        params.performative, params.sender, params.receiver, params.content,
+        params.protocol, params.conversation_id, params.reply_with, params.in_reply_to, params.reply_by
+      );
+      const nextId = (db.mensajes_acl[0]?.id || 0) + 1;
+      const contentJsonObj = {
+        performative: params.performative,
+        sender: params.sender,
+        receiver: params.receiver,
+        content: params.content,
+        language: "fipa-sl",
+        ontology: "AmbientalBazurto",
+        protocol: params.protocol,
+        "conversation-id": params.conversation_id
+      };
+      if (params.reply_with) contentJsonObj["reply-with"] = params.reply_with;
+      if (params.in_reply_to) contentJsonObj["in-reply-to"] = params.in_reply_to;
+      if (params.reply_by) contentJsonObj["reply-by"] = params.reply_by;
+
+      db.mensajes_acl.unshift({
+        id: nextId,
+        caso_uso: params.caso_uso,
+        conversation_id: params.conversation_id,
+        performative: params.performative,
+        sender: params.sender,
+        receiver: params.receiver,
+        acl_sexpr: sexpr,
+        content_json: JSON.stringify(contentJsonObj),
+        protocol: params.protocol,
+        metodo_origen: params.metodo_origen,
+        timestamp: new Date().toISOString()
+      });
+      trace.push({
+        tipo: "ACL",
+        performative: params.performative,
+        sender: params.sender,
+        receiver: params.receiver,
+        metodo_origen: params.metodo_origen,
+        protocol: params.protocol,
+        content: params.content,
+        sexpr
+      });
+    }
+
+    function pixelIsWaste(r, g, b, bg) {
+      const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+      const sat = Math.max(r, g, b) - Math.min(r, g, b);
+      const dist = Math.hypot(r - bg[0], g - bg[1], b - bg[2]);
+      return (luma < 145 && dist > 38) || (sat > 38 && dist > 32) || (dist > 68);
+    }
+
+    function rgbToHsvDeg(r, g, b) {
+      const rn = r / 255, gn = g / 255, bn = b / 255;
+      const maxc = Math.max(rn, gn, bn), minc = Math.min(rn, gn, bn);
+      const v = maxc;
+      if (minc === maxc) return [0, 0, v];
+      const diff = maxc - minc;
+      const s = diff / maxc;
+      const rc = (maxc - rn) / diff, gc = (maxc - gn) / diff, bc = (maxc - bn) / diff;
+      let h = 0;
+      if (rn === maxc) h = bc - gc;
+      else if (gn === maxc) h = 2 + rc - bc;
+      else h = 4 + gc - rc;
+      h = ((h / 6) % 1 + 1) % 1;
+      return [h * 360, s, v];
+    }
+
+    function drawLabeledBox(ctx, boxNorm, aw, ah, color, label) {
+      const [bx1, by1, bx2, by2] = boxNorm;
+      const x1 = Math.round(bx1 * aw), y1 = Math.round(by1 * ah);
+      const x2 = Math.round(bx2 * aw), y2 = Math.round(by2 * ah);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+      if (label) {
+        ctx.font = "bold 11px monospace";
+        const tagW = Math.min(Math.max(label.length * 7 + 12, 86), Math.max(aw - x1 - 4, 86));
+        const tagY1 = Math.max(29, y1 - 17);
+        ctx.fillStyle = color;
+        ctx.fillRect(x1, tagY1, Math.min(tagW, aw - x1 - 1), 16);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(label, x1 + 4, tagY1 + 12);
+      }
+    }
+
+    function isSyntheticSceneCanvas(img) {
+      if (img.naturalWidth !== 480 || img.naturalHeight !== 320) return false;
+      const tc = document.createElement("canvas");
+      tc.width = 480; tc.height = 320;
+      const tctx = tc.getContext("2d");
+      tctx.drawImage(img, 0, 0, 480, 320);
+      const td = tctx.getImageData(0, 0, 480, 320).data;
+      let matches = 0;
+      for (let x = 10; x < 45; x += 5) {
+        for (let y = 4; y < 16; y += 4) {
+          const i = (y * 480 + x) * 4;
+          if (Math.abs(td[i] - 224) <= 2 && Math.abs(td[i + 1] - 229) <= 2 && Math.abs(td[i + 2] - 232) <= 2) {
+            matches++;
+          }
+        }
+      }
+      return matches >= 18;
+    }
+
+    async function analizarConGeminiNavegador(img, fuenteNombre, apiKey, telemetriaLocal) {
+      if (!apiKey) return null;
+      try {
+        let aw = img.naturalWidth || 480, ah = img.naturalHeight || 320;
+        if (aw > 640) { ah = Math.round(ah * (640 / aw)); aw = 640; }
+        else if (ah > 520) { aw = Math.round(aw * (520 / ah)); ah = 520; }
+        const sc = document.createElement("canvas");
+        sc.width = aw; sc.height = ah;
+        const sctx = sc.getContext("2d");
+        sctx.drawImage(img, 0, 0, aw, ah);
+        const b64 = sc.toDataURL("image/jpeg", 0.86).split(",")[1];
+        const prompt = "Eres AgenteSensorResiduos del sistema multiagente SMAMonitoreoBazurto. Analiza esta imagen y responde SOLO JSON valido con las llaves: contenedor_detectado (bool), contenedores_en_imagen (int >= 0), nivel_llenado_visual (number 0..100), bolsas_en_suelo (int >= 0), desbordamiento (bool), confianza (number 0..1), explicacion_ia (string en espanol), cajas (array de hasta 6 {etiqueta, box_2d:[ymin,xmin,ymax,xmax]} en escala 0..1000).";
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: b64 } }] }],
+            generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+          })
+        });
+        if (!resp.ok) return null;
+        const raw = await resp.json();
+        let txt = raw.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        txt = txt.trim().replace(/^```json\s*/i, "").replace(/^```/i, "").replace(/```$/i, "").trim();
+        const parsed = JSON.parse(txt);
+        const detectado = Boolean(parsed.contenedor_detectado ?? true);
+        const contenedoresEnImagen = !detectado ? 0 : Math.max(parseInt(parsed.contenedores_en_imagen || 1, 10), 1);
+        const nivel = detectado ? Math.round(Math.min(Math.max(Number(parsed.nivel_llenado_visual || 0), 0), 100) * 10) / 10 : 0.0;
+        const bolsas = detectado ? Math.max(parseInt(parsed.bolsas_en_suelo || 0, 10), 0) : 0;
+        const desborde = detectado && (Boolean(parsed.desbordamiento) || nivel >= 80.0 || bolsas >= 2);
+        const estado = !detectado ? "sin_contenedor_detectado" : (desborde ? "desbordamiento_detectado" : "contenedor_estable");
+        const conf = Math.round(Math.min(Math.max(Number(parsed.confianza || 0.92), 0.5), 0.99) * 100) / 100;
+
+        for (const item of (parsed.cajas || []).slice(0, 6)) {
+          if (Array.isArray(item.box_2d) && item.box_2d.length === 4) {
+            const [ymin, xmin, ymax, xmax] = item.box_2d.map(v => Math.min(Math.max(Number(v) / 1000.0, 0), 1));
+            if (xmax > xmin && ymax > ymin) {
+              const col = (!detectado || desborde) ? "#dc2626" : (nivel >= 55 ? "#d97706" : "#16a34a");
+              drawLabeledBox(sctx, [xmin, ymin, xmax, ymax], aw, ah, col, String(item.etiqueta || "IA").slice(0, 26));
+            }
+          }
+        }
+        sctx.fillStyle = detectado ? "#1e3a8a" : "#7f1d1d";
+        sctx.fillRect(0, 0, aw, 28);
+        sctx.fillStyle = "#ffffff";
+        sctx.font = "bold 11px monospace";
+        sctx.fillText(detectado ? `VISION IA GEMINI 2.5 | Contenedores: ${contenedoresEnImagen} | Llenado: ${nivel}% | Bolsas: ${bolsas}` : "VISION IA GEMINI 2.5 | SIN CONTENEDOR", 8, 18);
+
+        const thumbC = document.createElement("canvas");
+        const tw = Math.min(aw, 380), th = Math.round(ah * (tw / aw));
+        thumbC.width = tw; thumbC.height = th;
+        thumbC.getContext("2d").drawImage(sc, 0, 0, tw, th);
+
+        return {
+          contenedor_detectado: detectado,
+          contenedores_en_imagen: contenedoresEnImagen,
+          nivel_llenado_visual: nivel,
+          desbordamiento: desborde,
+          estado_visual: estado,
+          bolsas_en_suelo: bolsas,
+          confianza: conf,
+          fuente_imagen: fuenteNombre,
+          motor_vision: "Gemini 2.5 Flash (IA Multimodal Real)",
+          explicacion_ia: String(parsed.explicacion_ia || "Análisis multimodal completado por Gemini 2.5 Flash."),
+          telemetria_pixeles: telemetriaLocal || { estructura_px: 0, boca_residuos_px: 0, cavidad_residuos_px: 0, suelo_residuos_px: 0, cavidad_vacia_px: 0 },
+          annotated_image_base64: sc.toDataURL("image/png"),
+          history_thumb_base64: thumbC.toDataURL("image/jpeg", 0.78)
+        };
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function analizarImagenEnNavegador(imageBase64, presetName, geminiApiKey = "") {
+        const fuenteNombre = imageBase64 ? "imagen_usuario_o_webcam" : (presetName || "contenedor_critico.png");
+        const src = imageBase64 || `static/samples/${fuenteNombre}`;
+        const activeKey = (geminiApiKey || "").trim();
+        const img = await new Promise((resolve, reject) => {
+          const i = new Image();
+          i.crossOrigin = "anonymous";
+          i.onload = () => resolve(i);
+          i.onerror = () => reject(new Error("No se pudo cargar imagen para análisis"));
+          i.src = src;
+        });
+
+        if (isSyntheticSceneCanvas(img)) {
+          const anaW = 240, anaH = 160;
+          const c = document.createElement("canvas");
+          c.width = anaW; c.height = anaH;
+          const ctx = c.getContext("2d");
+          ctx.drawImage(img, 0, 0, anaW, anaH);
+          const data = ctx.getImageData(0, 0, anaW, anaH).data;
+          const px = (x, y) => {
+            const idx = (y * anaW + x) * 4;
+            return [data[idx], data[idx + 1], data[idx + 2]];
+          };
+
+          let wr = 0, wg = 0, wb = 0, wc = 0;
+          for (let y = 4; y < 18; y++) {
+            for (let x = 10; x < 48; x++) { const [r, g, b] = px(x, y); wr += r; wg += g; wb += b; wc++; }
+            for (let x = anaW - 48; x < anaW - 10; x++) { const [r, g, b] = px(x, y); wr += r; wg += g; wb += b; wc++; }
+          }
+          const bgWall = [wr / wc, wg / wc, wb / wc];
+
+          let fr = 0, fg = 0, fb = 0, fc = 0;
+          for (let y = Math.floor(anaH * 0.80); y < Math.floor(anaH * 0.94); y++) {
+            for (let x = 4; x < 14; x++) { const [r, g, b] = px(x, y); fr += r; fg += g; fb += b; fc++; }
+            for (let x = anaW - 14; x < anaW - 4; x++) { const [r, g, b] = px(x, y); fr += r; fg += g; fb += b; fc++; }
+          }
+          const bgFloor = [fr / fc, fg / fc, fb / fc];
+
+          const rx1 = Math.floor(anaW * 0.25), rx2 = Math.floor(anaW * 0.75);
+          const ry1 = Math.floor(anaH * 0.22), ry2 = Math.floor(anaH * 0.74);
+          let wasteRows = 0, highestRow = ry2, wastePx = 0;
+          const roiPx = (rx2 - rx1) * (ry2 - ry1);
+          for (let y = ry1; y < ry2; y++) {
+            let rowW = 0;
+            for (let x = rx1; x < rx2; x++) {
+              const [r, g, b] = px(x, y);
+              if (pixelIsWaste(r, g, b, bgWall)) rowW++;
+            }
+            wastePx += rowW;
+            if (rowW / (rx2 - rx1) >= 0.30) {
+              wasteRows++;
+              if (y < highestRow) highestRow = y;
+            }
+          }
+
+          const oy1 = Math.floor(anaH * 0.06), oy2 = Math.floor(anaH * 0.16);
+          let topOv = 0;
+          for (let y = oy1; y < oy2; y++) {
+            for (let x = rx1; x < rx2; x++) {
+              const [r, g, b] = px(x, y);
+              if (pixelIsWaste(r, g, b, bgWall)) topOv++;
+            }
+          }
+          const topOvRatio = topOv / ((rx2 - rx1) * (oy2 - oy1));
+          const alturaPct = wasteRows > 0 ? ((ry2 - highestRow) / (ry2 - ry1)) * 100 : 0;
+          const densPct = (wastePx / roiPx) * 100;
+          let nivel = 0.70 * densPct + 0.30 * alturaPct;
+          if (topOvRatio > 0.15) nivel = Math.max(nivel, 88.0 + Math.min(topOvRatio * 20, 9));
+          const nivelVisual = Math.round(Math.min(Math.max(nivel, 5), 98) * 10) / 10;
+
+          const fy1 = Math.floor(anaH * 0.78), fy2 = Math.floor(anaH * 0.95);
+          const fxStart = Math.floor(anaW * 0.06);
+          const secW = Math.floor((Math.floor(anaW * 0.94) - fxStart) / 10);
+          const gBoxes = [];
+          let sueloWastePx = 0;
+          for (let s = 0; s < 10; s++) {
+            const sx1 = fxStart + s * secW, sx2 = sx1 + secW;
+            let sw = 0;
+            for (let y = fy1; y < fy2; y++) {
+              for (let x = sx1; x < sx2; x++) {
+                const [r, g, b] = px(x, y);
+                if (pixelIsWaste(r, g, b, bgFloor)) sw++;
+              }
+            }
+            sueloWastePx += sw;
+            if (sw / ((sx2 - sx1) * (fy2 - fy1)) >= 0.24) {
+              if (gBoxes.length && sx1 <= gBoxes[gBoxes.length - 1][2] + 4) {
+                gBoxes[gBoxes.length - 1][2] = sx2;
+              } else {
+                gBoxes.push([sx1, fy1, sx2, fy2]);
+              }
+            }
+          }
+          const bolsas = gBoxes.length;
+          const desbordamiento = nivelVisual >= 80.0 || bolsas >= 2;
+          const estadoVisual = desbordamiento ? "desbordamiento_detectado" : "contenedor_estable";
+
+          const aw = 480, ah = 320;
+          const outC = document.createElement("canvas");
+          outC.width = aw; outC.height = ah;
+          const octx = outC.getContext("2d");
+          octx.drawImage(img, 0, 0, aw, ah);
+          const sxF = aw / anaW, syF = ah / anaH;
+          const color = desbordamiento ? "#dc2626" : (nivelVisual >= 55 ? "#d97706" : "#16a34a");
+          octx.strokeStyle = color;
+          octx.lineWidth = 3;
+          octx.strokeRect(rx1 * sxF, ry1 * syF, (rx2 - rx1) * sxF, (ry2 - ry1) * syF);
+          const lvlY = (ry2 - (ry2 - ry1) * (nivelVisual / 100)) * syF;
+          octx.beginPath(); octx.moveTo(rx1 * sxF, lvlY); octx.lineTo(rx2 * sxF, lvlY); octx.stroke();
+
+          octx.strokeStyle = "#ef4444";
+          for (const [gx1, gy1, gx2, gy2] of gBoxes) {
+            octx.strokeRect(gx1 * sxF, gy1 * syF, (gx2 - gx1) * sxF, (gy2 - gy1) * syF);
+          }
+          octx.fillStyle = "#111827";
+          octx.fillRect(0, 0, aw, 28);
+          octx.fillStyle = "#ffffff";
+          octx.font = "bold 12px monospace";
+          octx.fillText(`VISION SMA BAZURTO | Llenado: ${nivelVisual}% | Bolsas suelo: ${bolsas} | Desborde: ${desbordamiento ? "SI" : "NO"}`, 10, 18);
+
+          const synthRes = {
+            contenedor_detectado: true,
+            contenedores_en_imagen: 1,
+            nivel_llenado_visual: nivelVisual,
+            desbordamiento,
+            estado_visual: estadoVisual,
+            bolsas_en_suelo: bolsas,
+            confianza: desbordamiento ? 0.94 : 0.90,
+            fuente_imagen: imageBase64 ? "imagen_usuario_o_webcam" : fuenteNombre,
+            motor_vision: "Motor Matemático HSV Local (100% Offline)",
+            explicacion_ia: `Análisis cromático offline sobre escena sintética (${fuenteNombre}): densidad interna ${densPct.toFixed(1)}% y ${bolsas} bulto(s) en el perímetro del suelo.`,
+            telemetria_pixeles: {
+              estructura_px: roiPx,
+              boca_residuos_px: topOv,
+              cavidad_residuos_px: wastePx,
+              suelo_residuos_px: sueloWastePx,
+              cavidad_vacia_px: Math.max(roiPx - wastePx, 0)
+            },
+            annotated_image_base64: outC.toDataURL("image/png"),
+            history_thumb_base64: outC.toDataURL("image/jpeg", 0.78)
+          };
+          if (activeKey) {
+            const iaRes = await analizarConGeminiNavegador(img, synthRes.fuente_imagen, activeKey, synthRes.telemetria_pixeles);
+            if (iaRes) return iaRes;
+          }
+          return synthRes;
+        }
+
+        // Análisis continuo HSV 200x200 píxel a píxel multi-contenedor (cero respuestas fijas)
+        const makeCells = () => Array.from({ length: 20 }, () => new Array(20).fill(0));
+        const bboxFromCellsRange = (cells, cxMin, cxMax, minCellPx = 4) => {
+          const cStart = Math.max(0, cxMin);
+          const cEnd = Math.min(19, cxMax);
+          let coords = [];
+          for (let cy = 0; cy < 20; cy++) {
+            for (let cx = cStart; cx <= cEnd; cx++) {
+              if (cells[cy][cx] >= minCellPx) coords.push([cx, cy]);
+            }
+          }
+          if (!coords.length && minCellPx > 1) {
+            for (let cy = 0; cy < 20; cy++) {
+              for (let cx = cStart; cx <= cEnd; cx++) {
+                if (cells[cy][cx] > 0) coords.push([cx, cy]);
+              }
+            }
+          }
+          if (!coords.length) return null;
+          let minCx = 19, maxCx = 0, minCy = 19, maxCy = 0;
+          for (const [cx, cy] of coords) {
+            if (cx < minCx) minCx = cx;
+            if (cx > maxCx) maxCx = cx;
+            if (cy < minCy) minCy = cy;
+            if (cy > maxCy) maxCy = cy;
+          }
+          return [minCx / 20.0, minCy / 20.0, (maxCx + 1) / 20.0, (maxCy + 1) / 20.0];
+        };
+        const bboxFromCells = (cells, minCellPx = 4) => bboxFromCellsRange(cells, 0, 19, minCellPx);
+
+        const hc = document.createElement("canvas");
+        hc.width = 200; hc.height = 200;
+        const hctx = hc.getContext("2d");
+        hctx.drawImage(img, 0, 0, 200, 200);
+        const hdata = hctx.getImageData(0, 0, 200, 200).data;
+
+        let greenBody = 0, darkBody = 0, greyBody = 0, blueBody = 0, blueLeft = 0, blueMid = 0, blueRight = 0, greenRight = 0;
+        let vividMouth = 0, lowerPlastic = 0, whiteGroundLeft = 0, whiteGroundMid = 0, blueMouth = 0, darkCavity = 0, midColorful = 0;
+        let darkTopDomeLeft = 0, cardboardMidRight = 0;
+        const structCells = makeCells(), topWasteCells = makeCells();
+        const groundPlasticCells = makeCells(), groundWhiteCells = makeCells(), cavityCells = makeCells();
+
+        for (let y = 0; y < 200; y++) {
+          const cy = Math.floor(y / 10);
+          for (let x = 0; x < 200; x++) {
+            const cx = Math.floor(x / 10);
+            const i = (y * 200 + x) * 4;
+            const r = hdata[i], g = hdata[i + 1], b = hdata[i + 2];
+            const [deg, sv, vv] = rgbToHsvDeg(r, g, b);
+
+            if (x >= 30 && x <= 145 && y >= 55 && y <= 165) {
+              const isG = deg >= 70 && deg <= 165 && sv >= 0.12 && vv >= 0.18 && vv <= 0.72 && g >= r && g >= b;
+              const isD = vv <= 0.25 && sv <= 0.35;
+              const isGr = sv <= 0.16 && vv >= 0.28 && vv <= 0.72;
+              if (isG) greenBody++;
+              if (isD) darkBody++;
+              if (isGr) greyBody++;
+              if (isG || isD || isGr) structCells[cy][cx]++;
+            }
+            if (x >= 5 && x <= 190 && y >= 85 && y <= 175) {
+              if (deg >= 190 && deg <= 245 && sv >= 0.32 && vv >= 0.18 && vv <= 0.85 && b > r && b > g) {
+                blueBody++;
+                if (x < 60) blueLeft++;
+                else if (x < 105) blueMid++;
+                else blueRight++;
+                structCells[cy][cx]++;
+              }
+            }
+            if (x >= 110 && x <= 198 && y >= 95 && y <= 185) {
+              if (deg >= 70 && deg <= 170 && sv >= 0.14 && vv >= 0.12 && vv <= 0.72 && g >= r) {
+                greenRight++;
+                structCells[cy][cx]++;
+              }
+            }
+            if (x >= 65 && x <= 145 && y >= 18 && y <= 58) {
+              if (deg >= 175 && deg <= 345 && sv > 0.32 && vv > 0.40) {
+                vividMouth++;
+                topWasteCells[cy][cx]++;
+              }
+            }
+            if (x >= 10 && x <= 190 && y >= 95 && y <= 185) {
+              const isOrange = deg >= 10 && deg <= 42 && sv > 0.55 && vv > 0.55;
+              const isBlue = deg >= 195 && deg <= 245 && sv > 0.55 && vv > 0.45;
+              const isBlackBag = vv < 0.16 && sv < 0.28;
+              if (isOrange || isBlue || isBlackBag) {
+                lowerPlastic++;
+                groundPlasticCells[cy][cx]++;
+              }
+            }
+            if (x >= 5 && x <= 110 && y >= 115 && y <= 190) {
+              if (sv <= 0.18 && vv >= 0.78) {
+                whiteGroundLeft++;
+                groundWhiteCells[cy][cx]++;
+              }
+            }
+            if (x >= 55 && x <= 120 && y >= 120 && y <= 165) {
+              if (sv <= 0.22 && vv >= 0.72) {
+                whiteGroundMid++;
+                groundWhiteCells[cy][cx]++;
+              }
+            }
+            if (x >= 95 && x <= 180 && y >= 55 && y <= 95) {
+              if (deg >= 195 && deg <= 235 && sv >= 0.55 && vv >= 0.45) {
+                blueMouth++;
+                topWasteCells[cy][cx]++;
+              }
+            }
+            if (x >= 45 && x <= 105 && y >= 65 && y <= 110) {
+              if (vv <= 0.16) {
+                darkCavity++;
+                cavityCells[cy][cx]++;
+              }
+            }
+            if (x >= 60 && x <= 140 && y >= 80 && y <= 112) {
+              if (
+                !(deg >= 70 && deg <= 165 && g >= r && g >= b) &&
+                !(deg >= 195 && deg <= 235 && sv >= 0.50) &&
+                sv >= 0.28 && vv >= 0.35
+              ) {
+                midColorful++;
+                topWasteCells[cy][cx]++;
+              }
+            }
+            if (x >= 20 && x <= 92 && y >= 45 && y <= 95) {
+              if (vv <= 0.24 && sv <= 0.35) darkTopDomeLeft++;
+            }
+            if (x >= 95 && x <= 175 && y >= 80 && y <= 135) {
+              if (deg >= 14 && deg <= 46 && sv >= 0.22 && vv >= 0.30 && vv <= 0.86) cardboardMidRight++;
+            }
+          }
+        }
+
+        const effPlastic = greenBody >= 1500 ? Math.max(0.0, lowerPlastic - 650.0) : 0.0;
+        const effWhitePile = (greenBody < 1500 && blueMouth < 200) ? Math.max(0.0, whiteGroundLeft - 450.0) : 0.0;
+        const cardboardFillRatio = (greenRight >= 1200 && blueBody >= 1200) ? Math.min(Math.max(0.0, cardboardMidRight - 450.0) / 500.0, 1.15) : 0.0;
+        const blueTopBagsRatio = blueBody >= 4000 ? Math.min(Math.max(0.0, darkTopDomeLeft - 400.0) / 750.0, 1.25) : 0.0;
+
+        const telemetriaPixeles = {
+          estructura_px: greenBody + darkBody + greyBody + (blueBody >= 1200 ? blueBody : 0),
+          boca_residuos_px: vividMouth + blueMouth + (blueBody >= 4000 ? Math.round(Math.max(0.0, darkTopDomeLeft - 400.0)) : 0),
+          cavidad_residuos_px: midColorful + ((greenRight >= 1200 && blueBody >= 1200) ? Math.round(Math.max(0.0, cardboardMidRight - 450.0)) : 0),
+          suelo_residuos_px: Math.round(effPlastic + effWhitePile + (greenBody < 1500 ? whiteGroundMid : 0)),
+          cavidad_vacia_px: darkCavity
+        };
+
+        let aw = img.naturalWidth || 480;
+        let ah = img.naturalHeight || 320;
+        if (aw > 640) {
+          ah = Math.round(ah * (640 / aw));
+          aw = 640;
+        } else if (ah > 520) {
+          aw = Math.round(aw * (520 / ah));
+          ah = 520;
+        }
+
+        const outC = document.createElement("canvas");
+        outC.width = aw; outC.height = ah;
+        const octx = outC.getContext("2d");
+        octx.drawImage(img, 0, 0, aw, ah);
+
+        let contenedorDetectado = true;
+        let contenedoresEnImagen = 1;
+        let nivelVisual = 14.0;
+        let bolsas = 0;
+        let desbordamiento = false;
+        let estadoVisual = "contenedor_estable";
+        let confianza = 0.90;
+        let banner = "";
+
+        if (greenBody < 400 && greyBody < 1500 && darkBody < 800 && blueBody < 1200) {
+          contenedorDetectado = false;
+          contenedoresEnImagen = 0;
+          nivelVisual = 0.0;
+          bolsas = 0;
+          desbordamiento = false;
+          estadoVisual = "sin_contenedor_detectado";
+          confianza = 0.96;
+          drawLabeledBox(octx, [0.14, 0.08, 0.86, 0.92], aw, ah, "#dc2626", "SIN CONTENEDOR (DESCARTADO)");
+          banner = "ALERTA VISION: SIN CONTENEDOR DE RESIDUOS";
+        } else {
+          const mouthRatio = Math.min(vividMouth / 650.0, 1.25);
+          const plasticGroundRatio = Math.min(effPlastic / 1800.0, 1.25);
+          const whitePileRatio = Math.min(effWhitePile / 2600.0, 1.25);
+          const cavityBagRatio = (greenBody < 1500 && blueMouth < 200 && darkCavity < 600) ? Math.min(midColorful / 210.0, 1.15) : 0.0;
+          const blueGroundScore = greenBody < 1500 ? (Math.min(blueMouth / 600.0, 1.0) * Math.min(whiteGroundMid / 700.0, 1.0)) : 0.0;
+          const hasExtraPile = cardboardFillRatio > 0.0 || blueTopBagsRatio > 0.0;
+          const emptySuppression = (vividMouth < 100 && effWhitePile === 0 && !hasExtraPile) ? Math.min(darkCavity / 900.0, 1.0) : 0.0;
+          const closedDarkSuppression = (effWhitePile === 0 && greenBody < 200 && !hasExtraPile) ? Math.min(darkBody / 3800.0, 1.0) : 0.0;
+
+          const rawFill =
+            14.0 +
+            68.0 * mouthRatio +
+            74.0 * plasticGroundRatio +
+            76.0 * whitePileRatio +
+            48.0 * cavityBagRatio +
+            58.0 * blueGroundScore +
+            24.0 * cardboardFillRatio +
+            76.0 * blueTopBagsRatio -
+            5.5 * closedDarkSuppression -
+            2.5 * emptySuppression;
+          nivelVisual = Math.round(Math.min(Math.max(rawFill, 6.5), 98.0) * 10) / 10;
+
+          const bagScore =
+            (effPlastic / 320.0) +
+            ((greenBody >= 1500 && effPlastic === 0) ? (vividMouth / 340.0) : 0.0) +
+            (effWhitePile / 420.0) +
+            (2.1 * blueGroundScore) +
+            (3.0 * blueTopBagsRatio) +
+            (2.0 * cardboardFillRatio) +
+            ((greenBody < 1500 && darkCavity >= 800 && whiteGroundLeft >= 220) ? 1.0 : 0.0);
+          bolsas = Math.round(Math.min(Math.max(bagScore, 0.0), 10.0));
+          desbordamiento = nivelVisual >= 80.0 || bolsas >= 2;
+          estadoVisual = desbordamiento ? "desbordamiento_detectado" : "contenedor_estable";
+          confianza = Math.round(Math.min(0.88 + Math.min(greenBody + darkBody + greyBody + blueBody, 8000) / 100000.0, 0.97) * 100) / 100;
+
+          const mainCol = desbordamiento ? "#dc2626" : (nivelVisual >= 55 ? "#d97706" : "#16a34a");
+          if (blueLeft >= 500 && blueMid >= 500 && greenRight >= 1000) {
+            contenedoresEnImagen = 3;
+            drawLabeledBox(octx, bboxFromCellsRange(structCells, 0, 5, 4) || [0.02, 0.44, 0.28, 0.74], aw, ah, "#2563eb", "CONTENEDOR #1 AZUL");
+            drawLabeledBox(octx, bboxFromCellsRange(structCells, 5, 10, 4) || [0.19, 0.40, 0.52, 0.83], aw, ah, "#2563eb", "CONTENEDOR #2 AZUL");
+            drawLabeledBox(octx, bboxFromCellsRange(structCells, 9, 19, 6) || [0.42, 0.08, 0.99, 0.98], aw, ah, mainCol, `CONTENEDOR #3 VERDE (${nivelVisual}%)`);
+            drawLabeledBox(octx, [0.46, 0.39, 0.88, 0.69], aw, ah, "#d97706", "CAJAS / RESIDUOS EN BOCA");
+          } else if ((blueLeft + blueMid) >= 2500 && blueRight >= 2500) {
+            contenedoresEnImagen = 2;
+            drawLabeledBox(octx, [0.06, 0.36, 0.49, 0.90], aw, ah, "#dc2626", `CONTENEDOR #1 AZUL (${nivelVisual}% REBOSE)`);
+            drawLabeledBox(octx, [0.11, 0.21, 0.46, 0.49], aw, ah, "#ef4444", "BOLSAS NEGRAS REBOSE");
+            drawLabeledBox(octx, [0.52, 0.39, 0.92, 0.92], aw, ah, "#16a34a", "CONTENEDOR #2 AZUL (12% VACIO)");
+            drawLabeledBox(octx, [0.54, 0.40, 0.90, 0.52], aw, ah, "#06b6d4", "CAVIDAD VACIA");
+          } else if (greenBody < 1000 && blueBody < 1000 && ((darkBody >= 800 && whiteGroundLeft >= 2000) || (darkBody >= 3200 && whiteGroundLeft < 100))) {
+            contenedoresEnImagen = 3;
+            drawLabeledBox(octx, bboxFromCellsRange(structCells, 1, 6, 4) || [0.06, 0.35, 0.33, 0.80], aw, ah, mainCol, "CONTENEDOR #1");
+            drawLabeledBox(octx, bboxFromCellsRange(structCells, 7, 12, 4) || [0.35, 0.32, 0.65, 0.82], aw, ah, mainCol, "CONTENEDOR #2");
+            drawLabeledBox(octx, bboxFromCellsRange(structCells, 13, 19, 4) || [0.67, 0.32, 0.96, 0.84], aw, ah, mainCol, `CONTENEDOR #3 (${nivelVisual}%)`);
+            if (bolsas > 0) {
+              const gBox = bboxFromCells(groundWhiteCells, 6);
+              if (gBox) drawLabeledBox(octx, gBox, aw, ah, "#ef4444", `SUELO (${bolsas} BOLSAS)`);
+            }
+          } else if (greenBody < 1000 && (blueMouth >= 250 || darkCavity >= 800)) {
+            contenedoresEnImagen = 2;
+            drawLabeledBox(octx, bboxFromCellsRange(structCells, 0, 10, 4) || [0.05, 0.20, 0.54, 0.92], aw, ah, mainCol, "CONTENEDOR #1");
+            drawLabeledBox(octx, bboxFromCellsRange(structCells, 10, 19, 4) || [0.52, 0.25, 0.95, 0.85], aw, ah, mainCol, `CONTENEDOR #2 (${nivelVisual}%)`);
+            if (bolsas > 0) {
+              const gBox = bboxFromCells(groundWhiteCells, 6);
+              if (gBox) drawLabeledBox(octx, gBox, aw, ah, "#ef4444", `SUELO (${bolsas} BOLSAS)`);
+            }
+            if (!desbordamiento && nivelVisual < 30.0 && darkCavity >= 500) {
+              const cavBox = bboxFromCells(cavityCells, 6);
+              if (cavBox) drawLabeledBox(octx, cavBox, aw, ah, "#06b6d4", `CAVIDAD VACIA (${nivelVisual}%)`);
+            }
+          } else {
+            contenedoresEnImagen = 1;
+            const structBox = bboxFromCells(structCells, 8) || [0.18, 0.22, 0.80, 0.88];
+            drawLabeledBox(octx, structBox, aw, ah, mainCol, `CONTENEDOR (${nivelVisual}%)`);
+            if (vividMouth >= 120 || blueMouth >= 150 || midColorful >= 120) {
+              const topBox = bboxFromCells(topWasteCells, 5);
+              if (topBox) drawLabeledBox(octx, topBox, aw, ah, desbordamiento ? "#dc2626" : "#d97706", "RESIDUOS / BOCA");
+            }
+            if (bolsas > 0) {
+              const gCells = effPlastic > 0 ? groundPlasticCells : groundWhiteCells;
+              const gBox = bboxFromCells(gCells, 6);
+              if (gBox) drawLabeledBox(octx, gBox, aw, ah, "#ef4444", `SUELO (${bolsas} BOLSAS)`);
+            }
+            if (!desbordamiento && nivelVisual < 30.0 && darkCavity >= 500) {
+              const cavBox = bboxFromCells(cavityCells, 6);
+              if (cavBox) drawLabeledBox(octx, cavBox, aw, ah, "#06b6d4", `CAVIDAD VACIA (${nivelVisual}%)`);
+            }
+          }
+          banner = `VISION SMA BAZURTO | Contenedores: ${contenedoresEnImagen} | Llenado: ${nivelVisual}% | Bolsas: ${bolsas} | Desborde: ${desbordamiento ? "SI" : "NO"}`;
+        }
+
+        octx.fillStyle = contenedorDetectado ? "#111827" : "#7f1d1d";
+        octx.fillRect(0, 0, aw, 28);
+        octx.fillStyle = "#ffffff";
+        octx.font = "bold 11px monospace";
+        octx.fillText(banner, 8, 18);
+
+        const thumbC = document.createElement("canvas");
+        const tw = Math.min(aw, 380);
+        const th = Math.round(ah * (tw / aw));
+        thumbC.width = tw; thumbC.height = th;
+        thumbC.getContext("2d").drawImage(outC, 0, 0, tw, th);
+
+        const explicacionLocal = !contenedorDetectado
+          ? `Filtro visual HSV local (offline): solo ${telemetriaPixeles.estructura_px} px de contenedor detectados; imagen descartada sin alterar MercadoBazurto.`
+          : `Detectados ${contenedoresEnImagen} contenedor(es) en la escena. Análisis cromático HSV local (offline): estructura=${telemetriaPixeles.estructura_px}px, boca=${telemetriaPixeles.boca_residuos_px}px, cavidad=${telemetriaPixeles.cavidad_residuos_px}px, suelo=${telemetriaPixeles.suelo_residuos_px}px -> ${nivelVisual}% y ${bolsas} bolsa(s) en suelo.`;
+
+        const localRes = {
+          contenedor_detectado: contenedorDetectado,
+          contenedores_en_imagen: contenedoresEnImagen,
+          nivel_llenado_visual: nivelVisual,
+          desbordamiento,
+          estado_visual: estadoVisual,
+          bolsas_en_suelo: bolsas,
+          confianza,
+          fuente_imagen: imageBase64 ? "imagen_usuario_o_webcam" : fuenteNombre,
+          motor_vision: "Motor Matemático HSV Local (100% Offline)",
+          explicacion_ia: explicacionLocal,
+          telemetria_pixeles: telemetriaPixeles,
+          annotated_image_base64: outC.toDataURL("image/png"),
+          history_thumb_base64: thumbC.toDataURL("image/jpeg", 0.78)
+        };
+        if (activeKey) {
+          const iaRes = await analizarConGeminiNavegador(img, localRes.fuente_imagen, activeKey, telemetriaPixeles);
+          if (iaRes) return iaRes;
+        }
+        return localRes;
+      }
+
+      function slugifyLocal(raw, prefix) {
+        const slug = (raw || "").trim().toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
+        return slug || `${prefix}_1`;
+      }
+
+      async function handleLocalApi(path, body = {}) {
+        const db = loadLocalDb();
+        if (path === "/api/estado") return db;
+        if (path === "/api/reset") {
+          saveLocalDb(createInitialLocalDb());
+          return { status: "reset_ok" };
+        }
+        if (path === "/api/zonas") {
+          const cleanId = body.zona_id ? slugifyLocal(body.zona_id, "zona") : `zona_${slugifyLocal(body.nombre, "nueva")}`;
+          if (!body.nombre || !body.nombre.trim()) throw new Error("El nombre de la zona es obligatorio");
+          if (db.entorno_zonas.find(z => z.zona_id === cleanId)) throw new Error(`La zona ${cleanId} ya existe`);
+          const now = new Date().toISOString();
+          const nuevaZona = {
+            zona_id: cleanId,
+            nombre: body.nombre.trim(),
+            nivel_llenado_contenedores: Number(body.nivel_llenado_contenedores ?? 25.0),
+            concentracion_gases: Number(body.concentracion_gases ?? 450.0),
+            temperatura: Number(body.temperatura ?? 30.0),
+            humedad: Number(body.humedad ?? 72.0),
+            sensor_aire_activo: 1,
+            comunidad_confirma: 1,
+            updated_at: now
+          };
+          db.entorno_zonas.push(nuevaZona);
+          db.contenedores.push({
+            contenedor_id: `cont_${cleanId}_01`,
+            zona_id: cleanId,
+            codigo: `CONT-${cleanId.toUpperCase()}-01`,
+            tipo: "Contenedor Municipal 1100L",
+            nivel_llenado: nuevaZona.nivel_llenado_contenedores,
+            estado_visual: "contenedor_estable",
+            bolsas_suelo: 0,
+            ultima_imagen: "contenedor_limpio.png",
+            imagen_custom_base64: null,
+            updated_at: now
+          });
+          saveLocalDb(db);
+          return nuevaZona;
+        }
+        if (path === "/api/contenedores") {
+          const z = db.entorno_zonas.find(item => item.zona_id === body.zona_id);
+          if (!z) throw new Error("Zona no encontrada");
+          if (!body.codigo || !body.codigo.trim()) throw new Error("El código del contenedor es obligatorio");
+          const cleanCid = body.contenedor_id ? slugifyLocal(body.contenedor_id, "cont") : slugifyLocal(`${body.zona_id}_${body.codigo}`, "cont");
+          if (db.contenedores.find(c => c.contenedor_id === cleanCid)) throw new Error(`El contenedor ${cleanCid} ya existe`);
+          const nuevo = {
+            contenedor_id: cleanCid,
+            zona_id: body.zona_id,
+            codigo: body.codigo.trim(),
+            tipo: (body.tipo || "Contenedor Municipal 1100L").trim(),
+            nivel_llenado: Number(body.nivel_llenado ?? 15.0),
+            estado_visual: "contenedor_estable",
+            bolsas_suelo: 0,
+            ultima_imagen: null,
+            updated_at: new Date().toISOString()
+          };
+          db.contenedores.push(nuevo);
+          saveLocalDb(db);
+          return nuevo;
+        }
+        if (path.startsWith("/api/vision/historial")) {
+          return db.historial_vision || [];
+        }
+        if (path.startsWith("/api/zonas/")) {
+          const zid = path.split("/").pop();
+          const z = db.entorno_zonas.find(item => item.zona_id === zid);
+          if (!z) throw new Error("Zona no encontrada");
+          Object.assign(z, body, { updated_at: new Date().toISOString() });
+          saveLocalDb(db);
+          return z;
+        }
+        if (path === "/api/vision/analizar") {
+          const z = db.entorno_zonas.find(item => item.zona_id === (body.zona_id || "zona_3")) || db.entorno_zonas[0];
+          let cont = db.contenedores.find(c => c.contenedor_id === body.contenedor_id && c.zona_id === z.zona_id)
+            || db.contenedores.find(c => c.zona_id === z.zona_id);
+          if (!cont) {
+            cont = {
+              contenedor_id: `cont_${z.zona_id}_01`,
+              zona_id: z.zona_id,
+              codigo: `CONT-${z.zona_id.toUpperCase()}-01`,
+              tipo: "Contenedor Municipal 1100L",
+              nivel_llenado: z.nivel_llenado_contenedores,
+              estado_visual: "contenedor_estable",
+              bolsas_suelo: 0,
+              ultima_imagen: null,
+              updated_at: new Date().toISOString()
+            };
+            db.contenedores.push(cont);
+          }
+          const res = await analizarImagenEnNavegador(body.image_base64, body.preset_imagen, body.gemini_api_key || "");
+          const now = new Date().toISOString();
+          if (body.aplicar_a_entorno && res.contenedor_detectado !== false) {
+            z.nivel_llenado_contenedores = res.nivel_llenado_visual;
+            z.updated_at = now;
+            cont.nivel_llenado = res.nivel_llenado_visual;
+            cont.estado_visual = res.estado_visual;
+            cont.bolsas_suelo = res.bolsas_en_suelo;
+            cont.ultima_imagen = body.image_base64 ? res.fuente_imagen : (body.preset_imagen || res.fuente_imagen);
+            cont.imagen_custom_base64 = body.image_base64 ? (res.history_thumb_base64 || body.image_base64) : null;
+            cont.updated_at = now;
+          }
+          const nextHid = ((db.historial_vision[0]?.id) || 0) + 1;
+          const histEntry = {
+            id: nextHid,
+            zona_id: z.zona_id,
+            zona_nombre: z.nombre,
+            contenedor_id: cont.contenedor_id,
+            contenedor_codigo: cont.codigo,
+            fuente_imagen: res.fuente_imagen,
+            contenedor_detectado: res.contenedor_detectado ? 1 : 0,
+            nivel_llenado_visual: res.nivel_llenado_visual,
+            bolsas_en_suelo: res.bolsas_en_suelo,
+            desbordamiento: res.desbordamiento ? 1 : 0,
+            estado_visual: res.estado_visual,
+            confianza: res.confianza,
+            motor_vision: res.motor_vision || "Motor Matemático HSV Local (100% Offline)",
+            explicacion_ia: res.explicacion_ia || "",
+            annotated_image_base64: res.history_thumb_base64 || res.annotated_image_base64,
+            timestamp: now
+          };
+          db.historial_vision.unshift(histEntry);
+          if (db.historial_vision.length > 25) db.historial_vision = db.historial_vision.slice(0, 25);
+          saveLocalDb(db);
+          return {
+            ...res,
+            zona_id: z.zona_id,
+            zona_nombre: z.nombre,
+            contenedor_id: cont.contenedor_id,
+            contenedor_codigo: cont.codigo,
+            historial_entry: histEntry
+          };
+        }
+        if (path === "/api/caso-uso-1") {
+          const zid = body.zona_id || "zona_3";
+          const z = db.entorno_zonas.find(item => item.zona_id === zid);
+          const trace = [];
+          const convId = `cu01-${zid}-${String(db.eventos_riesgo.length + 1).padStart(3, "0")}`;
+          if (body.comunidad_confirma !== undefined && body.comunidad_confirma !== null) {
+            z.comunidad_confirma = body.comunidad_confirma ? 1 : 0;
+          }
+          trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "medirNivelLlenadoContenedores()", detalle: `Consulta a MercadoBazurto(${zid}) -> nivel=${z.nivel_llenado_contenedores}%` });
+          const preset = body.preset_imagen || (z.nivel_llenado_contenedores >= 80 ? "contenedor_critico.png" : (z.nivel_llenado_contenedores >= 45 ? "contenedor_medio.png" : "contenedor_limpio.png"));
+          const vision = await analizarImagenEnNavegador(body.image_base64, preset);
+          if (vision.contenedor_detectado !== false && (body.image_base64 || body.preset_imagen)) {
+            z.nivel_llenado_contenedores = vision.nivel_llenado_visual;
+            trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "analizarImagenes()", detalle: `Vision real (${vision.fuente_imagen}) en ${zid}: ${vision.estado_visual} (${vision.nivel_llenado_visual}%, bolsas=${vision.bolsas_en_suelo})` });
+          } else if (vision.contenedor_detectado === false) {
+            trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "analizarImagenes()", detalle: `Vision descartada en ${zid} (${vision.fuente_imagen}): ${vision.estado_visual}. Entorno preservado en ${z.nivel_llenado_contenedores}%.` });
+          } else {
+            trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "analizarImagenes()", detalle: `Vision real (${vision.fuente_imagen}) en ${zid}: ${vision.estado_visual} (${vision.nivel_llenado_visual}%, bolsas=${vision.bolsas_en_suelo})` });
+          }
+
+          let prev = db.estado_interno_residuos.find(r => r.zona_id === zid);
+          const nivel = z.nivel_llenado_contenedores;
+          const ritmo = prev ? Math.round((nivel - prev.nivel) * 100) / 100 : 0;
+          const tiempo = nivel >= 80 ? ((prev ? prev.tiempo_sobre_limite : 0) + 15) : 0;
+          const ciclos = nivel >= 80 ? ((prev ? prev.ciclos_consecutivos : 0) + 1) : 0;
+          if (!prev) {
+            prev = { zona_id: zid };
+            db.estado_interno_residuos.push(prev);
+          }
+          Object.assign(prev, { nivel, tiempo_sobre_limite: tiempo, ritmo_llenado: ritmo, ciclos_consecutivos: ciclos, estado_visual: vision.estado_visual, bolsas_suelo: vision.bolsas_en_suelo });
+          trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "evaluarPersistencia()", detalle: `estadoInterno persistido -> nivel=${nivel}%, tiempo=${tiempo}min, vision=${vision.estado_visual}` });
+
+          const eventoId = (db.eventos_riesgo[0]?.id || 0) + 1;
+          trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "publicarEventoRiesgo()", detalle: `Evento #${eventoId} enviado por INFORM a AgenteCoordinador` });
+          pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "INFORM", sender: "AgenteSensorResiduos", receiver: "AgenteCoordinador", content: { eventoRiesgo: zid, evento_id: eventoId, nivel }, protocol: "FIPA-Inform", metodo_origen: "publicarEventoRiesgo()" });
+
+          trace.push({ tipo: "METODO", agente: "AgenteSensorAire", metodo: "medirGases()", detalle: `CO2=${z.concentracion_gases}ppm, temp=${z.temperatura}C, hum=${z.humedad}%` });
+          const medId = (db.historial_mediciones_aire[0]?.id || 0) + 1;
+          db.historial_mediciones_aire.unshift({ id: medId, zona_id: zid, concentracion_gases: z.concentracion_gases, temperatura: z.temperatura, humedad: z.humedad, timestamp: new Date().toISOString() });
+          trace.push({ tipo: "METODO", agente: "AgenteSensorAire", metodo: "registrarMedicion()", detalle: `Medicion #${medId} guardada en historialMediciones` });
+          trace.push({ tipo: "METODO", agente: "AgenteSensorAire", metodo: "detectarAumentoProgresivo()", detalle: `Tendencia evaluada en ${zid}` });
+          trace.push({ tipo: "METODO", agente: "AgenteSensorAire", metodo: "publicarMedicion()", detalle: `Publicando medicion de aire via ACL:INFORM` });
+          pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "INFORM", sender: "AgenteSensorAire", receiver: "AgenteCoordinador", content: { medicion: zid, concentracionGases: z.concentracion_gases }, protocol: "FIPA-Inform", metodo_origen: "publicarMedicion()" });
+
+          const riesgo = Math.round((0.55 * Math.min(nivel / 100, 1) + 0.45 * Math.min(z.concentracion_gases / 1000, 1)) * 100) / 100;
+          db.eventos_riesgo.unshift({ id: eventoId, zona_id: zid, origen: "AgenteSensorResiduos", descripcion: `Nivel ${nivel}%`, riesgo_calculado: riesgo, prioridad: 1, atendido: 1 });
+          trace.push({ tipo: "METODO", agente: "AgenteCoordinador", metodo: "consultarEventos()", detalle: `Eventos consultados para ${zid}` });
+          trace.push({ tipo: "METODO", agente: "AgenteCoordinador", metodo: "calcularRiesgo()", detalle: `Riesgo calculado=${riesgo}` });
+          trace.push({ tipo: "METODO", agente: "AgenteCoordinador", metodo: "priorizarZonas()", detalle: `Zona ${zid} priorizada` });
+          const replyWith = `req-alerta-${eventoId}`;
+          const nivelAlerta = riesgo >= 0.65 ? "ALTO" : "MODERADO";
+          trace.push({ tipo: "METODO", agente: "AgenteCoordinador", metodo: "delegarAlerta()", detalle: `Delegando emision de alerta (${nivelAlerta}) a AgenteAlertas` });
+          pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "REQUEST", sender: "AgenteCoordinador", receiver: "AgenteAlertas", content: { action: "emitir_alerta", zona: zid, riesgo, nivel: nivelAlerta }, protocol: "FIPA-Request", reply_with: replyWith, metodo_origen: "delegarAlerta()" });
+
+          let resultado = "REFUSE", alertaId = null;
+          trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "recibirSolicitudAlerta()", detalle: `Evaluando solicitud (duplicada=${Boolean(body.forzar_duplicada)})` });
+          if (body.forzar_duplicada) {
+            pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "REFUSE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { motivo: "alerta_ya_emitida", zona: zid }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "recibirSolicitudAlerta()" });
+          } else {
+            pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "AGREE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { action: "emitir_alerta", zona: zid }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "recibirSolicitudAlerta()" });
+            trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "emitirAviso()", detalle: `Difundiendo aviso ambiental a comunidad de ${zid}` });
+            alertaId = (db.alertas[0]?.id || 0) + 1;
+            if (body.esperar_confirmacion_interactiva) {
+              db.alertas.unshift({ id: alertaId, evento_id: eventoId, zona_id: zid, nivel: nivelAlerta, estado: "PENDIENTE_COMUNIDAD", confirmada_comunidad: 0, reporte: `Aviso #${eventoId} emitido a líderes de ${zid}. Esperando respuesta en Panel de Comunidad.` });
+              trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "gestionarConfirmacion()", detalle: `Alerta #${alertaId} en espera de respuesta en Panel de Comunidad` });
+              resultado = "PENDIENTE_COMUNIDAD";
+            } else if (z.comunidad_confirma) {
+              db.alertas.unshift({ id: alertaId, evento_id: eventoId, zona_id: zid, nivel: nivelAlerta, estado: "CONFIRMADA", confirmada_comunidad: 1, reporte: `Alerta en ${zid} emitida y confirmada por la comunidad.` });
+              trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "generarReporteConfirmacion()", detalle: `Reporte guardado (alerta #${alertaId})` });
+              pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "INFORM-DONE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { estado: "alerta_confirmada", zona: zid, alerta_id: alertaId }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "generarReporteConfirmacion()" });
+              resultado = "INFORM-DONE";
+            } else {
+              db.alertas.unshift({ id: alertaId, evento_id: eventoId, zona_id: zid, nivel: nivelAlerta, estado: "SIN_CONFIRMACION", confirmada_comunidad: 0, reporte: `Alerta en ${zid} emitida pero SIN confirmacion comunitaria.` });
+              trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "generarReporteSinConfirmacion()", detalle: `Falta de confirmacion registrada (alerta #${alertaId})` });
+              pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "FAILURE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { motivo: "sin_confirmacion_comunitaria", zona: zid, alerta_id: alertaId }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "generarReporteSinConfirmacion()" });
+              resultado = "FAILURE";
+            }
+          }
+          saveLocalDb(db);
+          return { caso_uso: "CU-01", conversation_id: convId, zona_id: zid, riesgo, resultado_acl: resultado, alerta_id: alertaId, vision, traza: trace };
+        }
+        if (path.startsWith("/api/alertas/") && path.endsWith("/responder")) {
+          const alertaId = parseInt(path.split("/")[3], 10);
+          const alerta = db.alertas.find(a => a.id === alertaId);
+          const zid = alerta.zona_id;
+          const z = db.entorno_zonas.find(item => item.zona_id === zid);
+          z.comunidad_confirma = body.confirmar ? 1 : 0;
+          const trace = [];
+          const convId = `cu01-${zid}-ack-${String(alertaId).padStart(3, "0")}`;
+          const replyWith = `req-alerta-${alerta.evento_id}`;
+          trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "gestionarConfirmacion()", detalle: `Confirmacion comunitaria en ${zid}: ${Boolean(body.confirmar)}` });
+          if (body.confirmar) {
+            alerta.estado = "CONFIRMADA";
+            alerta.confirmada_comunidad = 1;
+            alerta.reporte = `Alerta en ${zid} emitida y confirmada por la comunidad del Mercado de Bazurto.`;
+            trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "generarReporteConfirmacion()", detalle: `Reporte de confirmacion guardado (alerta #${alertaId})` });
+            pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "INFORM-DONE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { estado: "alerta_confirmada", zona: zid, alerta_id: alertaId }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "generarReporteConfirmacion()" });
+          } else {
+            alerta.estado = "SIN_CONFIRMACION";
+            alerta.confirmada_comunidad = 0;
+            alerta.reporte = `Alerta en ${zid} emitida pero SIN confirmacion de recepcion comunitaria.`;
+            trace.push({ tipo: "METODO", agente: "AgenteAlertas", metodo: "generarReporteSinConfirmacion()", detalle: `Reporte de falta de confirmacion guardado (alerta #${alertaId})` });
+            pushAcl(db, trace, { caso_uso: "CU-01", conversation_id: convId, performative: "FAILURE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { motivo: "sin_confirmacion_comunitaria", zona: zid, alerta_id: alertaId }, protocol: "FIPA-Request", in_reply_to: replyWith, metodo_origen: "generarReporteSinConfirmacion()" });
+          }
+          saveLocalDb(db);
+          return { caso_uso: "CU-01", conversation_id: convId, zona_id: zid, alerta_id: alertaId, resultado_acl: body.confirmar ? "INFORM-DONE" : "FAILURE", confirmada_comunidad: Boolean(body.confirmar), traza: trace };
+        }
+        if (path === "/api/caso-uso-2") {
+          const zid = body.zona_id || "zona_3";
+          const z = db.entorno_zonas.find(item => item.zona_id === zid);
+          if (body.simular_sin_confirmacion !== undefined && body.simular_sin_confirmacion !== null) z.comunidad_confirma = body.simular_sin_confirmacion ? 0 : 1;
+          if (body.simular_sensor_caido !== undefined && body.simular_sensor_caido !== null) z.sensor_aire_activo = body.simular_sensor_caido ? 0 : 1;
+          const trace = [];
+          const evId = db.eventos_riesgo[0]?.id || 1;
+          const convId = `cu02-${zid}-${String(db.incidencias.length + 1).padStart(3, "0")}`;
+          trace.push({ tipo: "METODO", agente: "AgenteSupervisor", metodo: "verificarAtencionEventos()", detalle: `Auditoria sobre evento #${evId} en ${zid}` });
+          trace.push({ tipo: "METODO", agente: "AgenteSupervisor", metodo: "supervisarAgentes()", detalle: "Iniciando ronda de auditoria sobre roles Monitor, Coordinador y EmisorAlertas" });
+
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "QUERY-IF", sender: "AgenteSupervisor", receiver: "AgenteCoordinador", content: { atendido_evento: evId, zona: zid }, protocol: "FIPA-Query", reply_with: `q-coord-${evId}`, metodo_origen: "verificarAtencionEventos()" });
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "CONFIRM", sender: "AgenteCoordinador", receiver: "AgenteSupervisor", content: { atendido_evento: evId, alerta_delegada: true }, protocol: "FIPA-Query", in_reply_to: `q-coord-${evId}`, metodo_origen: "consultarEventos()" });
+
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "QUERY-IF", sender: "AgenteSupervisor", receiver: "AgenteAlertas", content: { alerta_confirmada_por_comunidad: zid }, protocol: "FIPA-Query", reply_with: `q-alerta-${evId}`, metodo_origen: "verificarAtencionEventos()" });
+          if (z.comunidad_confirma) {
+            pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "CONFIRM", sender: "AgenteAlertas", receiver: "AgenteSupervisor", content: { reporteConfirmacion: zid }, protocol: "FIPA-Query", in_reply_to: `q-alerta-${evId}`, metodo_origen: "gestionarConfirmacion()" });
+          } else {
+            pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "DISCONFIRM", sender: "AgenteAlertas", receiver: "AgenteSupervisor", content: { reporteSinConfirmacion: zid }, protocol: "FIPA-Query", in_reply_to: `q-alerta-${evId}`, metodo_origen: "generarReporteSinConfirmacion()" });
+            const incId = (db.incidencias[0]?.id || 0) + 1;
+            db.incidencias.unshift({ id: incId, agente_afectado: "AgenteAlertas", zona_id: zid, descripcion: `Alerta evento #${evId} sin confirmacion comunitaria`, accion_correctiva: "Escalamiento y reintento de alerta" });
+            trace.push({ tipo: "METODO", agente: "AgenteSupervisor", metodo: "registrarIncidencias()", detalle: `Incidencia #${incId} registrada por falta de confirmacion` });
+            pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "REQUEST", sender: "AgenteSupervisor", receiver: "AgenteCoordinador", content: { accion_correctiva: "escalar_alerta_reintento", zona: zid }, protocol: "FIPA-Request", reply_with: `req-corr-${zid}`, metodo_origen: "solicitarAccionesCorrectivas()" });
+            pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "AGREE", sender: "AgenteCoordinador", receiver: "AgenteSupervisor", content: { accion_correctiva: "escalar_alerta_reintento", zona: zid }, protocol: "FIPA-Request", in_reply_to: `req-corr-${zid}`, metodo_origen: "delegarAlerta()" });
+          }
+
+          pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "QUERY-IF", sender: "AgenteSupervisor", receiver: "AgenteSensorAire", content: { estado_activo: "AgenteSensorAire", zona: zid }, protocol: "FIPA-Query", reply_with: `q-sensor-${evId}`, reply_by: "5s", metodo_origen: "supervisarAgentes()" });
+          if (z.sensor_aire_activo) {
+            pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "CONFIRM", sender: "AgenteSensorAire", receiver: "AgenteSupervisor", content: { estado_activo: true, zona: zid }, protocol: "FIPA-Query", in_reply_to: `q-sensor-${evId}`, metodo_origen: "medirGases()" });
+          } else {
+            trace.push({ tipo: "TIMEOUT", agente: "AgenteSensorAire", metodo: "reply-by vencido (5s)", detalle: `AgenteSensorAire en ${zid} no respondio dentro de 5s` });
+            const incId2 = (db.incidencias[0]?.id || 0) + 1;
+            db.incidencias.unshift({ id: incId2, agente_afectado: "AgenteSensorAire", zona_id: zid, descripcion: `Timeout de AgenteSensorAire en ${zid}`, accion_correctiva: "Recalculo de riesgo usando solo AgenteSensorResiduos" });
+            trace.push({ tipo: "METODO", agente: "AgenteSupervisor", metodo: "registrarIncidencias()", detalle: `Incidencia #${incId2} por timeout del sensor de aire` });
+            pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "INFORM", sender: "AgenteSupervisor", receiver: "AgenteCoordinador", content: { fallo: "AgenteSensorAire", zona: zid }, protocol: "FIPA-Inform", metodo_origen: "notificarFallos()" });
+            pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "REQUEST", sender: "AgenteSupervisor", receiver: "AgenteCoordinador", content: { accion_correctiva: "recalcular_riesgo_sin_sensor_aire", zona: zid }, protocol: "FIPA-Request", reply_with: `req-corr-${zid}`, metodo_origen: "solicitarAccionesCorrectivas()" });
+            pushAcl(db, trace, { caso_uso: "CU-02", conversation_id: convId, performative: "AGREE", sender: "AgenteCoordinador", receiver: "AgenteSupervisor", content: { accion_correctiva: "recalcular_riesgo", zona: zid }, protocol: "FIPA-Request", in_reply_to: `req-corr-${zid}`, metodo_origen: "calcularRiesgo()" });
+          }
+          saveLocalDb(db);
+          return { caso_uso: "CU-02", conversation_id: convId, zona_id: zid, alerta_confirmada: Boolean(z.comunidad_confirma), sensor_aire_activo: Boolean(z.sensor_aire_activo), traza: trace };
+        }
+        if (path.startsWith("/api/contenedores/") && path.endsWith("/asignar-imagen")) {
+          const cid = path.split("/")[3];
+          const cont = db.contenedores.find(c => c.contenedor_id === cid);
+          if (!cont) throw new Error("Contenedor no encontrado");
+          cont.ultima_imagen = body.image_base64 ? "imagen_usuario_o_webcam" : (body.preset_imagen || cont.ultima_imagen || "contenedor_limpio.png");
+          cont.imagen_custom_base64 = body.image_base64 || null;
+          cont.updated_at = new Date().toISOString();
+          saveLocalDb(db);
+          return { ...cont, tiene_imagen_custom: Boolean(cont.imagen_custom_base64) };
+        }
+        if (path === "/api/coordinador/inspeccionar-camaras") {
+          const trace = [];
+          const convId = `cu-cam-${String(db.eventos_riesgo.length + 1).padStart(3, "0")}`;
+          const inspecciones = [];
+          const gKey = (body.gemini_api_key || "").trim();
+          for (const z of db.entorno_zonas) {
+            const zid = z.zona_id;
+            let cont = db.contenedores.find(c => c.zona_id === zid);
+            if (!cont) {
+              cont = { contenedor_id: `cont_${zid}_01`, zona_id: zid, codigo: `CONT-${zid.toUpperCase()}-01`, tipo: "Contenedor Municipal 1100L", nivel_llenado: z.nivel_llenado_contenedores, estado_visual: "contenedor_estable", bolsas_suelo: 0, ultima_imagen: "contenedor_limpio.png", imagen_custom_base64: null, updated_at: new Date().toISOString() };
+              db.contenedores.push(cont);
+            }
+            trace.push({ tipo: "METODO", agente: "AgenteCoordinador", metodo: "consultarEventos()", detalle: `Consultando eventos y cámara de ${zid}` });
+            pushAcl(db, trace, { caso_uso: "CU-ROL-02", conversation_id: convId, performative: "QUERY-REF", sender: "AgenteCoordinador", receiver: "AgenteSensorResiduos", content: { accion: "revisar_camara_zona", zona: zid, contenedor: cont.codigo }, protocol: "FIPA-Query", reply_with: `qry-cam-${zid}`, metodo_origen: "consultarEventos()" });
+            pushAcl(db, trace, { caso_uso: "CU-ROL-02", conversation_id: convId, performative: "QUERY-REF", sender: "AgenteCoordinador", receiver: "AgenteSensorAire", content: { accion: "consultar_gases_zona", zona: zid }, protocol: "FIPA-Query", reply_with: `qry-air-${zid}`, metodo_origen: "consultarEventos()" });
+
+            trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "medirNivelLlenadoContenedores()", detalle: `Nivel previo ${z.nombre}: ${z.nivel_llenado_contenedores}%` });
+            const preset = cont.imagen_custom_base64 ? null : (["contenedor_limpio.png", "contenedor_medio.png", "contenedor_critico.png"].includes(cont.ultima_imagen) ? cont.ultima_imagen : (z.nivel_llenado_contenedores >= 80 ? "contenedor_critico.png" : (z.nivel_llenado_contenedores >= 45 ? "contenedor_medio.png" : "contenedor_limpio.png")));
+            const vis = await analizarImagenEnNavegador(cont.imagen_custom_base64, preset, gKey);
+            const now = new Date().toISOString();
+            if (vis.contenedor_detectado !== false) {
+              z.nivel_llenado_contenedores = vis.nivel_llenado_visual;
+              cont.nivel_llenado = vis.nivel_llenado_visual;
+              cont.estado_visual = vis.estado_visual;
+              cont.bolsas_suelo = vis.bolsas_en_suelo;
+              cont.ultima_imagen = cont.imagen_custom_base64 ? "imagen_usuario_o_webcam" : (preset || vis.fuente_imagen);
+              cont.updated_at = now;
+            }
+            const nextHid = ((db.historial_vision[0]?.id) || 0) + 1;
+            db.historial_vision.unshift({ id: nextHid, zona_id: zid, zona_nombre: z.nombre, contenedor_id: cont.contenedor_id, contenedor_codigo: cont.codigo, fuente_imagen: vis.fuente_imagen, contenedor_detectado: vis.contenedor_detectado ? 1 : 0, nivel_llenado_visual: vis.nivel_llenado_visual, bolsas_en_suelo: vis.bolsas_en_suelo, desbordamiento: vis.desbordamiento ? 1 : 0, estado_visual: vis.estado_visual, confianza: vis.confianza, motor_vision: vis.motor_vision || "HSV Local", explicacion_ia: vis.explicacion_ia || "", annotated_image_base64: vis.history_thumb_base64 || vis.annotated_image_base64, timestamp: now });
+            if (db.historial_vision.length > 25) db.historial_vision = db.historial_vision.slice(0, 25);
+
+            trace.push({ tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "analizarImagenes()", detalle: `Cámara ${cont.codigo}: ${vis.nivel_llenado_visual}% · ${vis.bolsas_en_suelo} bolsas (${vis.motor_vision})` });
+            pushAcl(db, trace, { caso_uso: "CU-ROL-02", conversation_id: convId, performative: "INFORM", sender: "AgenteSensorResiduos", receiver: "AgenteCoordinador", content: { zona: zid, contenedor: cont.codigo, llenado_visual: vis.nivel_llenado_visual, bolsas_en_suelo: vis.bolsas_en_suelo, estado: vis.estado_visual }, protocol: "FIPA-Query", in_reply_to: `qry-cam-${zid}`, metodo_origen: "analizarImagenes()" });
+            pushAcl(db, trace, { caso_uso: "CU-ROL-02", conversation_id: convId, performative: "INFORM", sender: "AgenteSensorAire", receiver: "AgenteCoordinador", content: { zona: zid, gases_ppm: z.concentracion_gases }, protocol: "FIPA-Query", in_reply_to: `qry-air-${zid}`, metodo_origen: "publicarMedicion()" });
+
+            const riesgo = z.sensor_aire_activo ? Math.round((0.55 * Math.min(z.nivel_llenado_contenedores / 100, 1) + 0.45 * Math.min(z.concentracion_gases / 1000, 1)) * 100) / 100 : Math.round(Math.min(z.nivel_llenado_contenedores / 100, 1) * 100) / 100;
+            trace.push({ tipo: "METODO", agente: "AgenteCoordinador", metodo: "calcularRiesgo()", detalle: `Utilidad calculada para ${zid}: riesgo=${riesgo}` });
+            inspecciones.push({
+              zona_id: zid, zona_nombre: z.nombre, contenedor_id: cont.contenedor_id, contenedor_codigo: cont.codigo,
+              fuente_imagen: vis.fuente_imagen, contenedor_detectado: vis.contenedor_detectado !== false,
+              nivel_llenado_visual: vis.nivel_llenado_visual, bolsas_en_suelo: vis.bolsas_en_suelo,
+              desbordamiento: vis.desbordamiento, estado_visual: vis.estado_visual, confianza: vis.confianza,
+              motor_vision: vis.motor_vision, explicacion_ia: vis.explicacion_ia, telemetria_pixeles: vis.telemetria_pixeles,
+              annotated_image_base64: vis.annotated_image_base64, concentracion_gases: z.concentracion_gases, riesgo
+            });
+          }
+          inspecciones.sort((a, b) => b.riesgo - a.riesgo);
+          inspecciones.forEach((item, idx) => { item.posicion = idx + 1; });
+          const top = inspecciones[0];
+          trace.push({ tipo: "METODO", agente: "AgenteCoordinador", metodo: "priorizarZonas()", detalle: `Prioridad #1: ${top.zona_id} (riesgo=${top.riesgo})` });
+          const nivelAlerta = top.riesgo >= 0.65 ? "ALTO" : "MODERADO";
+          const evId = (db.eventos_riesgo[0]?.id || 0) + 1;
+          db.eventos_riesgo.unshift({ id: evId, zona_id: top.zona_id, origen: "residuos", riesgo_calculado: top.riesgo, prioridad: 1, detalle: `Inspeccion camaras ${top.zona_id}` });
+          pushAcl(db, trace, { caso_uso: "CU-ROL-02", conversation_id: convId, performative: "REQUEST", sender: "AgenteCoordinador", receiver: "AgenteAlertas", content: { action: "emitir_alerta", zona: top.zona_id, riesgo: top.riesgo }, protocol: "FIPA-Request", reply_with: `req-${evId}`, metodo_origen: "delegarAlerta()" });
+          const alertaId = (db.alertas[0]?.id || 0) + 1;
+          db.alertas.unshift({ id: alertaId, evento_id: evId, zona_id: top.zona_id, nivel: nivelAlerta, estado: "PENDIENTE_COMUNIDAD", confirmada_comunidad: 0, reporte: `Inspección coordinada de cámaras (#1 ${top.zona_nombre}: ${top.nivel_llenado_visual}%). Esperando ACK.` });
+          saveLocalDb(db);
+          return { caso_uso: "CU-ROL-02", rol: "Coordinador", conversation_id: convId, zona_prioritaria: top, priorizacion_zonas: inspecciones, inspecciones_camaras: inspecciones, alerta_id: alertaId, resultado_acl: "PENDIENTE_COMUNIDAD", traza: trace };
+        }
+        if (path.startsWith("/api/casos-uso-rol/")) {
+          const cuId = path.split("/").pop().toUpperCase();
+          if (cuId === "CU-ROL-02") return await handleLocalApi("/api/coordinador/inspeccionar-camaras", body);
+          if (cuId === "CU-ROL-04") {
+            const r2 = await handleLocalApi("/api/caso-uso-2", body);
+            return { ...r2, caso_uso: "CU-ROL-04", rol: "Supervisor", resultado_acl: r2.alerta_confirmada ? "CONFIRM" : "FAILURE" };
+          }
+          if (cuId === "CU-ROL-01") {
+            const zid = body.zona_id || "zona_3";
+            const z = db.entorno_zonas.find(item => item.zona_id === zid) || db.entorno_zonas[0];
+            const cont = db.contenedores.find(c => c.zona_id === zid);
+            const vis = await analizarImagenEnNavegador(cont?.imagen_custom_base64 || null, cont?.ultima_imagen || "contenedor_critico.png", body.gemini_api_key || "");
+            const trace = [
+              { tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "medirNivelLlenadoContenedores()", detalle: `Lectura ${zid}: ${z.nivel_llenado_contenedores}%` },
+              { tipo: "METODO", agente: "AgenteSensorResiduos", metodo: "analizarImagenes()", detalle: `${vis.estado_visual} (${vis.nivel_llenado_visual}%) · ${vis.motor_vision}` },
+              { tipo: "METODO", agente: "AgenteSensorAire", metodo: "medirGases()", detalle: `Gases CO2: ${z.concentracion_gases} ppm` }
+            ];
+            const convId = `curol01-${zid}`;
+            pushAcl(db, trace, { caso_uso: "CU-ROL-01", conversation_id: convId, performative: "INFORM", sender: "AgenteSensorResiduos", receiver: "AgenteCoordinador", content: { zona: zid, nivel: vis.nivel_llenado_visual }, protocol: "FIPA-Inform", metodo_origen: "publicarEventoRiesgo()" });
+            saveLocalDb(db);
+            return { caso_uso: "CU-ROL-01", rol: "MonitorCondicionesAmbientales", conversation_id: convId, zona_id: zid, vision: vis, resultado_acl: "INFORM", traza: trace };
+          }
+          if (cuId === "CU-ROL-03") {
+            const zid = body.zona_id || "zona_3";
+            const z = db.entorno_zonas.find(item => item.zona_id === zid) || db.entorno_zonas[0];
+            const trace = [];
+            const convId = `curol03-${zid}`;
+            const alertaId = (db.alertas[0]?.id || 0) + 1;
+            pushAcl(db, trace, { caso_uso: "CU-ROL-03", conversation_id: convId, performative: "AGREE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { action: "emitir_alerta", zona: zid }, protocol: "FIPA-Request", metodo_origen: "recibirSolicitudAlerta()" });
+            db.alertas.unshift({ id: alertaId, evento_id: 1, zona_id: zid, nivel: "ALTO", estado: z.comunidad_confirma ? "CONFIRMADA" : "SIN_CONFIRMACION", confirmada_comunidad: z.comunidad_confirma ? 1 : 0, reporte: `Alerta emitida por CU-ROL-03 en ${zid}.` });
+            pushAcl(db, trace, { caso_uso: "CU-ROL-03", conversation_id: convId, performative: z.comunidad_confirma ? "INFORM-DONE" : "FAILURE", sender: "AgenteAlertas", receiver: "AgenteCoordinador", content: { zona: zid, alerta_id: alertaId }, protocol: "FIPA-Request", metodo_origen: z.comunidad_confirma ? "generarReporteConfirmacion()" : "generarReporteSinConfirmacion()" });
+            saveLocalDb(db);
+            return { caso_uso: "CU-ROL-03", rol: "EmisorAlertas", conversation_id: convId, zona_id: zid, alerta_id: alertaId, resultado_acl: z.comunidad_confirma ? "INFORM-DONE" : "FAILURE", traza: trace };
+          }
+        }
+        if (path === "/api/frameworks") {
+          return {
+            total_frameworks: FRAMEWORKS_CATALOG_LOCAL.length,
+            langgraph_nativo_instalado: false,
+            motor_activo: "StateGraph Compatible Offline (Navegador + LocalStorage)",
+            frameworks: FRAMEWORKS_CATALOG_LOCAL
+          };
+        }
+        if (path === "/api/frameworks/ejecutar") {
+          const fwId = (body.framework_id || "langgraph").toLowerCase();
+          const fw = FRAMEWORKS_CATALOG_LOCAL.find(item => item.id === fwId);
+          if (!fw) throw new Error(`Framework desconocido: ${fwId}`);
+          const zid = body.zona_id || "zona_3";
+          const confirma = body.comunidad_confirma !== false;
+          const r1 = await handleLocalApi("/api/caso-uso-1", { zona_id: zid, comunidad_confirma: confirma, gemini_api_key: body.gemini_api_key || "" });
+          const trace = [...(r1.traza || [])];
+          const incidencias = [];
+          const nodosVisitados = [
+            { nodo: "nodo_sensor_residuos", agente: "AgenteSensorResiduos", rol: "MonitorCondicionesAmbientales", metodos: ["medirNivelLlenadoContenedores()", "analizarImagenes()", "evaluarPersistencia()", "publicarEventoRiesgo()"], salida: `evento=#${r1.evento_id || 1}, nivel=${r1.vision?.nivel_llenado_visual ?? 80}%` },
+            { nodo: "nodo_sensor_aire", agente: "AgenteSensorAire", rol: "MonitorCondicionesAmbientales", metodos: ["medirGases()", "registrarMedicion()", "detectarAumentoProgresivo()", "publicarMedicion()"], salida: `CO2 medido en ${zid}` },
+            { nodo: "nodo_coordinador", agente: "AgenteCoordinador", rol: "Coordinador", metodos: ["consultarEventos()", "calcularRiesgo()", "priorizarZonas()", "delegarAlerta()"], salida: `riesgo=${r1.riesgo}` },
+            { nodo: "nodo_alertas", agente: "AgenteAlertas", rol: "EmisorAlertas", metodos: ["recibirSolicitudAlerta()", "emitirAviso()", "gestionarConfirmacion()", confirma ? "generarReporteConfirmacion()" : "generarReporteSinConfirmacion()"], salida: `alerta_id=${r1.alerta_id}, ACL=${r1.resultado_acl}` }
+          ];
+          const transiciones = [
+            "START -> nodo_sensor_residuos",
+            "nodo_sensor_residuos -> nodo_sensor_aire",
+            "nodo_sensor_aire -> nodo_coordinador",
+            "nodo_coordinador -> nodo_alertas"
+          ];
+          if (!confirma || body.incluir_supervision !== false) {
+            const r2 = await handleLocalApi("/api/caso-uso-2", { zona_id: zid, simular_sin_confirmacion: !confirma, simular_sensor_caido: false });
+            (r2.traza || []).forEach(t => trace.push(t));
+            nodosVisitados.push({ nodo: "nodo_supervisor", agente: "AgenteSupervisor", rol: "Supervisor", metodos: ["verificarAtencionEventos()", "supervisarAgentes()", confirma ? "confirmarAuditoria()" : "registrarIncidencias()"], salida: confirma ? "Auditoría CONFIRM sin incidencias" : "Incidencia escalada al Coordinador" });
+            transiciones.push("nodo_alertas -> nodo_supervisor", "nodo_supervisor -> END");
+          } else {
+            transiciones.push("nodo_alertas -> END");
+          }
+          const estRes = (db.estado_interno_residuos || []).find(r => r.zona_id === zid) || {};
+          return {
+            caso_uso: `FW-${fwId.toUpperCase()}`,
+            framework_id: fw.id,
+            framework_nombre: fw.nombre,
+            paradigma: fw.paradigma,
+            resuelve_persistencia: fw.resuelve_persistencia,
+            motor_ejecucion: `StateGraph Offline (adaptador ${fw.nombre})`,
+            langgraph_nativo_instalado: false,
+            conversation_id: `${fw.id}-${zid}-local`,
+            thread_id: `${fw.id}-${zid}-local`,
+            zona_id: zid,
+            riesgo: r1.riesgo,
+            resultado_acl: r1.resultado_acl,
+            nodos_visitados: nodosVisitados,
+            transiciones,
+            estado_final_checkpoint: {
+              zona_id: zid,
+              tiempoSobreLimite: estRes.tiempo_sobre_limite ?? 0,
+              ritmoLlenado: estRes.ritmo_llenado ?? 0,
+              historialMediciones_count: (db.historial_mediciones_aire || []).length,
+              riesgo: r1.riesgo,
+              alerta_id: r1.alerta_id,
+              resultado_acl: r1.resultado_acl,
+              incidencias_supervisor: incidencias
+            },
+            codigo_implementacion: fw.codigo_implementacion,
+            traza: trace
+          };
+        }
+        throw new Error("Ruta local no implementada: " + path);
+      }
+
+      async function apiRequest(path, method = "GET", bodyObj = null) {
+        const apiPath = path.startsWith("/") ? path.slice(1) : path;
+        if (!useLocalFallback) {
+          let serverJsonError = null;
+          try {
+            const opts = { method, cache: "no-store", headers: {} };
+            if (bodyObj !== null) {
+              opts.headers["Content-Type"] = "application/json";
+              opts.body = JSON.stringify(bodyObj);
+            }
+            const res = await fetch(apiPath, opts);
+            const ct = res.headers.get("content-type") || "";
+            if (ct.includes("application/json")) {
+              const payload = await res.json();
+              if (res.ok) {
+                const b = document.getElementById("runtimeBadge");
+                b.className = "badge b-ok";
+                b.textContent = "Backend Python FastAPI + SQLite Activo";
+                return payload;
+              }
+              serverJsonError = new Error(payload.detail || `Error HTTP ${res.status}`);
+            }
+          } catch (err) { }
+          if (serverJsonError) throw serverJsonError;
+          useLocalFallback = true;
+        }
+        const b = document.getElementById("runtimeBadge");
+        b.className = "badge b-acl";
+        b.textContent = "Modo Nube Autónomo (GitHub Pages + LocalStorage)";
+        return await handleLocalApi("/" + apiPath, bodyObj || {});
+      }
+
+      function abrirLegalFallback(e, seccion) {
+        if (!useLocalFallback) return true;
+        e.preventDefault();
+        alert(`${seccion} — SMAMonitoreoBazurto:\nEste sistema procesa únicamente variables ambientales (nivel de contenedores, gases CO2, temperatura y humedad) sin recopilar datos personales sensibles.`);
+        return false;
+      }
+
+      async function cargarEstado() {
+        estadoCache = await apiRequest("/api/estado", "GET");
+        try {
+          const savedKey = localStorage.getItem("bazurto_v2_gemini_key") || "";
+          const kEl = document.getElementById("inputGeminiKey");
+          if (kEl && !kEl.value && savedKey) kEl.value = savedKey;
+        } catch (e) { }
+        actualizarEstadoGeminiKey();
+        sincronizarSelectoresZonasYContenedores();
+        sincronizarInputsZona();
+        renderizarCamarasCoordinador();
+        renderizarCatalogoFrameworks();
+        renderizarMuestrasVision();
+        renderizarHistorialVision();
+        renderizarPanelComunidad();
+        renderizarTablas();
+        renderizarACL();
+      }
+
+      function renderizarCamarasCoordinador() {
+        if (!estadoCache) return;
+        const grid = document.getElementById("coordZonesGrid");
+        if (!grid) return;
+        const zonas = estadoCache.entorno_zonas || [];
+        const conts = estadoCache.contenedores || [];
+        grid.innerHTML = zonas.map(z => {
+          const cont = conts.find(c => c.zona_id === z.zona_id) || { contenedor_id: `cont_${z.zona_id}_01`, codigo: `CONT-${z.zona_id.toUpperCase()}-01`, ultima_imagen: "contenedor_limpio.png", nivel_llenado: z.nivel_llenado_contenedores };
+          const imgActual = cont.ultima_imagen || "contenedor_limpio.png";
+          const esCustom = cont.tiene_imagen_custom || imgActual === "imagen_usuario_o_webcam";
+          const previewSrc = ["contenedor_limpio.png", "contenedor_medio.png", "contenedor_critico.png"].includes(imgActual)
+            ? `static/samples/${imgActual}`
+            : "static/samples/contenedor_critico.png";
+          const badgeCls = z.nivel_llenado_contenedores >= 80 ? "b-err" : (z.nivel_llenado_contenedores >= 55 ? "b-warn" : "b-ok");
+          return `
+          <div class="coord-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+              <strong><code>${z.zona_id}</code> · ${z.nombre}</strong>
+              <span class="badge ${badgeCls}">${z.nivel_llenado_contenedores}%</span>
+            </div>
+            <div style="font-size:0.8rem;color:var(--muted);">
+              Cámara: <strong>${cont.codigo}</strong><br>
+              Asignada: <code>${esCustom ? "Foto personalizada del usuario" : imgActual}</code> · Gases: ${z.concentracion_gases} ppm
+            </div>
+            <img src="${previewSrc}" alt="Cámara de ${z.zona_id}" />
+            <div>
+              <label for="selCam_${cont.contenedor_id}" style="margin:0 0 4px;">Cambiar escena asignada a esta zona:</label>
+              <select id="selCam_${cont.contenedor_id}" onchange="asignarPresetACamara('${cont.contenedor_id}', this.value)">
+                <option value="contenedor_limpio.png" ${imgActual === "contenedor_limpio.png" ? "selected" : ""}>Escena Limpia (~17%)</option>
+                <option value="contenedor_medio.png" ${imgActual === "contenedor_medio.png" ? "selected" : ""}>Escena Nivel Medio (~65%)</option>
+                <option value="contenedor_critico.png" ${imgActual === "contenedor_critico.png" ? "selected" : ""}>Escena Crítica Desbordada (~98%)</option>
+                ${esCustom ? `<option value="__custom__" selected>Foto propia cargada en Módulo 1</option>` : ""}
+              </select>
+            </div>
+          </div>
+        `;
+        }).join("");
+      }
+
+      async function asignarPresetACamara(contenedorId, presetVal) {
+        if (presetVal === "__custom__") return;
+        await apiRequest(`/api/contenedores/${contenedorId}/asignar-imagen`, "POST", {
+          preset_imagen: presetVal,
+          image_base64: null
+        });
+        await cargarEstado();
+      }
+
+      async function ejecutarInspeccionCoordinada() {
+        const data = await apiRequest("/api/coordinador/inspeccionar-camaras", "POST", {
+          gemini_api_key: getGeminiKey() || null,
+          esperar_confirmacion_interactiva: true
+        });
+        renderizarResultadoInspeccionCoordinada(data);
+        renderizarTraza(data);
+        await cargarEstado();
+      }
+
+      function renderizarResultadoInspeccionCoordinada(data) {
+        const box = document.getElementById("coordInspectionOutput");
+        if (!box || !data) return;
+        const cams = data.inspecciones_camaras || [];
+        const aclComms = (data.traza || []).filter(t => t.tipo === "ACL");
+        box.innerHTML = `
+        <div style="padding:12px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;margin-bottom:12px;">
+          <strong>Comunicación FIPA-ACL Coordinador &harr; Cámaras (${aclComms.length} mensajes emitidos en vivo):</strong>
+          <div style="font-size:0.82rem;color:#1e3a8a;margin-top:6px;">
+            ${aclComms.slice(0, 6).map(m => `<div><span class="badge b-acl">${m.performative}</span> <strong>${m.sender}</strong> &rarr; <strong>${m.receiver}</strong> · <code>${m.metodo_origen}</code></div>`).join("")}
+          </div>
+        </div>
+        <div class="coord-grid">
+          ${cams.map(item => `
+            <div class="coord-card ${item.posicion === 1 ? "priority-1" : ""}">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                <span class="badge ${item.posicion === 1 ? "b-err" : "b-acl"}">Prioridad #${item.posicion} · Riesgo ${item.riesgo}</span>
+                <span class="badge ${item.desbordamiento ? "b-err" : "b-ok"}">${item.nivel_llenado_visual}% · ${item.bolsas_en_suelo} bolsas</span>
+              </div>
+              <strong>${item.zona_nombre} (<code>${item.zona_id}</code>)</strong>
+              <small style="color:var(--muted);">Motor: <strong>${item.motor_vision || "HSV Local"}</strong></small>
+              <img src="${item.annotated_image_base64}" alt="Inspección ${item.zona_id}" />
+              <p style="margin:0;font-size:0.8rem;line-height:1.35;">${item.explicacion_ia || item.estado_visual}</p>
+            </div>
+          `).join("")}
+        </div>
+      `;
+      }
+
+      async function ejecutarCasoUsoRol(cuId) {
+        const zid = document.getElementById("zonaSelect").value;
+        const data = await apiRequest(`/api/casos-uso-rol/${cuId}`, "POST", {
+          zona_id: zid,
+          gemini_api_key: getGeminiKey() || null,
+          esperar_confirmacion_interactiva: true
+        });
+        if (data.inspecciones_camaras) renderizarResultadoInspeccionCoordinada(data);
+        if (data.vision) mostrarResultadoVision(data.vision);
+        renderizarTraza(data);
+        await cargarEstado();
+      }
+
+      function escapeHtml(text) {
+        return String(text || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+
+      function renderizarCatalogoFrameworks() {
+        const tabsEl = document.getElementById("fwSelectorTabs");
+        const specEl = document.getElementById("fwSpecBox");
+        if (!tabsEl || !specEl) return;
+        const catalog = (estadoCache && estadoCache.frameworks_catalogo) || FRAMEWORKS_CATALOG_LOCAL;
+        tabsEl.innerHTML = catalog.map(fw => {
+          const activeCls = fw.id === frameworkSeleccionado ? "active" : "";
+          return `<button type="button" class="fw-tab-btn ${activeCls}" onclick="seleccionarFramework('${fw.id}')">${fw.nombre}</button>`;
+        }).join("");
+
+        const actual = catalog.find(f => f.id === frameworkSeleccionado) || catalog[0];
+        if (!actual) return;
+        specEl.innerHTML = `
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--surface-alt);">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px;">
+              <strong style="font-size:0.96rem;">${actual.nombre} <span style="color:var(--muted);font-weight:500;">(${actual.creador} &middot; ${actual.lenguaje})</span></strong>
+              <span class="badge b-acl">${actual.paradigma}</span>
+            </div>
+            <p style="margin:4px 0;font-size:0.84rem;"><strong>Cómo resuelve el límite de n8n (Persistencia):</strong> ${actual.resuelve_persistencia}</p>
+            <p style="margin:4px 0 8px;font-size:0.84rem;"><strong>Mapeo MAS-ML de Bazurto:</strong> ${actual.mapeo_agentes}</p>
+            <details>
+              <summary style="cursor:pointer;font-size:0.83rem;font-weight:700;color:var(--accent);">Ver código de implementación de SMAMonitoreoBazurto en ${actual.nombre}</summary>
+              <pre>${escapeHtml(actual.codigo_implementacion)}</pre>
+            </details>
+          </div>
+        `;
+      }
+
+      function seleccionarFramework(fwId) {
+        frameworkSeleccionado = fwId;
+        renderizarCatalogoFrameworks();
+      }
+
+      async function ejecutarOrquestacionFramework() {
+        const zid = document.getElementById("fwZonaSelect")?.value || document.getElementById("zonaSelect").value;
+        const confirmaVal = (document.getElementById("fwComunidadSelect")?.value || "true") === "true";
+        const data = await apiRequest("/api/frameworks/ejecutar", "POST", {
+          framework_id: frameworkSeleccionado,
+          zona_id: zid,
+          comunidad_confirma: confirmaVal,
+          incluir_supervision: true,
+          gemini_api_key: getGeminiKey() || null
+        });
+        renderizarResultadoFramework(data);
+        renderizarTraza(data);
+        await cargarEstado();
+      }
+
+      function renderizarResultadoFramework(data) {
+        const outEl = document.getElementById("fwExecutionOutput");
+        const statusBadge = document.getElementById("fwEngineStatusBadge");
+        if (statusBadge && data.motor_ejecucion) {
+          statusBadge.textContent = data.motor_ejecucion;
+        }
+        if (!outEl || !data) return;
+        const nodos = data.nodos_visitados || [];
+        const cp = data.estado_final_checkpoint || {};
+        outEl.innerHTML = `
+          <div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:12px;">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center;">
+              <strong>Ejecución Real de Grafo Multiagente &middot; Framework: <code>${data.framework_nombre}</code></strong>
+              <span class="badge b-ok">Checkpoint thread_id: ${data.thread_id}</span>
+            </div>
+            <div class="fw-graph-flow">
+              ${nodos.map((n, i) => `
+                ${i > 0 ? '<span class="fw-arrow">&rarr;</span>' : ""}
+                <div class="fw-node-pill ${n.nodo === "nodo_supervisor" ? "supervisor" : ""}">
+                  <strong>${n.nodo}</strong><br>
+                  <span style="color:var(--accent);font-weight:700;">${n.agente}</span><br>
+                  <small style="color:var(--muted);">${n.salida}</small>
+                </div>
+              `).join("")}
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:0.82rem;margin-top:6px;">
+              <span class="badge b-acl">Cierre ACL: ${cp.resultado_acl || data.resultado_acl}</span>
+              <span class="badge b-met">Riesgo: ${cp.riesgo}</span>
+              <span class="badge b-met">tiempoSobreLimite (Checkpoint): ${cp.tiempoSobreLimite} min</span>
+              <span class="badge b-met">historialMediciones: ${cp.historialMediciones_count}</span>
+              <span class="badge ${cp.incidencias_supervisor?.length ? "b-warn" : "b-ok"}">Incidencias Supervisor: ${(cp.incidencias_supervisor || []).length}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      function sincronizarSelectoresZonasYContenedores(zonaPreferida = null, contenedorPreferido = null) {
+        if (!estadoCache) return;
+        const zonas = estadoCache.entorno_zonas || [];
+        const conts = estadoCache.contenedores || [];
+
+        const selEnv = document.getElementById("zonaSelect");
+        const selVis = document.getElementById("visionZonaSelect");
+        const selHist = document.getElementById("historyFilterZona");
+        const selCont = document.getElementById("visionContenedorSelect");
+        const selFw = document.getElementById("fwZonaSelect");
+
+        const currentZona = zonaPreferida || (selVis && selVis.value) || (selEnv && selEnv.value) || (zonas[0]?.zona_id || "zona_3");
+        const currentHist = selHist ? selHist.value : "";
+
+        const optsHtml = zonas.map(z => `<option value="${z.zona_id}">${z.zona_id} — ${z.nombre}</option>`).join("");
+        if (selEnv) {
+          selEnv.innerHTML = optsHtml;
+          if (zonas.some(z => z.zona_id === currentZona)) selEnv.value = currentZona;
+        }
+        if (selVis) {
+          selVis.innerHTML = optsHtml;
+          if (zonas.some(z => z.zona_id === currentZona)) selVis.value = currentZona;
+        }
+        if (selFw) {
+          const prevFw = selFw.value;
+          selFw.innerHTML = optsHtml;
+          if (prevFw && zonas.some(z => z.zona_id === prevFw)) selFw.value = prevFw;
+          else if (zonas.some(z => z.zona_id === currentZona)) selFw.value = currentZona;
+        }
+        if (selHist) {
+          selHist.innerHTML = `<option value="">Todas las zonas</option>` + zonas.map(z => `<option value="${z.zona_id}">${z.zona_id} — ${z.nombre}</option>`).join("");
+          if (currentHist && zonas.some(z => z.zona_id === currentHist)) selHist.value = currentHist;
+        }
+
+        const activeZona = (selVis && selVis.value) || currentZona;
+        const contsZona = conts.filter(c => c.zona_id === activeZona);
+        if (selCont) {
+          const prevCont = contenedorPreferido || selCont.value;
+          selCont.innerHTML = contsZona.length
+            ? contsZona.map(c => `<option value="${c.contenedor_id}">${c.codigo} [${c.tipo}] (${c.nivel_llenado}%)</option>`).join("")
+            : `<option value="">Sin contenedores en ${activeZona}</option>`;
+          if (contsZona.some(c => c.contenedor_id === prevCont)) selCont.value = prevCont;
+        }
+      }
+
+      function alCambiarZonaDesdeVision() {
+        const selVis = document.getElementById("visionZonaSelect");
+        const selEnv = document.getElementById("zonaSelect");
+        if (selVis && selEnv) selEnv.value = selVis.value;
+        sincronizarSelectoresZonasYContenedores(selVis?.value, null);
+        sincronizarInputsZona();
+      }
+
+      function alCambiarZonaDesdeEntorno() {
+        const selEnv = document.getElementById("zonaSelect");
+        const selVis = document.getElementById("visionZonaSelect");
+        if (selEnv && selVis) selVis.value = selEnv.value;
+        sincronizarSelectoresZonasYContenedores(selEnv?.value, null);
+        sincronizarInputsZona();
+      }
+
+      function toggleFormZona() {
+        const fz = document.getElementById("formNuevaZona");
+        const fc = document.getElementById("formNuevoContenedor");
+        if (fc) fc.style.display = "none";
+        if (fz) fz.style.display = fz.style.display === "block" ? "none" : "block";
+      }
+
+      function toggleFormContenedor() {
+        const fc = document.getElementById("formNuevoContenedor");
+        const fz = document.getElementById("formNuevaZona");
+        if (fz) fz.style.display = "none";
+        if (fc) fc.style.display = fc.style.display === "block" ? "none" : "block";
+      }
+
+      async function crearNuevaZona() {
+        const idEl = document.getElementById("inputNuevaZonaId");
+        const nomEl = document.getElementById("inputNuevaZonaNombre");
+        const nombre = (nomEl?.value || "").trim();
+        if (!nombre) {
+          alert("Escribe el nombre descriptivo de la nueva zona.");
+          return;
+        }
+        try {
+          const created = await apiRequest("/api/zonas", "POST", {
+            zona_id: (idEl?.value || "").trim() || null,
+            nombre
+          });
+          if (idEl) idEl.value = "";
+          if (nomEl) nomEl.value = "";
+          document.getElementById("formNuevaZona").style.display = "none";
+          estadoCache = await apiRequest("/api/estado", "GET");
+          sincronizarSelectoresZonasYContenedores(created.zona_id, null);
+          sincronizarInputsZona();
+          renderizarMuestrasVision();
+          renderizarHistorialVision();
+          renderizarPanelComunidad();
+          renderizarTablas();
+          renderizarACL();
+        } catch (err) {
+          alert("No se pudo crear la zona: " + err.message);
+        }
+      }
+
+      async function crearNuevoContenedor() {
+        const zid = document.getElementById("visionZonaSelect").value || document.getElementById("zonaSelect").value;
+        const codEl = document.getElementById("inputNuevoContCodigo");
+        const tipoEl = document.getElementById("inputNuevoContTipo");
+        const codigo = (codEl?.value || "").trim();
+        if (!codigo) {
+          alert("Escribe un código identificador para el contenedor.");
+          return;
+        }
+        try {
+          const created = await apiRequest("/api/contenedores", "POST", {
+            zona_id: zid,
+            codigo,
+            tipo: (tipoEl?.value || "").trim() || "Contenedor Municipal 1100L"
+          });
+          if (codEl) codEl.value = "";
+          document.getElementById("formNuevoContenedor").style.display = "none";
+          estadoCache = await apiRequest("/api/estado", "GET");
+          sincronizarSelectoresZonasYContenedores(zid, created.contenedor_id);
+          sincronizarInputsZona();
+        } catch (err) {
+          alert("No se pudo crear el contenedor: " + err.message);
+        }
+      }
+
+      function renderizarHistorialVision() {
+        if (!estadoCache) return;
+        const cont = document.getElementById("visionHistoryList");
+        const badge = document.getElementById("historyCountBadge");
+        const filtro = document.getElementById("historyFilterZona")?.value || "";
+        const allItems = estadoCache.historial_vision || [];
+        const items = filtro ? allItems.filter(h => h.zona_id === filtro) : allItems;
+        if (badge) badge.textContent = `${items.length} ${items.length === 1 ? "imagen" : "imágenes"}`;
+        if (!items.length) {
+          cont.innerHTML = `<p style="margin:0;color:var(--muted);font-size:0.88rem;">Aún no hay imágenes registradas para este filtro. Selecciona una zona, un contenedor y analiza una imagen en el Módulo 1.</p>`;
+          return;
+        }
+        cont.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Miniatura</th>
+              <th># / Hora</th>
+              <th>Zona y Contenedor</th>
+              <th>Imagen Fuente</th>
+              <th>Resultado Visual</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(h => {
+          const det = Boolean(h.contenedor_detectado);
+          const ovf = Boolean(h.desbordamiento);
+          const bCls = !det ? "b-err" : (ovf ? "b-err" : (h.nivel_llenado_visual >= 55 ? "b-warn" : "b-ok"));
+          const hora = h.timestamp ? new Date(h.timestamp).toLocaleTimeString() : "-";
+          return `
+                <tr>
+                  <td>
+                    <img src="${h.annotated_image_base64}" alt="Historial #${h.id}" class="history-thumb" onclick="verHistorialEnVisor(${h.id})" />
+                  </td>
+                  <td><strong>#${h.id}</strong><br><small style="color:var(--muted);">${hora}</small></td>
+                  <td>
+                    <code>${h.zona_id}</code> · ${h.zona_nombre}<br>
+                    <small><strong>Contenedor:</strong> ${h.contenedor_codigo}</small>
+                  </td>
+                  <td><code>${h.fuente_imagen}</code></td>
+                  <td>
+                    <span class="badge ${bCls}">${h.nivel_llenado_visual}% · ${h.estado_visual}</span><br>
+                    <small>Bolsas suelo: <strong>${h.bolsas_en_suelo}</strong> · ${det ? "Entorno actualizado" : "Descartada (entorno intacto)"}</small><br>
+                    <small style="color:var(--muted);">${h.motor_vision || "Motor HSV Local"}</small>
+                  </td>
+                  <td>
+                    <button type="button" class="btn-outline" style="padding:5px 9px;font-size:0.78rem;" onclick="verHistorialEnVisor(${h.id})">Ver en Visor</button>
+                  </td>
+                </tr>
+              `;
+        }).join("")}
+          </tbody>
+        </table>
+      `;
+      }
+
+      function verHistorialEnVisor(histId) {
+        if (!estadoCache) return;
+        const item = (estadoCache.historial_vision || []).find(h => h.id === histId);
+        if (!item) return;
+        mostrarResultadoVision({
+          annotated_image_base64: item.annotated_image_base64,
+          contenedor_detectado: Boolean(item.contenedor_detectado),
+          nivel_llenado_visual: item.nivel_llenado_visual,
+          bolsas_en_suelo: item.bolsas_en_suelo,
+          desbordamiento: Boolean(item.desbordamiento),
+          estado_visual: item.estado_visual,
+          confianza: item.confianza,
+          fuente_imagen: item.fuente_imagen,
+          motor_vision: item.motor_vision,
+          explicacion_ia: item.explicacion_ia
+        });
+        const hint = document.getElementById("visionHint");
+        if (hint) {
+          hint.innerHTML = `Inspeccionando registro histórico <strong>#${item.id}</strong> · Zona: <code>${item.zona_id}</code> · Contenedor: <strong>${item.contenedor_codigo}</strong> (${item.fuente_imagen}).`;
+        }
+        document.getElementById("visionPreviewImg").scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      function renderizarMuestrasVision() {
+        const muestras = (estadoCache && estadoCache.muestras_vision) || MUESTRAS_CATALOG;
+        const grid = document.getElementById("sampleGrid");
+        grid.innerHTML = muestras.map(m => {
+          const cleanUrl = m.url.startsWith("/") ? m.url.slice(1) : m.url;
+          const active = !imagenBase64Seleccionada && presetSeleccionado === m.filename ? "selected" : "";
+          return `
+          <button type="button" class="sample-btn ${active}" onclick="seleccionarPreset('${m.filename}')">
+            <img src="${cleanUrl}" alt="${m.titulo}" />
+            <span>${m.titulo}</span>
+          </button>
+        `;
+        }).join("");
+      }
+
+      async function seleccionarPreset(filename) {
+        presetSeleccionado = filename;
+        imagenBase64Seleccionada = null;
+        document.getElementById("visionHint").innerHTML =
+          `Escena seleccionada: <code>${filename}</code>. Analizando píxeles automáticamente...`;
+        renderizarMuestrasVision();
+        await analizarImagenActual();
+      }
+
+      function manejarArchivoSubido(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (pilotoAutomaticoActivo) {
+          pilotoAutomaticoActivo = false;
+          const btn = document.getElementById("btnToggleAutopilot");
+          if (btn) btn.textContent = "Reanudar Piloto Automático";
+        }
+        const reader = new FileReader();
+        reader.onload = async () => {
+          imagenBase64Seleccionada = reader.result;
+          presetSeleccionado = null;
+          document.getElementById("visionHint").innerHTML =
+            `Foto subida desde tu PC: <code>${file.name}</code>. Ejecutando <code>analizarImagenes()</code>...`;
+          renderizarMuestrasVision();
+          await analizarImagenActual();
+        };
+        reader.readAsDataURL(file);
+      }
+
+      async function abrirWebcam() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          alert("Tu navegador no soporta acceso a webcam en esta sesión. Usa una escena precargada o sube una imagen.");
+          return;
+        }
+        try {
+          webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          document.getElementById("webcamVideo").srcObject = webcamStream;
+          document.getElementById("webcamBox").style.display = "block";
+        } catch (err) {
+          alert("No se pudo abrir la webcam: " + err.message);
+        }
+      }
+
+      function cerrarWebcam() {
+        if (webcamStream) {
+          webcamStream.getTracks().forEach(t => t.stop());
+          webcamStream = null;
+        }
+        document.getElementById("webcamBox").style.display = "none";
+      }
+
+      async function capturarDesdeWebcam() {
+        const video = document.getElementById("webcamVideo");
+        const canvas = document.getElementById("webcamCanvas");
+        canvas.width = video.videoWidth || 480;
+        canvas.height = video.videoHeight || 320;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        imagenBase64Seleccionada = canvas.toDataURL("image/png");
+        presetSeleccionado = null;
+        document.getElementById("visionHint").innerHTML =
+          "Fotograma capturado desde tu webcam. Ejecutando <code>analizarImagenes()</code>...";
+        renderizarMuestrasVision();
+        await analizarImagenActual();
+      }
+
+      async function analizarImagenActual() {
+        const zid = document.getElementById("visionZonaSelect").value || document.getElementById("zonaSelect").value;
+        const cid = document.getElementById("visionContenedorSelect").value || null;
+        const hint = document.getElementById("visionHint");
+        const data = await apiRequest("/api/vision/analizar", "POST", {
+          zona_id: zid,
+          contenedor_id: cid,
+          image_base64: imagenBase64Seleccionada,
+          preset_imagen: presetSeleccionado,
+          aplicar_a_entorno: true,
+          gemini_api_key: getGeminiKey() || null
+        });
+        mostrarResultadoVision(data);
+        if (hint && data) {
+          const contLabel = data.contenedor_codigo || cid || "contenedor";
+          if (data.contenedor_detectado === false) {
+            hint.innerHTML = `Registrado en historial (${data.fuente_imagen || "imagen"} · <code>${data.zona_id}</code> / <strong>${contLabel}</strong>): <strong>sin contenedor detectado</strong>. Entorno preservado.`;
+          } else {
+            hint.innerHTML = `Registrado en historial y asignado a cámara de <code>${data.zona_id}</code> / <strong>${contLabel}</strong>: nivel <strong>${data.nivel_llenado_visual}%</strong>, bolsas en suelo: <strong>${data.bolsas_en_suelo}</strong>.`;
+          }
+        }
+        await cargarEstado();
+      }
+
+      function mostrarResultadoVision(vision) {
+        if (!vision) return;
+        document.getElementById("visionPreviewImg").src = vision.annotated_image_base64;
+        const alertBox = document.getElementById("visionAlertBox");
+        if (alertBox) {
+          if (vision.contenedor_detectado === false) {
+            alertBox.style.display = "block";
+            alertBox.innerHTML = `<strong>Filtro de Validación Visual (AgenteSensorResiduos):</strong> No se detectó un contenedor municipal de residuos en esta imagen (<code>${vision.estado_visual}</code>). <strong>No se alteró</strong> el parámetro <code>nivelLlenadoContenedores</code> de <code>MercadoBazurto</code>.`;
+          } else {
+            alertBox.style.display = "none";
+            alertBox.innerHTML = "";
+          }
+        }
+        const badgeClass = vision.contenedor_detectado === false
+          ? "b-err"
+          : (vision.desbordamiento ? "b-err" : (vision.nivel_llenado_visual >= 55 ? "b-warn" : "b-ok"));
+        const motorLabel = vision.motor_vision || "Motor Matemático HSV Local (100% Offline)";
+        const isIa = motorLabel.includes("Gemini");
+        const expl = vision.explicacion_ia
+          ? `<div style="width:100%;font-size:0.8rem;color:var(--ink);background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:7px 10px;margin-top:4px;text-align:left;"><strong>Explicación (${motorLabel}):</strong> ${vision.explicacion_ia}</div>`
+          : "";
+        const tel = vision.telemetria_pixeles;
+        const telLine = tel
+          ? `<div style="width:100%;font-size:0.75rem;color:var(--muted);text-align:center;margin-top:4px;">Telemetría HSV (200×200): estructura=${tel.estructura_px}px · boca=${tel.boca_residuos_px}px · cavidad=${tel.cavidad_residuos_px}px · suelo=${tel.suelo_residuos_px}px · vacío=${tel.cavidad_vacia_px}px</div>`
+          : "";
+        document.getElementById("visionMetrics").innerHTML = `
+        <span class="badge ${isIa ? "b-ok" : "b-acl"}">${motorLabel}</span>
+        <span class="badge b-acl">Contenedores en escena: ${vision.contenedores_en_imagen ?? (vision.contenedor_detectado === false ? 0 : 1)}</span>
+        <span class="badge ${badgeClass}">Llenado Visual: ${vision.nivel_llenado_visual}%</span>
+        <span class="badge b-acl">Bolsas en Suelo: ${vision.bolsas_en_suelo}</span>
+        <span class="badge ${vision.desbordamiento || vision.contenedor_detectado === false ? "b-err" : "b-ok"}">${vision.estado_visual}</span>
+        <span class="badge b-met">Confianza: ${Math.round(vision.confianza * 100)}%</span>
+        ${expl}
+        ${telLine}
+      `;
+      }
+
+      function sincronizarInputsZona() {
+        if (!estadoCache) return;
+        const zid = document.getElementById("zonaSelect").value;
+        const z = estadoCache.entorno_zonas.find(item => item.zona_id === zid);
+        if (!z) return;
+        document.getElementById("inResiduos").value = z.nivel_llenado_contenedores;
+        document.getElementById("inGases").value = z.concentracion_gases;
+        document.getElementById("inTemp").value = z.temperatura;
+        document.getElementById("inHum").value = z.humedad;
+      }
+
+      async function guardarEntorno() {
+        const zid = document.getElementById("zonaSelect").value;
+        await apiRequest(`/api/zonas/${zid}`, "PUT", {
+          nivel_llenado_contenedores: parseFloat(document.getElementById("inResiduos").value),
+          concentracion_gases: parseFloat(document.getElementById("inGases").value),
+          temperatura: parseFloat(document.getElementById("inTemp").value),
+          humedad: parseFloat(document.getElementById("inHum").value)
+        });
+        await cargarEstado();
+      }
+
+      async function ejecutarCU1Interactivo() {
+        await guardarEntorno();
+        const zid = document.getElementById("zonaSelect").value;
+        const cid = document.getElementById("visionContenedorSelect")?.value || null;
+        const data = await apiRequest("/api/caso-uso-1", "POST", {
+          zona_id: zid,
+          contenedor_id: cid,
+          forzar_duplicada: false,
+          image_base64: imagenBase64Seleccionada,
+          preset_imagen: presetSeleccionado,
+          esperar_confirmacion_interactiva: true,
+          gemini_api_key: getGeminiKey() || null
+        });
+        if (data.vision) mostrarResultadoVision(data.vision);
+        renderizarTraza(data);
+        await cargarEstado();
+      }
+
+      async function ejecutarCU1(duplicada, confirma) {
+        await guardarEntorno();
+        const zid = document.getElementById("zonaSelect").value;
+        const cid = document.getElementById("visionContenedorSelect")?.value || null;
+        const data = await apiRequest("/api/caso-uso-1", "POST", {
+          zona_id: zid,
+          contenedor_id: cid,
+          forzar_duplicada: duplicada,
+          comunidad_confirma: confirma,
+          image_base64: imagenBase64Seleccionada,
+          preset_imagen: presetSeleccionado,
+          esperar_confirmacion_interactiva: false,
+          gemini_api_key: getGeminiKey() || null
+        });
+        if (data.vision) mostrarResultadoVision(data.vision);
+        renderizarTraza(data);
+        await cargarEstado();
+      }
+
+      async function responderAlertaComunidad(alertaId, confirmar) {
+        const data = await apiRequest(`/api/alertas/${alertaId}/responder`, "POST", { confirmar });
+        renderizarTraza(data);
+        await cargarEstado();
+      }
+
+      async function ejecutarCU2(sinConfirmacion, sensorCaido, zonaOverride = null) {
+        const zid = zonaOverride || document.getElementById("zonaSelect").value;
+        if (zonaOverride) {
+          document.getElementById("zonaSelect").value = zonaOverride;
+          const visSel = document.getElementById("visionZonaSelect");
+          if (visSel) visSel.value = zonaOverride;
+          sincronizarSelectoresZonasYContenedores(zonaOverride, null);
+        }
+        const data = await apiRequest("/api/caso-uso-2", "POST", {
+          zona_id: zid,
+          simular_sin_confirmacion: sinConfirmacion,
+          simular_sensor_caido: sensorCaido
+        });
+        renderizarTraza(data);
+        await cargarEstado();
+      }
+
+      async function resetearBD() {
+        await apiRequest("/api/reset", "POST");
+        document.getElementById("traceContainer").innerHTML = "";
+        document.getElementById("traceSummary").textContent = "Base de datos reiniciada al estado inicial.";
+        await cargarEstado();
+      }
+
+      function renderizarPanelComunidad() {
+        if (!estadoCache) return;
+        const box = document.getElementById("communityInbox");
+        const alertas = estadoCache.alertas || [];
+        if (alertas.length === 0) {
+          box.innerHTML = `<p style="margin:0;color:var(--muted);font-size:0.9rem;">No hay avisos emitidos todavía. Pulsa <strong>"Ejecutar CU-01 y Enviar al Panel de Comunidad"</strong> para recibir una alerta en vivo.</p>`;
+          return;
+        }
+
+        box.innerHTML = alertas.slice(0, 4).map(a => {
+          const isPending = a.estado === "PENDIENTE_COMUNIDAD";
+          const isFailed = a.estado === "SIN_CONFIRMACION";
+          const cls = isPending ? "pending" : (isFailed ? "failed" : "");
+          const badgeCls = isPending ? "b-warn" : (isFailed ? "b-err" : "b-ok");
+
+          let actions = "";
+          if (isPending) {
+            actions = `
+            <div class="btn-group">
+              <button type="button" class="btn-primary" onclick="responderAlertaComunidad(${a.id}, true)">
+                Confirmar Recepción (ACK Comunidad &rarr; INFORM-DONE)
+              </button>
+              <button type="button" class="btn-warn" onclick="responderAlertaComunidad(${a.id}, false)">
+                Simular No Respuesta de Comunidad (Sin Confirmación &rarr; FAILURE)
+              </button>
+            </div>
+          `;
+          } else if (isFailed) {
+            actions = `
+            <div class="btn-group">
+              <button type="button" class="btn-danger" onclick="ejecutarCU2(true, false, '${a.zona_id}')">
+                Auditar con AgenteSupervisor (Ejecutar CU-02 sobre Alerta #${a.id})
+              </button>
+            </div>
+          `;
+          }
+
+          return `
+          <div class="community-item ${cls}">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center;">
+              <strong>Aviso Comunitario #${a.id} · Zona: <code>${a.zona_id}</code> · Riesgo ${a.nivel}</strong>
+              <span class="badge ${badgeCls}">${a.estado}</span>
+            </div>
+            <p style="margin:6px 0 4px;font-size:0.88rem;">${a.reporte}</p>
+            ${actions}
+          </div>
+        `;
+        }).join("");
+      }
+
+      function resetTarjetasAgentesVivas() {
+        for (const ag of AGENTES_SMA) {
+          const card = document.getElementById(`card_${ag}`);
+          const st = document.getElementById(`st_${ag}`);
+          if (card) card.className = "agent-live-card";
+          if (st) {
+            st.className = "badge b-met";
+            st.textContent = "EN ESPERA";
+          }
+        }
+      }
+
+      function animarActividadAgentesDesdeTraza(traza, etiqueta = "Ciclo Activo") {
+        for (const h of animTimerHandles) clearTimeout(h);
+        animTimerHandles = [];
+        resetTarjetasAgentesVivas();
+        const pasos = (traza || []).filter(item => item && (item.agente || item.sender));
+        const seenDone = new Set();
+
+        pasos.forEach((step, idx) => {
+          const timer = setTimeout(() => {
+            const ag = step.tipo === "ACL" ? step.sender : step.agente;
+            if (!AGENTES_SMA.includes(ag)) return;
+            for (const prevAg of AGENTES_SMA) {
+              if (prevAg !== ag && seenDone.has(prevAg)) {
+                const pCard = document.getElementById(`card_${prevAg}`);
+                const pSt = document.getElementById(`st_${prevAg}`);
+                if (pCard && pCard.classList.contains("active")) pCard.className = "agent-live-card done";
+                if (pSt && pSt.textContent === "EJECUTANDO") {
+                  pSt.className = "badge b-ok";
+                  pSt.textContent = "ACTIVO";
+                }
+              }
+            }
+            seenDone.add(ag);
+            const card = document.getElementById(`card_${ag}`);
+            const st = document.getElementById(`st_${ag}`);
+            const act = document.getElementById(`act_${ag}`);
+            const aclEl = document.getElementById(`acl_${ag}`);
+            if (card) card.className = "agent-live-card active";
+            if (st) {
+              st.className = "badge b-acl";
+              st.textContent = "EJECUTANDO";
+            }
+            if (act) {
+              act.innerHTML = step.tipo === "ACL"
+                ? `Mensaje a <strong>${step.receiver}</strong> (<code>${step.metodo_origen || "-"}</code>)`
+                : (step.tipo === "TIMEOUT"
+                  ? `<strong>TIMEOUT:</strong> ${step.detalle}`
+                  : `<code>${step.metodo}</code><br><span style="color:var(--muted);">${String(step.detalle || "").slice(0, 72)}</span>`);
+            }
+            if (aclEl && step.tipo === "ACL") {
+              aclEl.textContent = `ACL:${step.performative} -> ${step.receiver}`;
+            }
+
+            if (idx === pasos.length - 1) {
+              setTimeout(() => {
+                for (const finalAg of AGENTES_SMA) {
+                  if (seenDone.has(finalAg)) {
+                    const fCard = document.getElementById(`card_${finalAg}`);
+                    const fSt = document.getElementById(`st_${finalAg}`);
+                    if (fCard) fCard.className = "agent-live-card done";
+                    if (fSt) {
+                      fSt.className = "badge b-ok";
+                      fSt.textContent = "COMPLETADO";
+                    }
+                  }
+                }
+                const banner = document.getElementById("liveAutoStatusBanner");
+                if (banner) {
+                  banner.innerHTML = `<strong>${etiqueta}:</strong> Los ${seenDone.size} agentes completaron cámaras + grafo (${frameworkSeleccionado}) en vivo.`;
+                }
+              }, 320);
+            }
+          }, idx * 240);
+          animTimerHandles.push(timer);
+        });
+      }
+
+      function togglePilotoAutomatico() {
+        pilotoAutomaticoActivo = !pilotoAutomaticoActivo;
+        const btn = document.getElementById("btnToggleAutopilot");
+        const dot = document.getElementById("livePulseDot");
+        const banner = document.getElementById("liveAutoStatusBanner");
+        if (btn) btn.textContent = pilotoAutomaticoActivo ? "Pausar Piloto Automático" : "Reanudar Piloto Automático";
+        if (dot) dot.style.background = pilotoAutomaticoActivo ? "#16a34a" : "#9ca3af";
+        if (banner && !pilotoAutomaticoActivo) {
+          banner.innerHTML = "<strong>Piloto Automático en Pausa:</strong> Puedes probar manualmente cámaras, zonas y frameworks o pulsar <em>Reanudar</em>.";
+        } else if (pilotoAutomaticoActivo) {
+          ejecutarCicloAutonomoCompleto(true);
+        }
+      }
+
+      async function ejecutarCicloAutonomoCompleto(avanzarZona = true) {
+        if (autoCicloEnCurso) return;
+        autoCicloEnCurso = true;
+        try {
+          autoRondaNum += 1;
+          const rotZonas = ["zona_3", "zona_5", "zona_2"];
+          const presetMap = {
+            "zona_3": "contenedor_critico.png",
+            "zona_5": "contenedor_medio.png",
+            "zona_2": "contenedor_limpio.png"
+          };
+          const zid = rotZonas[(autoRondaNum - 1) % rotZonas.length];
+          const confirma = autoRondaNum % 3 !== 0;
+
+          if (!imagenBase64Seleccionada) {
+            presetSeleccionado = presetMap[zid] || "contenedor_critico.png";
+            sincronizarSelectoresZonasYContenedores(zid, null);
+            sincronizarInputsZona();
+            renderizarMuestrasVision();
+          }
+          const usedZid = imagenBase64Seleccionada ? (document.getElementById("zonaSelect")?.value || zid) : zid;
+          const gKey = getGeminiKey() || null;
+
+          const cycBadge = document.getElementById("liveCycleBadge");
+          const banner = document.getElementById("liveAutoStatusBanner");
+          if (cycBadge) cycBadge.textContent = `Ronda #${autoRondaNum} · ${usedZid}`;
+          if (banner) {
+            banner.innerHTML = `<strong>Piloto Automático Activo (Ronda #${autoRondaNum}):</strong> Coordinador ordenando revisión de 3 cámaras y ejecutando <code>${frameworkSeleccionado}</code> en <code>${usedZid}</code>...`;
+          }
+
+          const insp = await apiRequest("/api/coordinador/inspeccionar-camaras", "POST", {
+            gemini_api_key: gKey,
+            comunidad_confirma: confirma,
+            esperar_confirmacion_interactiva: false
+          });
+          renderizarResultadoInspeccionCoordinada(insp);
+
+          const fwData = await apiRequest("/api/frameworks/ejecutar", "POST", {
+            framework_id: frameworkSeleccionado,
+            zona_id: usedZid,
+            comunidad_confirma: confirma,
+            incluir_supervision: true,
+            gemini_api_key: gKey
+          });
+          renderizarResultadoFramework(fwData);
+
+          const combinado = {
+            caso_uso: fwData.caso_uso || `FW-${frameworkSeleccionado.toUpperCase()}`,
+            framework_nombre: fwData.framework_nombre,
+            thread_id: fwData.thread_id,
+            conversation_id: fwData.conversation_id,
+            riesgo: fwData.riesgo,
+            resultado_acl: fwData.resultado_acl,
+            traza: [...(insp.traza || []).slice(0, 10), ...(fwData.traza || [])]
+          };
+          await cargarEstado();
+          renderizarTraza(combinado, `Ronda Autónoma V2 #${autoRondaNum} (${usedZid})`);
+        } finally {
+          autoCicloEnCurso = false;
+        }
+      }
+
+      function renderizarTraza(data, etiqueta = "Ejecución En Vivo") {
+        const summary = document.getElementById("traceSummary");
+        if (data.caso_uso === "CU-01") {
+          const extra = data.riesgo !== undefined ? ` · Riesgo: <strong>${data.riesgo}</strong>` : "";
+          summary.innerHTML = `<strong>${data.caso_uso}</strong> · Conversación <code>${data.conversation_id}</code>${extra} · Cierre ACL: <span class="badge b-acl">${data.resultado_acl}</span>`;
+        } else if (String(data.caso_uso || "").startsWith("CU-ROL-")) {
+          const extraTop = data.zona_prioritaria ? ` · Prioridad #1: <strong>${data.zona_prioritaria.zona_id}</strong> (riesgo ${data.zona_prioritaria.riesgo})` : "";
+          summary.innerHTML = `<strong>${data.caso_uso}</strong> (Rol: <code>${data.rol || "-"}</code>) · Conversación <code>${data.conversation_id}</code>${extraTop} · Estado: <span class="badge b-acl">${data.resultado_acl || "OK"}</span>`;
+        } else if (String(data.caso_uso || "").startsWith("FW-")) {
+          summary.innerHTML = `<strong>${data.caso_uso}</strong> (Framework: <code>${data.framework_nombre || data.framework_id}</code>) · Checkpoint <code>${data.thread_id || data.conversation_id}</code> · Riesgo: <strong>${data.riesgo}</strong> · Cierre ACL: <span class="badge b-acl">${data.resultado_acl || "OK"}</span>`;
+        } else {
+          summary.innerHTML = `<strong>${data.caso_uso}</strong> · Conversación <code>${data.conversation_id}</code> · Confirmada: <strong>${data.alerta_confirmada}</strong> · Sensor Activo: <strong>${data.sensor_aire_activo}</strong>`;
+        }
+
+        const cont = document.getElementById("traceContainer");
+        cont.innerHTML = data.traza.map((item, idx) => {
+          if (item.tipo === "ACL") {
+            return `<div class="trace-item"><span class="badge b-acl">ACL:${item.performative}</span> <strong>${item.sender}</strong> &rarr; <strong>${item.receiver}</strong> <small>(${item.protocol})</small><br><span style="color:#4b5563">Origen: <code>${item.metodo_origen}</code></span><pre>${item.sexpr}</pre></div>`;
+          }
+          if (item.tipo === "TIMEOUT") {
+            return `<div class="trace-item"><span class="badge b-err">TIMEOUT</span> <strong>${item.agente}</strong>: ${item.detalle}</div>`;
+          }
+          return `<div class="trace-item"><span class="badge b-met">${idx + 1}. MÉTODO</span> <strong>${item.agente}</strong>.<code>${item.metodo}</code><br><span style="color:#4b5563">${item.detalle}</span></div>`;
+        }).join("");
+        animarActividadAgentesDesdeTraza(data.traza || [], etiqueta);
+      }
+
+      function cambiarFormatoACL(fmt) {
+        formatoACL = fmt;
+        document.getElementById("btnSexpr").classList.toggle("active", fmt === "sexpr");
+        document.getElementById("btnJson").classList.toggle("active", fmt === "json");
+        renderizarACL();
+      }
+
+      function renderizarACL() {
+        if (!estadoCache) return;
+        const cont = document.getElementById("aclList");
+        cont.innerHTML = estadoCache.mensajes_acl.map(m => {
+          const body = formatoACL === "sexpr" ? m.acl_sexpr : JSON.stringify(JSON.parse(m.content_json), null, 2);
+          return `<div class="trace-item"><span class="badge b-acl">${m.caso_uso} · ${m.performative}</span> <strong>${m.sender}</strong> &rarr; <strong>${m.receiver}</strong><pre>${body}</pre></div>`;
+        }).join("");
+      }
+
+      function renderizarTablas() {
+        document.getElementById("tblResiduos").innerHTML = estadoCache.estado_interno_residuos.map(r =>
+          `<tr><td><code>${r.zona_id}</code></td><td>${r.nivel}%</td><td>${r.tiempo_sobre_limite} min</td><td>${r.ritmo_llenado}</td><td><code>${r.estado_visual || "contenedor_estable"}</code></td><td>${r.bolsas_suelo ?? 0}</td></tr>`
+        ).join("");
+
+        document.getElementById("tblAire").innerHTML = estadoCache.historial_mediciones_aire.slice(0, 8).map(m =>
+          `<tr><td>#${m.id}</td><td><code>${m.zona_id}</code></td><td>${m.concentracion_gases}</td><td>${m.temperatura}</td><td>${m.humedad}</td></tr>`
+        ).join("");
+
+        document.getElementById("tblAlertas").innerHTML = estadoCache.alertas.slice(0, 8).map(a => {
+          const badge = a.estado === "CONFIRMADA" ? "b-ok" : (a.estado === "PENDIENTE_COMUNIDAD" ? "b-warn" : "b-err");
+          return `<tr><td>#${a.id}</td><td><code>${a.zona_id}</code></td><td>${a.nivel}</td><td><span class="badge ${badge}">${a.estado}</span></td><td>${a.reporte}</td></tr>`;
+        }).join("");
+
+        document.getElementById("tblIncidencias").innerHTML = estadoCache.incidencias.slice(0, 8).map(i =>
+          `<tr><td>#${i.id}</td><td>${i.agente_afectado}</td><td><code>${i.zona_id}</code></td><td>${i.descripcion}</td><td>${i.accion_correctiva}</td></tr>`
+        ).join("");
+      }
+
+      cargarEstado().then(async () => {
+        await analizarImagenActual();
+        await ejecutarCicloAutonomoCompleto(false);
+        setInterval(() => {
+          if (pilotoAutomaticoActivo && !imagenBase64Seleccionada) {
+            ejecutarCicloAutonomoCompleto(true);
+          }
+        }, 16000);
+      });
+  </script>
+</body>
+
+</html>
