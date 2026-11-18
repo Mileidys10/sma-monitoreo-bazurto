@@ -40,9 +40,9 @@ El backend corre sobre un motor real en **Python** compuesto por:
 3. `AgenteAlertas` responde `REFUSE` si ya hay una alerta activa en esa zona (alerta duplicada, flujo alterno A2). Si acepta (`AGREE`), emite el aviso y reporta `INFORM-DONE` si la comunidad confirma o `FAILURE` si no.
 4. Sin evento de riesgo el grafo termina en el Coordinador: no se alerta.
 
-### Fotos propias para la cámara (opcional)
+### Fotos para la cámara
 
-Coloca fotos de contenedores (`.png`, `.jpg`, `.webp`) en `app/static/fotos_locales/`. Al arrancar, cada foto se analiza una vez; las que no tienen un contenedor se descartan, y en cada ronda la cámara usa la foto cuyo nivel se parece más al nivel simulado de la zona (la foto solo se analiza, no cambia el entorno). Esa carpeta **no se sube a git**: las fotos pueden tener derechos de autor y su licencia debe documentarla quien las aporta. Sin fotos locales se usan las 3 imágenes de muestra. En Docker se montan solas desde esa misma carpeta (solo lectura).
+Puedes añadir más fotos de contenedores (`.png`, `.jpg`, `.webp`) en `app/static/fotos_locales/`. Al arrancar, cada foto se analiza una vez; las que no tienen un contenedor se descartan, y en cada ronda la cámara usa la foto cuyo nivel se parece más al nivel simulado de la zona (la foto solo se analiza, no cambia el entorno). El repositorio ya incluye 8 fotos de prueba (ver `app/static/fotos_locales/LEEME.md` para su procedencia y licencia). Sin fotos se usan las 3 imágenes de muestra. En Docker las fotos viajan dentro de la imagen.
 
 ---
 

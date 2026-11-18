@@ -6,4 +6,4 @@ __pycache__
 *.db
 .env
 tests
-app/static/fotos_locales
+app/static/fotos_locales/Screenshot 2026-11-15 174700.png
