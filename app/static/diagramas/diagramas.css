@@ -1,0 +1,244 @@
+/* Estilos para la vista de Diagramas — SMA Bazurto V2
+ * Acento unico azul petroleo (#0b556c), fondo claro, contraste WCAG AA >= 4.5:1.
+ * Sin morados, sin degradados, sin glassmorphism, sin dependencias externas.
+ */
+
+:root {
+  --petroleo: #0b556c;
+  --petroleo-oscuro: #073b4c;
+  --petroleo-suave: #e3f0f5;
+
+  --fondo: #f3f6f8;
+  --superficie: #ffffff;
+  --superficie-alt: #f8fafb;
+  --borde: #c4d0d8;
+
+  --texto: #102029;
+  --texto-secundario: #334e5c;
+
+  --error-bg: #fce8e6;
+  --error-borde: #c5221f;
+  --error-txt: #75110f;
+
+  --radio: 8px;
+  --fuente-sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--fondo);
+  color: var(--texto);
+  font-family: var(--fuente-sans);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.saltar-contenido {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+  background-color: var(--petroleo-oscuro);
+  color: #ffffff;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 var(--radio) 0;
+}
+
+.saltar-contenido:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+:focus-visible {
+  outline: 3px solid var(--petroleo);
+  outline-offset: 2px;
+}
+
+.cabecera-diagramas {
+  background-color: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+  border-top: 4px solid var(--petroleo);
+}
+
+.cabecera-contenido {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.cabecera-contenido h1 {
+  margin: 0;
+  font-size: clamp(1.2rem, 1.8vw + 0.75rem, 1.6rem);
+  line-height: 1.25;
+  color: var(--petroleo-oscuro);
+}
+
+.cabecera-subtitulo {
+  margin: 0.2rem 0 0;
+  font-size: 0.86rem;
+  color: var(--texto-secundario);
+}
+
+.btn-volver {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 0.95rem;
+  min-height: 40px;
+  border-radius: 6px;
+  background-color: var(--petroleo);
+  border: 1px solid var(--petroleo-oscuro);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+
+.btn-volver:hover {
+  background-color: var(--petroleo-oscuro);
+}
+
+.contenedor-diagramas {
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 1.1rem 1.25rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  flex: 1 0 auto;
+}
+
+.panel-diagrama {
+  background-color: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 1.05rem 1.15rem;
+  min-width: 0;
+}
+
+.panel-diagrama h2 {
+  margin: 0 0 0.45rem;
+  font-size: 1.08rem;
+  color: var(--petroleo-oscuro);
+}
+
+.descripcion-diagrama {
+  margin: 0 0 0.85rem;
+  color: var(--texto-secundario);
+  font-size: 0.92rem;
+}
+
+.meta-motor {
+  margin: 0 0 0.75rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 5px;
+  background-color: var(--petroleo-suave);
+  border: 1px solid var(--petroleo);
+  color: var(--petroleo-oscuro);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.meta-motor[data-estado="error"] {
+  background-color: var(--error-bg);
+  border-color: var(--error-borde);
+  color: var(--error-txt);
+}
+
+.marco-mermaid {
+  background-color: var(--superficie-alt);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  padding: 0.85rem;
+  overflow-x: auto;
+}
+
+.marco-mermaid .mermaid {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--texto);
+}
+
+.marco-mermaid .mermaid svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.pie-diagramas {
+  background-color: var(--superficie);
+  border-top: 1px solid var(--borde);
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.65rem 1.25rem;
+  font-size: 0.84rem;
+  color: var(--texto-secundario);
+}
+
+.pie-nota {
+  margin: 0;
+}
+
+.pie-enlaces {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.pie-enlaces a {
+  color: var(--petroleo-oscuro);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pie-enlaces a:hover {
+  color: var(--petroleo);
+}
+
+@media (max-width: 900px) {
+  .cabecera-contenido {
+    padding: 0.85rem;
+  }
+
+  .contenedor-diagramas {
+    padding: 0.85rem;
+  }
+
+  .panel-diagrama {
+    padding: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

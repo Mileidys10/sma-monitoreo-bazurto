@@ -610,21 +610,52 @@ body {
 }
 
 .bitacora-item {
-  display: grid;
-  grid-template-columns: auto auto auto 1fr;
+  display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 0.4rem 0.65rem;
   padding: 0.45rem 0.65rem;
   background-color: var(--superficie-alt);
   border: 1px solid var(--borde);
+  border-left: 4px solid var(--borde-fuerte);
   border-radius: 5px;
   font-size: 0.85rem;
+}
+
+.bitacora-item[data-caso-uso="CU-01"] {
+  border-left-color: var(--petroleo);
+}
+
+.bitacora-item[data-caso-uso="CU-02"] {
+  border-left-color: var(--riesgo-medio-borde);
 }
 
 .bitacora-hora {
   font-family: var(--fuente-mono);
   font-size: 0.78rem;
   color: var(--texto-secundario);
+}
+
+.bitacora-cu {
+  font-family: var(--fuente-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid var(--borde-fuerte);
+  white-space: nowrap;
+}
+
+.bitacora-cu.cu-01 {
+  background-color: var(--petroleo-suave);
+  border-color: var(--petroleo);
+  color: var(--petroleo-oscuro);
+}
+
+.bitacora-cu.cu-02 {
+  background-color: var(--riesgo-medio-bg);
+  border-color: var(--riesgo-medio-borde);
+  color: var(--riesgo-medio-txt);
 }
 
 .bitacora-perf {
@@ -649,6 +680,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1 1 220px;
   min-width: 0;
 }
 
@@ -885,12 +917,8 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .bitacora-item {
-    grid-template-columns: auto auto 1fr;
-  }
-
   .bitacora-contenido {
-    grid-column: 1 / -1;
+    flex-basis: 100%;
     white-space: normal;
   }
 }
@@ -907,4 +935,12 @@ body {
   .pulso-acl {
     display: none;
   }
+}
+
+/* Foco de teclado siempre visible en los nodos, aunque el agente cambie de estado (WCAG 2.4.7).
+   Mas especifico que las reglas [data-estado] y con trazo discontinuo para distinguirlo del estado. */
+.nodo-agente.nodo-agente:focus-visible .nodo-caja {
+  stroke: var(--petroleo-oscuro);
+  stroke-width: 4;
+  stroke-dasharray: 7 3;
 }

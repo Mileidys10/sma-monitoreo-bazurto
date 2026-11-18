@@ -290,7 +290,17 @@
     const fragmento = document.createDocumentFragment();
     estado.bitacora.forEach(function (entrada) {
       const li = crearEl("li", "bitacora-item");
+      const cu = String(entrada.caso_uso || "").trim();
+      if (cu) {
+        li.dataset.casoUso = cu;
+      }
       const hora = crearEl("span", "bitacora-hora", formatearHora(entrada.ts));
+      li.appendChild(hora);
+      if (cu) {
+        const claseCu = cu === "CU-02" ? "cu-02" : "cu-01";
+        const badgeCu = crearEl("span", "bitacora-cu " + claseCu, cu);
+        li.appendChild(badgeCu);
+      }
       const perf = crearEl("span", "bitacora-perf", entrada.performativa || "ACL");
       const ruta = crearEl(
         "span",
@@ -303,7 +313,6 @@
         "bitacora-contenido",
         textoContenido.length > 120 ? textoContenido.slice(0, 117) + "..." : textoContenido
       );
-      li.appendChild(hora);
       li.appendChild(perf);
       li.appendChild(ruta);
       li.appendChild(contenido);
@@ -504,6 +513,7 @@
           conversation_id: datos.conversation_id || "",
           protocolo: datos.protocolo || "",
           ronda: datos.ronda || 0,
+          caso_uso: datos.caso_uso || "",
           ts: evento.ts,
         };
         estado.bitacora.unshift(entrada);
