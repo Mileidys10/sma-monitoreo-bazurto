@@ -8,8 +8,11 @@ services:
       # Opcional: con clave, el agente de residuos usa Gemini; sin ella usa el analisis local HSV.
       # La clave se toma del entorno de quien ejecuta; NUNCA se escribe en el repositorio.
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      SMA_FOTOS_DIR: /fotos
     volumes:
       - sma_data:/data
+      # Fotos locales opcionales para la camara (no se versionan ni van dentro de la imagen).
+      - ./app/static/fotos_locales:/fotos:ro
     restart: unless-stopped
 
 volumes:

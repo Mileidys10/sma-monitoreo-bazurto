@@ -44,12 +44,12 @@ class BazurtoAgentState(TypedDict, total=False):
     nivel_llenado: float
     vision_resumen: dict[str, Any]
     estado_interno_residuos: dict[str, Any]
-    evento_id: int
+    evento_id: Optional[int]
     medicion_aire: dict[str, float]
     aumento_gases: bool
     riesgo: float
     ranking_zonas: list[dict[str, Any]]
-    reply_with: str
+    reply_with: Optional[str]
     alerta_aceptada: bool
     alerta_id: Optional[int]
     resultado_acl: str
@@ -63,7 +63,8 @@ MERMAID_STATEGRAPH = """flowchart TD
     START([START]) --> nodo_sensor_residuos[nodo_sensor_residuos\\nAgenteSensorResiduos]
     nodo_sensor_residuos -->|ACL:INFORM| nodo_sensor_aire[nodo_sensor_aire\\nAgenteSensorAire]
     nodo_sensor_aire -->|ACL:INFORM| nodo_coordinador[nodo_coordinador\\nAgenteCoordinador]
-    nodo_coordinador -->|ACL:REQUEST| nodo_alertas[nodo_alertas\\nAgenteAlertas]
+    nodo_coordinador -->|sin evento de riesgo persistente| END([END])
+    nodo_coordinador -->|ACL:REQUEST si hay evento| nodo_alertas[nodo_alertas\\nAgenteAlertas]
     nodo_alertas -->|decidir_ruta_supervision: FAILURE / REFUSE / Auditar| nodo_supervisor[nodo_supervisor\\nAgenteSupervisor]
     nodo_alertas -->|INFORM-DONE sin auditoría extra| END([END])
     nodo_supervisor -->|REQUEST / CONFIRM| END"""
@@ -78,8 +79,14 @@ class BazurtoStateGraphRunner:
         on_agente: Optional[CallbackAgente] = None,
         on_vision: Optional[CallbackVision] = None,
         ritmo_s: float = 0.0,
+        imagen_segun_nivel: bool = False,
+        proveedor_imagen: Optional[Callable[[float], Optional[str]]] = None,
     ) -> None:
         self.sma = sma
+        # En modo autonomo la camara "ve" el nivel simulado: la foto se elige segun ese nivel y
+        # nunca sobrescribe el entorno. En modo manual la foto asignada/subida sigue mandando.
+        self.imagen_segun_nivel = imagen_segun_nivel
+        self.proveedor_imagen = proveedor_imagen  # nivel -> foto (data URL) o None
         self.on_agente = on_agente
         self.on_vision = on_vision
         self.ritmo_s = ritmo_s  # pausa tras cada agente para que la Sala de Control muestre el avance
@@ -118,20 +125,22 @@ class BazurtoStateGraphRunner:
             nivel = self.sma.sensor_residuos.medirNivelLlenadoContenedores(zid, trace)
             conts = self.sma.db.list_contenedores(zid)
             cont = conts[0] if conts else None
-            img_custom = cont.get("imagen_custom_base64") if cont else None
-            preset = None if img_custom else (
+            img_custom = None if self.imagen_segun_nivel else (cont.get("imagen_custom_base64") if cont else None)
+            preset = None if (img_custom or self.imagen_segun_nivel) else (
                 cont.get("ultima_imagen")
                 if cont and cont.get("ultima_imagen") in ("contenedor_limpio.png", "contenedor_medio.png", "contenedor_critico.png")
                 else self.sma.sensor_residuos._preset_para_nivel(nivel)
             )
+            foto_banco = self.proveedor_imagen(nivel) if (self.imagen_segun_nivel and self.proveedor_imagen) else None
             vision = self.sma.sensor_residuos.analizarImagenes(
                 zona_id=zid,
                 nivel=nivel,
                 trace=trace,
-                image_base64=img_custom,
+                image_base64=foto_banco or img_custom,
                 preset_imagen=preset,
                 actualizar_entorno=False,
                 gemini_api_key=state.get("gemini_api_key"),
+                no_modificar_entorno=bool(foto_banco),
             )
             if self.on_vision:
                 self.on_vision(zid, cont, vision)
@@ -143,9 +152,11 @@ class BazurtoStateGraphRunner:
                 estado_visual=str(vision["estado_visual"]),
                 bolsas_suelo=int(vision["bolsas_en_suelo"]),
             )
-            evento_id = self.sma.sensor_residuos.publicarEventoRiesgo(
-                zid, estado_interno, conv_id, f"FW-{fw_tag}", trace
-            )
+            evento_id: Optional[int] = None
+            if estado_interno["persiste"]:  # bloque opt del CU-01: nivel > umbral AND persiste
+                evento_id = self.sma.sensor_residuos.publicarEventoRiesgo(
+                    zid, estado_interno, conv_id, f"FW-{fw_tag}", trace
+                )
 
             nodos.append(
                 {
@@ -156,10 +167,10 @@ class BazurtoStateGraphRunner:
                         "medirNivelLlenadoContenedores()",
                         "analizarImagenes()",
                         "evaluarPersistencia()",
-                        "publicarEventoRiesgo()",
+                        "publicarEventoRiesgo()" if evento_id is not None else "sin evento (bajo umbral o sin persistencia)",
                     ],
                     "salida": (
-                        f"evento=#{evento_id}, nivel={nivel_efectivo}%, "
+                        f"evento={'#' + str(evento_id) if evento_id is not None else 'ninguno'}, nivel={nivel_efectivo}%, "
                         f"tiempoSobreLimite={estado_interno['tiempo_sobre_limite']}min, "
                         f"vision={vision['estado_visual']}"
                     ),
@@ -182,7 +193,7 @@ class BazurtoStateGraphRunner:
                     "ritmo_llenado": float(estado_interno["ritmo_llenado"]),
                     "ciclos_consecutivos": int(estado_interno["ciclos_consecutivos"]),
                 },
-                "evento_id": int(evento_id),
+                "evento_id": evento_id,
                 "nodos_visitados": nodos,
                 "transiciones": transiciones,
                 "traza": trace,
@@ -230,7 +241,7 @@ class BazurtoStateGraphRunner:
         def nodo_coordinador(state: BazurtoAgentState) -> dict[str, Any]:
             zid = str(state["zona_id"])
             conv_id = str(state["conversation_id"])
-            evento_id = int(state["evento_id"])
+            evento_id = state.get("evento_id")
             fw_tag = str(state.get("framework_id", "langgraph")).upper()
             trace = list(state.get("traza") or [])
             nodos = list(state.get("nodos_visitados") or [])
@@ -239,10 +250,12 @@ class BazurtoStateGraphRunner:
             self.sma.coordinador.consultarEventos(zid, trace)
             riesgo = self.sma.coordinador.calcularRiesgo(zid, True, trace)
             ranking = self.sma.coordinador.priorizarZonas(zid, riesgo, trace)
-            self.sma.db.update_evento_riesgo(evento_id, riesgo, 1, atendido=True)
-            reply_with = self.sma.coordinador.delegarAlerta(
-                evento_id, zid, riesgo, conv_id, f"FW-{fw_tag}", False, trace
-            )
+            reply_with: Optional[str] = None
+            if evento_id is not None:  # solo hay alerta que delegar si el sensor publico un evento
+                self.sma.db.update_evento_riesgo(int(evento_id), riesgo, 1, atendido=True)
+                reply_with = self.sma.coordinador.delegarAlerta(
+                    int(evento_id), zid, riesgo, conv_id, f"FW-{fw_tag}", False, trace
+                )
 
             nodos.append(
                 {
@@ -253,7 +266,7 @@ class BazurtoStateGraphRunner:
                         "consultarEventos()",
                         "calcularRiesgo()",
                         "priorizarZonas()",
-                        "delegarAlerta()",
+                        "delegarAlerta()" if evento_id is not None else "sin alerta que delegar",
                     ],
                     "salida": f"riesgo={riesgo}, rankingTop={ranking[0]['zona_id'] if ranking else zid}",
                 }
@@ -271,7 +284,7 @@ class BazurtoStateGraphRunner:
         def nodo_alertas(state: BazurtoAgentState) -> dict[str, Any]:
             zid = str(state["zona_id"])
             conv_id = str(state["conversation_id"])
-            evento_id = int(state["evento_id"])
+            evento_id = int(state["evento_id"])  # garantizado: este nodo solo corre con evento
             riesgo = float(state["riesgo"])
             reply_with = str(state["reply_with"])
             fw_tag = str(state.get("framework_id", "langgraph")).upper()
@@ -448,7 +461,11 @@ class BazurtoStateGraphRunner:
         builder.add_edge(start_node, "nodo_sensor_residuos")
         builder.add_edge("nodo_sensor_residuos", "nodo_sensor_aire")
         builder.add_edge("nodo_sensor_aire", "nodo_coordinador")
-        builder.add_edge("nodo_coordinador", "nodo_alertas")
+        builder.add_conditional_edges(
+            "nodo_coordinador",
+            lambda st: "alertas" if st.get("evento_id") is not None else "fin",
+            {"alertas": "nodo_alertas", "fin": end_node},
+        )
         builder.add_conditional_edges(
             "nodo_alertas",
             decidir_ruta_supervision,

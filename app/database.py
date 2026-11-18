@@ -440,6 +440,15 @@ class BazurtoDatabase:
             ).fetchone()
             return dict(row) if row else None
 
+    def resolver_alertas_zona(self, zona_id: str) -> int:
+        """Cierra las alertas activas (CONFIRMADA) de una zona; devuelve cuantas cerro."""
+        with self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE alertas SET estado = 'RESUELTA' WHERE zona_id = ? AND estado = 'CONFIRMADA'",
+                (zona_id,),
+            )
+            return int(cur.rowcount)
+
     def get_latest_alerta(self, zona_id: Optional[str] = None) -> Optional[dict[str, Any]]:
         with self._connect() as conn:
             if zona_id:

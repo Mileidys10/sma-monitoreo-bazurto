@@ -204,8 +204,10 @@ class AgenteSensorResiduos(AgenteBase):
         preset_imagen: Optional[str] = None,
         actualizar_entorno: bool = False,
         gemini_api_key: Optional[str] = None,
+        no_modificar_entorno: bool = False,
     ) -> dict[str, Any]:
-        tiene_fuente_explicita = bool(image_base64 or preset_imagen)
+        # no_modificar_entorno: la imagen solo se percibe y analiza; el nivel del entorno simulado manda.
+        tiene_fuente_explicita = bool(image_base64 or preset_imagen) and not no_modificar_entorno
         chosen_preset = preset_imagen or self._preset_para_nivel(nivel)
         vision = analizar_imagen_contenedor(
             image_input=image_base64,
@@ -223,8 +225,9 @@ class AgenteSensorResiduos(AgenteBase):
                 f"Imagen descartada sin alterar MercadoBazurto (se conserva nivel={nivel_final}%)."
             )
         else:
-            nivel_final = vision["nivel_llenado_visual"] if (tiene_fuente_explicita or actualizar_entorno) else nivel
-            if tiene_fuente_explicita or actualizar_entorno:
+            usar_imagen_como_nivel = (tiene_fuente_explicita or actualizar_entorno) and not no_modificar_entorno
+            nivel_final = vision["nivel_llenado_visual"] if usar_imagen_como_nivel else nivel
+            if usar_imagen_como_nivel:
                 self.db.update_zona(zona_id, nivel_llenado_contenedores=nivel_final)
 
             desbordamiento = bool(vision["desbordamiento"] or nivel_final >= self.umbrales.nivel_residuos_critico)
@@ -553,7 +556,7 @@ class AgenteAlertas(AgenteBase):
         trace: list[dict[str, Any]],
     ) -> bool:
         alerta_activa = self.db.get_active_alerta_zona(zona_id)
-        duplicada = forzar_duplicada or (alerta_activa is not None and forzar_duplicada)
+        duplicada = forzar_duplicada or alerta_activa is not None  # A2 del CU-01: ya hay una alerta activa en la zona
         trace.append(
             {
                 "tipo": "METODO",

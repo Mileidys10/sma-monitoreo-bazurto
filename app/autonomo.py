@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import base64
 import logging
+import os
 import random
+from pathlib import Path
 import threading
 from typing import Any, Optional
 from uuid import uuid4
 
+from app.banco_fotos import BancoFotos
 from app.eventos import AGENTES, EventBus
 from app.fipa_acl import ACLMessage
 from app.models_masml import SMAMonitoreoBazurto, registrar_observador_acl
@@ -47,23 +50,43 @@ def _limitar(valor: float, minimo: float, maximo: float) -> float:
 
 
 class SimuladorEntorno:
-    """Evoluciona de forma continua los sensores del entorno MercadoBazurto (simulado)."""
+    """Evoluciona de forma continua los sensores del entorno MercadoBazurto (simulado).
 
-    def __init__(self, sma: SMAMonitoreoBazurto, rng: random.Random) -> None:
+    El llenado solo baja cuando un camion recolector vacia la zona; el camion se programa al
+    confirmarse una alerta (INFORM-DONE) y llega unas rondas despues, tiempo en el que una nueva
+    solicitud de alerta para la misma zona debe ser rechazada por duplicada (REFUSE).
+    """
+
+    def __init__(
+        self,
+        sma: SMAMonitoreoBazurto,
+        rng: random.Random,
+        paso_llenado: tuple[float, float] = (2.5, 6.0),
+    ) -> None:
         self.sma = sma
         self.rng = rng
+        self.paso_llenado = paso_llenado  # puntos de llenado por ronda
+        self.pendientes: dict[str, int] = {}  # zona_id -> rondas que faltan para que llegue el camion
+
+    def programar_recoleccion(self, zona_id: str, en_rondas: int = 4) -> None:
+        self.pendientes.setdefault(zona_id, en_rondas)
 
     def avanzar(self) -> list[str]:
         """Avanza todas las zonas un paso. Devuelve los nombres de zonas recolectadas por el camion."""
         recolectadas: list[str] = []
         for zona in self.sma.db.list_zonas():
-            nivel = float(zona["nivel_llenado_contenedores"]) + self.rng.uniform(0.8, 3.2)
-            if nivel >= 99.0:  # el camion recolector vacia los contenedores
-                nivel = self.rng.uniform(18.0, 32.0)
-                recolectadas.append(str(zona["nombre"]))
+            zid = str(zona["zona_id"])
+            nivel = float(zona["nivel_llenado_contenedores"]) + self.rng.uniform(*self.paso_llenado)
+            if zid in self.pendientes:
+                self.pendientes[zid] -= 1
+                if self.pendientes[zid] <= 0:
+                    del self.pendientes[zid]
+                    nivel = self.rng.uniform(18.0, 32.0)
+                    self.sma.db.resolver_alertas_zona(zid)  # el camion cierra la alerta activa
+                    recolectadas.append(str(zona["nombre"]))
             gases = float(zona["concentracion_gases"]) + self.rng.uniform(-30.0, 45.0) + (nivel - 50.0) * 0.2
             self.sma.db.update_zona(
-                str(zona["zona_id"]),
+                zid,
                 nivel_llenado_contenedores=round(_limitar(nivel, 0.0, 100.0), 1),
                 concentracion_gases=round(_limitar(gases, 380.0, 1400.0), 1),
                 temperatura=round(_limitar(float(zona["temperatura"]) + self.rng.uniform(-0.4, 0.4), 26.0, 36.0), 1),
@@ -95,15 +118,24 @@ class LoopAutonomo:
         self.estado_agentes: dict[str, dict[str, str]] = {
             a: {"agente": a, "estado": "reposo", "detalle": ""} for a in AGENTES
         }
+        carpeta_fotos = Path(os.environ.get("SMA_FOTOS_DIR") or Path(__file__).resolve().parent / "static" / "fotos_locales")
+        self.banco = BancoFotos(carpeta_fotos, sma.parametros.nivel_residuos_critico, self.rng)
         self.runner = BazurtoStateGraphRunner(
-            sma, on_agente=self._on_agente, on_vision=self._on_vision, ritmo_s=ritmo_s
+            sma,
+            on_agente=self._on_agente,
+            on_vision=self._on_vision,
+            ritmo_s=ritmo_s,
+            imagen_segun_nivel=True,
+            proveedor_imagen=self.banco.elegir if len(self.banco) else None,
         )
         self._stop = threading.Event()
         self._hilo: Optional[threading.Thread] = None
         self._zona_activa = ""
         self.info_sistema = {
             "motor": "LangGraph", "version_langgraph": VERSION_LANGGRAPH,
-            "intervalo_s": intervalo_s, "mensaje": "Agentes autónomos en ejecución",
+            "intervalo_s": intervalo_s,
+            "mensaje": "Agentes autónomos en ejecución. Cámara: "
+            + (f"banco de fotos locales ({self.banco.resumen()})" if len(self.banco) else "3 imágenes de muestra"),
         }
         registrar_observador_acl(self._on_acl)
 
@@ -138,7 +170,10 @@ class LoopAutonomo:
         if anotada.startswith("data:image/png;base64,"):
             self.imagenes[zona_id] = base64.b64decode(anotada.split(",", 1)[1])
         motor = "gemini" if "Gemini" in str(vision.get("motor_vision", "")) else "hsv"
-        preset = (contenedor or {}).get("ultima_imagen")
+        fuente = str(vision.get("fuente_imagen", ""))
+        preset = next(
+            (n for n in ("contenedor_critico.png", "contenedor_medio.png", "contenedor_limpio.png") if n in fuente), None
+        )
         self.bus.emitir(
             "vision",
             zona_id=zona_id,
@@ -158,7 +193,7 @@ class LoopAutonomo:
         a = _DESTINO.get(msg.receiver, f"a {msg.receiver}")
         p = msg.performative.upper()
         if p == "INFORM" and msg.sender == "AgenteSensorResiduos":
-            return {"texto": f"{quien} informa {a} el nivel de llenado de los contenedores.", "nivel": "info"}
+            return {"texto": f"{quien} avisa {a}: los contenedores llevan un buen rato por encima del umbral.", "nivel": "atencion"}
         if p == "INFORM" and msg.sender == "AgenteSensorAire":
             return {"texto": f"{quien} informa {a} la concentración de gases que midió.", "nivel": "info"}
         textos = {
@@ -192,15 +227,36 @@ class LoopAutonomo:
             est = res["estado_final_checkpoint"]
             z = self.sma.db.get_zona(zid) or {}
             riesgo = est.get("riesgo")
-            self.bus.emitir(
-                "medicion",
-                zona_id=zid,
-                nivel_llenado=float(z.get("nivel_llenado_contenedores", 0.0)),
-                concentracion_gases=float(z.get("concentracion_gases", 0.0)),
-                temperatura=float(z.get("temperatura", 0.0)),
-                humedad=float(z.get("humedad", 0.0)),
-                riesgo=_pct(riesgo),
-            )
+            # Todas las zonas publican su lectura de la ronda: nivel y riesgo siempre del mismo instante.
+            riesgo_por_zona = {str(r["zona_id"]): r.get("riesgo") for r in (est.get("ranking") or []) if "zona_id" in r}
+            riesgo_por_zona[zid] = riesgo
+            for zona_actual in self.sma.db.list_zonas():
+                otra = str(zona_actual["zona_id"])
+                self.bus.emitir(
+                    "medicion",
+                    zona_id=otra,
+                    nivel_llenado=float(zona_actual["nivel_llenado_contenedores"]),
+                    concentracion_gases=float(zona_actual["concentracion_gases"]),
+                    temperatura=float(zona_actual["temperatura"]),
+                    humedad=float(zona_actual["humedad"]),
+                    riesgo=_pct(riesgo_por_zona.get(otra)),
+                )
+            if est.get("resultado_acl") is None:
+                nivel_z = float(z.get("nivel_llenado_contenedores", 0.0))
+                limite = self.sma.parametros.nivel_residuos_critico
+                motivo = (
+                    f"está por debajo del umbral ({limite:.0f} %)" if nivel_z < limite
+                    else "supera el umbral pero aún no lleva el tiempo mínimo seguido"
+                )
+                self.bus.emitir(
+                    "narracion",
+                    texto=f"{nombre} {motivo} con {nivel_z:.0f} % de llenado: no hace falta alertar.",
+                )
+            if est.get("resultado_acl") == "INFORM-DONE":
+                self.entorno.programar_recoleccion(zid)
+                self.bus.emitir(
+                    "narracion", texto=f"Alerta atendida: se envió un camión recolector a {nombre}; llegará en unas rondas."
+                )
             if est.get("alerta_id") is not None:
                 self.bus.emitir(
                     "alerta", alerta_id=str(est["alerta_id"]), zona_id=zid,
@@ -250,6 +306,10 @@ class LoopAutonomo:
     def iniciar(self) -> None:
         if self._hilo and self._hilo.is_alive():
             return
+        limite = self.sma.parametros.nivel_residuos_critico
+        for z in self.sma.db.list_zonas():  # una alerta vieja no debe bloquear nuevas con la zona ya bajo el umbral
+            if float(z["nivel_llenado_contenedores"]) < limite:
+                self.sma.db.resolver_alertas_zona(str(z["zona_id"]))
         self._stop.clear()
         self.bus.emitir("sistema", **self.info_sistema)
         self._hilo = threading.Thread(target=self._bucle, name="sma-autonomo", daemon=True)

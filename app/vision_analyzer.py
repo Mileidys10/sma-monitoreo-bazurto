@@ -487,7 +487,7 @@ def _analyze_synthetic_scene(orig_img: Image.Image, fuente: str, umbral_critico:
         "fuente_imagen": fuente,
         "motor_vision": "Motor Matemático HSV Local (100% Offline)",
         "explicacion_ia": (
-            f"Análisis cromático offline sobre escena sintética ({fuente}): "
+            f"Análisis cromático offline sobre la imagen ({fuente}): "
             f"densidad interna {densidad_pct:.1f}% y {bolsas_en_suelo} bulto(s) en el perímetro del suelo."
         ),
         "telemetria_pixeles": {

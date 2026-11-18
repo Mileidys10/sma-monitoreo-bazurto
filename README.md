@@ -29,9 +29,20 @@ El backend corre sobre un motor real en **Python** compuesto por:
 | **Mensajes FIPA-ACL** | **Real** | `ACLMessage` emitidos por los agentes (`INFORM`, `REQUEST`, `AGREE`, `REFUSE`, `INFORM-DONE`, `FAILURE`, `QUERY-IF`, `CONFIRM`, `DISCONFIRM`) y persistidos en SQLite. |
 | **Riesgo y alertas** | **Real** | `calcularRiesgo()`, `priorizarZonas()`, alertas e incidencias reales calculadas y almacenadas en `bazurto_sma.db`. |
 | **Análisis de imagen** | **Real** | Procesamiento real con `analizar_imagen_contenedor()` (`app/vision_analyzer.py`): motor HSV local píxel a píxel o IA Gemini si hay clave. |
-| **Sensores del entorno** | **Simulado** | `SimuladorEntorno` (`app/autonomo.py`) evoluciona llenado, gases, temperatura y humedad en `MercadoBazurto` (incluyendo vaciado por camión recolector al llegar a ≥ 99%). |
+| **Sensores del entorno** | **Simulado** | `SimuladorEntorno` (`app/autonomo.py`) evoluciona llenado, gases, temperatura y humedad en `MercadoBazurto`. El llenado solo baja cuando un camión recolector llega, unas rondas después de una alerta confirmada. |
 | **Respuesta comunitaria** | **Simulado** | En las rondas autónomas (`LoopAutonomo`), la comunidad confirma con probabilidad `prob_confirma = 0.7` (70%). |
-| **Imágenes iniciales** | **De muestra** | El catálogo base usa 3 fotografías sintéticas de muestra (`contenedor_limpio.png`, `contenedor_medio.png`, `contenedor_critico.png`), aunque también admite subir fotos o webcam en `/documentacion`. |
+| **Imágenes iniciales** | **De muestra** | En la Sala de Control la cámara analiza una de 3 imágenes de muestra (`contenedor_limpio.png`, `contenedor_medio.png`, `contenedor_critico.png`) elegida según el nivel simulado; la imagen no modifica el entorno. En `/documentacion` se pueden subir fotos o usar la webcam, y ahí la foto sí fija el nivel de la zona. |
+
+### ¿Cuándo se genera una alerta? (regla del CU-01)
+
+1. `AgenteSensorResiduos` publica el evento de riesgo e informa al Coordinador **solo si** el nivel supera el umbral (80 %) y persiste al menos 30 min (`nivel > umbral AND persiste`). Cada visita a una zona cuenta como 15 min simulados.
+2. `AgenteSensorAire` informa su medición en cada ronda. `AgenteCoordinador` calcula riesgo y prioriza zonas siempre, pero **solo delega la alerta** (`REQUEST`) si hubo evento de riesgo.
+3. `AgenteAlertas` responde `REFUSE` si ya hay una alerta activa en esa zona (alerta duplicada, flujo alterno A2). Si acepta (`AGREE`), emite el aviso y reporta `INFORM-DONE` si la comunidad confirma o `FAILURE` si no.
+4. Sin evento de riesgo el grafo termina en el Coordinador: no se alerta.
+
+### Fotos propias para la cámara (opcional)
+
+Coloca fotos de contenedores (`.png`, `.jpg`, `.webp`) en `app/static/fotos_locales/`. Al arrancar, cada foto se analiza una vez; las que no tienen un contenedor se descartan, y en cada ronda la cámara usa la foto cuyo nivel se parece más al nivel simulado de la zona (la foto solo se analiza, no cambia el entorno). Esa carpeta **no se sube a git**: las fotos pueden tener derechos de autor y su licencia debe documentarla quien las aporta. Sin fotos locales se usan las 3 imágenes de muestra. En Docker se montan solas desde esa misma carpeta (solo lectura).
 
 ---
 
