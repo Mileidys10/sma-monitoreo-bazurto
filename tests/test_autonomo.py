@@ -9,7 +9,9 @@ from app.models_masml import SMAMonitoreoBazurto
 def _loop(tmp_path: Path, **kw):
     sma = SMAMonitoreoBazurto(db_path=str(tmp_path / "auto.db"))
     bus = EventBus()
-    return LoopAutonomo(sma, bus, ritmo_s=0, semilla=7, **kw), bus, sma
+    loop = LoopAutonomo(sma, bus, ritmo_s=0, semilla=7, **kw)
+    loop.entorno.prob_falla_sensor = 0.0  # determinista: los fallos del sensor se prueban aparte
+    return loop, bus, sma
 
 
 def _quieto(loop: LoopAutonomo) -> LoopAutonomo:
@@ -137,3 +139,81 @@ def test_cada_ronda_publica_la_medicion_de_todas_las_zonas(tmp_path: Path) -> No
     fin = [e.datos for e in bus.recientes() if e.tipo == "ronda_fin"][0]
     riesgo_ranking = {r["zona_id"]: r["riesgo"] for r in fin["ranking"]}
     assert all(m["riesgo"] == riesgo_ranking[m["zona_id"]] for m in med)  # nivel y riesgo del mismo instante
+
+
+
+def _acl(bus, ronda):
+    return [e.datos for e in bus.recientes() if e.tipo == "mensaje_acl" and e.datos["ronda"] == ronda]
+
+
+def test_cada_mensaje_lleva_su_caso_de_uso(tmp_path: Path) -> None:
+    loop, bus, _ = _loop(tmp_path)
+    _quieto(loop)
+    loop.ejecutar_ronda()
+    loop.ejecutar_ronda()  # ronda 2 = zona_3: CU-01 completo y auditoria CU-02
+    acl = _acl(bus, 2)
+    assert {m["caso_uso"] for m in acl} == {"CU-01", "CU-02"}
+    assert all(m["caso_uso"] == "CU-02" for m in acl if "AgenteSupervisor" in (m["emisor"], m["receptor"]))
+    assert all(m["caso_uso"] == "CU-01" for m in acl if m["performativa"] in ("REQUEST", "AGREE", "INFORM-DONE")
+               and m["receptor"] in ("AgenteAlertas", "AgenteCoordinador") and m["emisor"] != "AgenteSupervisor")
+
+
+def test_cu02_supervisor_consulta_coordinador_alertas_y_sensor(tmp_path: Path) -> None:
+    loop, bus, _ = _loop(tmp_path)
+    _quieto(loop)
+    loop.ejecutar_ronda()
+    loop.ejecutar_ronda()
+    consultas = {m["receptor"] for m in _acl(bus, 2) if m["performativa"] == "QUERY-IF"}
+    assert consultas == {"AgenteCoordinador", "AgenteAlertas", "AgenteSensorAire"}
+    confirmaciones = {m["emisor"] for m in _acl(bus, 2) if m["performativa"] == "CONFIRM"}
+    assert confirmaciones == {"AgenteCoordinador", "AgenteAlertas", "AgenteSensorAire"}
+
+
+def test_cu02_a1_alerta_sin_confirmar_escala_y_reintenta(tmp_path: Path) -> None:
+    loop, bus, sma = _loop(tmp_path)
+    _quieto(loop)
+    loop.prob_confirma = 0.0
+    loop.ejecutar_ronda()
+    loop.ejecutar_ronda()  # zona_3: la comunidad no confirma
+    acl = _acl(bus, 2)
+    perf = [(m["performativa"], m["emisor"], m["receptor"]) for m in acl]
+    assert ("FAILURE", "AgenteAlertas", "AgenteCoordinador") in perf
+    assert ("DISCONFIRM", "AgenteAlertas", "AgenteSupervisor") in perf
+    assert ("REQUEST", "AgenteSupervisor", "AgenteCoordinador") in perf
+    assert ("AGREE", "AgenteCoordinador", "AgenteSupervisor") in perf
+    reintento = [m for m in acl if m["performativa"] == "REQUEST" and m["emisor"] == "AgenteCoordinador"
+                 and "reintento True" in m["contenido"]]
+    assert reintento, "el Coordinador debe reenviar la alerta como reintento"
+    assert any(i["agente_afectado"] == "AgenteAlertas" for i in sma.db.list_incidencias(limit=10))
+
+
+def test_cu02_a2_sensor_de_aire_caido_timeout_y_recalculo(tmp_path: Path) -> None:
+    loop, bus, sma = _loop(tmp_path)
+    _quieto(loop)
+    sma.db.update_zona("zona_2", sensor_aire_activo=False)
+    loop.entorno.sensores_caidos["zona_2"] = 5  # sigue caido durante la ronda
+    loop.ejecutar_ronda()  # ronda 1 = zona_2: bajo el umbral, sin alerta, pero el sensor no responde
+    acl = _acl(bus, 1)
+    perf = [(m["performativa"], m["emisor"], m["receptor"]) for m in acl]
+    assert not any(e == "AgenteSensorAire" for _, e, _r in perf), "un sensor caido no envia mensajes"
+    assert ("QUERY-IF", "AgenteSupervisor", "AgenteSensorAire") in perf
+    assert ("INFORM", "AgenteSupervisor", "AgenteCoordinador") in perf  # notificarFallos
+    assert ("REQUEST", "AgenteSupervisor", "AgenteCoordinador") in perf  # recalcular sin el sensor
+    assert ("AGREE", "AgenteCoordinador", "AgenteSupervisor") in perf
+    assert "REQUEST" not in {p for p, e, r in perf if r == "AgenteAlertas"}  # sin evento no hay alerta
+    narr = [e.datos["texto"] for e in bus.recientes() if e.tipo == "narracion"]
+    assert any("no respondió antes del plazo" in t for t in narr)
+    assert any(i["agente_afectado"] == "AgenteSensorAire" for i in sma.db.list_incidencias(limit=10))
+
+
+def test_simulador_tumba_y_recupera_el_sensor_de_aire(tmp_path: Path) -> None:
+    loop, bus, sma = _loop(tmp_path)
+    loop.entorno.paso_llenado = (0.0, 0.0)
+    loop.entorno.prob_falla_sensor = 1.0
+    loop.entorno.avanzar()
+    assert not any(z["sensor_aire_activo"] for z in sma.db.list_zonas())
+    loop.entorno.prob_falla_sensor = 0.0
+    for _ in range(5):
+        loop.entorno.avanzar()
+    assert all(z["sensor_aire_activo"] for z in sma.db.list_zonas())
+    assert loop.entorno.sensores_caidos == {}

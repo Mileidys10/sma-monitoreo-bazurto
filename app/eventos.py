@@ -47,6 +47,7 @@ class MensajeACL(BaseModel):
     conversation_id: str
     protocolo: str = "fipa-request"
     ronda: int = 0
+    caso_uso: str = ""
 
 
 class Medicion(BaseModel):

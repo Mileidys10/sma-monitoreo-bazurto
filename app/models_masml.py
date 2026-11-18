@@ -266,7 +266,7 @@ class AgenteSensorResiduos(AgenteBase):
         previo = self.db.get_estado_residuos(zona_id)
         if previo:
             ritmo = round(nivel - float(previo["nivel"]), 2)
-            if nivel >= self.umbrales.nivel_residuos_critico:
+            if nivel > self.umbrales.nivel_residuos_critico:
                 tiempo = int(previo["tiempo_sobre_limite"]) + 15
                 ciclos = int(previo["ciclos_consecutivos"]) + 1
             else:
@@ -274,13 +274,13 @@ class AgenteSensorResiduos(AgenteBase):
                 ciclos = 0
         else:
             ritmo = 0.0
-            tiempo = 15 if nivel >= self.umbrales.nivel_residuos_critico else 0
-            ciclos = 1 if nivel >= self.umbrales.nivel_residuos_critico else 0
+            tiempo = 15 if nivel > self.umbrales.nivel_residuos_critico else 0
+            ciclos = 1 if nivel > self.umbrales.nivel_residuos_critico else 0
 
         estado_interno = self.db.upsert_estado_residuos(
             zona_id, nivel, tiempo, ritmo, ciclos, estado_visual=estado_visual, bolsas_suelo=bolsas_suelo
         )
-        persiste = nivel >= self.umbrales.nivel_residuos_critico and tiempo >= self.umbrales.tiempo_persistencia_min
+        persiste = nivel > self.umbrales.nivel_residuos_critico and tiempo >= self.umbrales.tiempo_persistencia_min
         trace.append(
             {
                 "tipo": "METODO",
@@ -1003,112 +1003,147 @@ class SMAMonitoreoBazurto:
             evento = self.supervisor.verificarAtencionEventos(zona_id, trace)
         evento_id = int(evento["id"]) if evento else 1
 
-        self.supervisor.supervisarAgentes(trace)
+        auditoria = self.auditar_supervision(zona_id, evento_id, conv_id, trace)
+        alerta_confirmada = auditoria["alerta_confirmada"]
+        sensor_ok = auditoria["sensor_aire_activo"]
+        riesgo_recalculado = auditoria["riesgo_recalculado"]
+        incidencias_creadas = auditoria["incidencias_creadas"]
 
-        # 1. QUERY-IF a AgenteCoordinador
-        q_coord = ACLMessage(
-            performative="QUERY-IF",
-            sender="AgenteSupervisor",
-            receiver="AgenteCoordinador",
-            content={"atendido_evento": evento_id, "zona": zona_id},
-            protocol="FIPA-Query",
-            conversation_id=conv_id,
-            reply_with=f"q-coord-{evento_id}",
-            metodo_origen="verificarAtencionEventos()",
-            caso_uso="CU-02",
-        )
-        self.supervisor.emitir_acl(q_coord, trace)
-        self.coordinador.emitir_acl(
-            ACLMessage(
-                performative="CONFIRM",
-                sender="AgenteCoordinador",
-                receiver="AgenteSupervisor",
-                content={"atendido_evento": evento_id, "alerta_delegada": True},
+        return {
+            "caso_uso": "CU-02",
+            "conversation_id": conv_id,
+            "zona_id": zona_id,
+            "alerta_confirmada": alerta_confirmada,
+            "sensor_aire_activo": sensor_ok,
+            "riesgo_recalculado": riesgo_recalculado,
+            "incidencias_creadas": incidencias_creadas,
+            "traza": trace,
+        }
+
+    def auditar_supervision(
+        self,
+        zona_id: str,
+        evento_id: Optional[int],
+        conv_id: str,
+        trace: list[dict[str, Any]],
+        alerta_confirmada: Optional[bool] = None,
+    ) -> dict[str, Any]:
+        """CU-02: el AgenteSupervisor audita con FIPA-Query (QUERY-IF).
+
+        Con evento: pregunta al Coordinador si lo atendio, a AgenteAlertas si la comunidad confirmo
+        (A1: DISCONFIRM -> incidencia, escalamiento y REQUEST de reintento) y al sensor de aire si
+        responde antes del reply-by (A2: timeout -> incidencia, notificarFallos y recalculo sin el
+        sensor). Sin evento solo verifica la salud del sensor de aire.
+        """
+        self.supervisor.supervisarAgentes(trace)
+        zona_datos = self.entorno.leer_atributos_zona(zona_id)
+        incidencias_creadas: list[int] = []
+        ref = evento_id if evento_id is not None else "ronda"
+
+        if evento_id is not None:
+            # 1. QUERY-IF a AgenteCoordinador
+            q_coord = ACLMessage(
+                performative="QUERY-IF",
+                sender="AgenteSupervisor",
+                receiver="AgenteCoordinador",
+                content={"atendido_evento": evento_id, "zona": zona_id},
                 protocol="FIPA-Query",
                 conversation_id=conv_id,
-                in_reply_to=q_coord.reply_with,
-                metodo_origen="consultarEventos()",
+                reply_with=f"q-coord-{evento_id}",
+                metodo_origen="verificarAtencionEventos()",
                 caso_uso="CU-02",
-            ),
-            trace,
-        )
-
-        # 2. QUERY-IF a AgenteAlertas (Confirmacion comunitaria)
-        q_alerta = ACLMessage(
-            performative="QUERY-IF",
-            sender="AgenteSupervisor",
-            receiver="AgenteAlertas",
-            content={"alerta_confirmada_por_comunidad": zona_id, "evento_id": evento_id},
-            protocol="FIPA-Query",
-            conversation_id=conv_id,
-            reply_with=f"q-alerta-{evento_id}",
-            metodo_origen="verificarAtencionEventos()",
-            caso_uso="CU-02",
-        )
-        self.supervisor.emitir_acl(q_alerta, trace)
-
-        zona_datos = self.entorno.leer_atributos_zona(zona_id)
-        alerta_confirmada = bool(zona_datos["comunidad_confirma"])
-        incidencias_creadas = []
-
-        if alerta_confirmada:
-            self.alertas.emitir_acl(
-                ACLMessage(
-                    performative="CONFIRM",
-                    sender="AgenteAlertas",
-                    receiver="AgenteSupervisor",
-                    content={"reporteConfirmacion": zona_id, "evento_id": evento_id},
-                    protocol="FIPA-Query",
-                    conversation_id=conv_id,
-                    in_reply_to=q_alerta.reply_with,
-                    metodo_origen="gestionarConfirmacion()",
-                    caso_uso="CU-02",
-                ),
-                trace,
             )
-        else:
-            self.alertas.emitir_acl(
-                ACLMessage(
-                    performative="DISCONFIRM",
-                    sender="AgenteAlertas",
-                    receiver="AgenteSupervisor",
-                    content={"reporteSinConfirmacion": zona_id, "evento_id": evento_id},
-                    protocol="FIPA-Query",
-                    conversation_id=conv_id,
-                    in_reply_to=q_alerta.reply_with,
-                    metodo_origen="generarReporteSinConfirmacion()",
-                    caso_uso="CU-02",
-                ),
-                trace,
-            )
-            inc_id = self.supervisor.registrarIncidencias(
-                "AgenteAlertas",
-                zona_id,
-                f"Alerta del evento #{evento_id} sin confirmacion comunitaria",
-                "Escalamiento y reintento de emision de alerta",
-                trace,
-            )
-            incidencias_creadas.append(inc_id)
-            req_id = self.supervisor.solicitarAccionesCorrectivas(
-                "escalar_alerta_reintento", zona_id, conv_id, "CU-02", trace
-            )
+            self.supervisor.emitir_acl(q_coord, trace)
             self.coordinador.emitir_acl(
                 ACLMessage(
-                    performative="AGREE",
+                    performative="CONFIRM",
                     sender="AgenteCoordinador",
                     receiver="AgenteSupervisor",
-                    content={"accion_correctiva": "escalar_alerta_reintento", "zona": zona_id},
-                    protocol="FIPA-Request",
+                    content={"atendido_evento": evento_id, "alerta_delegada": True},
+                    protocol="FIPA-Query",
                     conversation_id=conv_id,
-                    in_reply_to=req_id,
-                    metodo_origen="delegarAlerta()",
+                    in_reply_to=q_coord.reply_with,
+                    metodo_origen="consultarEventos()",
                     caso_uso="CU-02",
                 ),
                 trace,
             )
-            self.coordinador.delegarAlerta(evento_id, zona_id, 0.90, conv_id, "CU-02", True, trace)
 
-        # 3. QUERY-IF a AgenteSensorAire (Salud del sensor y Timeout)
+            # 2. QUERY-IF a AgenteAlertas (confirmacion comunitaria)
+            q_alerta = ACLMessage(
+                performative="QUERY-IF",
+                sender="AgenteSupervisor",
+                receiver="AgenteAlertas",
+                content={"alerta_confirmada_por_comunidad": zona_id, "evento_id": evento_id},
+                protocol="FIPA-Query",
+                conversation_id=conv_id,
+                reply_with=f"q-alerta-{evento_id}",
+                metodo_origen="verificarAtencionEventos()",
+                caso_uso="CU-02",
+            )
+            self.supervisor.emitir_acl(q_alerta, trace)
+            if alerta_confirmada is None:
+                alerta_confirmada = bool(zona_datos["comunidad_confirma"])
+
+            if alerta_confirmada:
+                self.alertas.emitir_acl(
+                    ACLMessage(
+                        performative="CONFIRM",
+                        sender="AgenteAlertas",
+                        receiver="AgenteSupervisor",
+                        content={"reporteConfirmacion": zona_id, "evento_id": evento_id},
+                        protocol="FIPA-Query",
+                        conversation_id=conv_id,
+                        in_reply_to=q_alerta.reply_with,
+                        metodo_origen="gestionarConfirmacion()",
+                        caso_uso="CU-02",
+                    ),
+                    trace,
+                )
+            else:  # A1: alerta sin confirmacion comunitaria
+                self.alertas.emitir_acl(
+                    ACLMessage(
+                        performative="DISCONFIRM",
+                        sender="AgenteAlertas",
+                        receiver="AgenteSupervisor",
+                        content={"reporteSinConfirmacion": zona_id, "evento_id": evento_id},
+                        protocol="FIPA-Query",
+                        conversation_id=conv_id,
+                        in_reply_to=q_alerta.reply_with,
+                        metodo_origen="generarReporteSinConfirmacion()",
+                        caso_uso="CU-02",
+                    ),
+                    trace,
+                )
+                incidencias_creadas.append(
+                    self.supervisor.registrarIncidencias(
+                        "AgenteAlertas",
+                        zona_id,
+                        f"Alerta del evento #{evento_id} sin confirmacion comunitaria",
+                        "Escalamiento y reintento de emision de alerta",
+                        trace,
+                    )
+                )
+                req_id = self.supervisor.solicitarAccionesCorrectivas(
+                    "escalar_alerta_reintento", zona_id, conv_id, "CU-02", trace
+                )
+                self.coordinador.emitir_acl(
+                    ACLMessage(
+                        performative="AGREE",
+                        sender="AgenteCoordinador",
+                        receiver="AgenteSupervisor",
+                        content={"accion_correctiva": "escalar_alerta_reintento", "zona": zona_id},
+                        protocol="FIPA-Request",
+                        conversation_id=conv_id,
+                        in_reply_to=req_id,
+                        metodo_origen="delegarAlerta()",
+                        caso_uso="CU-02",
+                    ),
+                    trace,
+                )
+                self.coordinador.delegarAlerta(evento_id, zona_id, 0.90, conv_id, "CU-02", True, trace)
+
+        # 3. QUERY-IF a AgenteSensorAire (salud del sensor con reply-by)
         q_sensor = ACLMessage(
             performative="QUERY-IF",
             sender="AgenteSupervisor",
@@ -1116,7 +1151,7 @@ class SMAMonitoreoBazurto:
             content={"estado_activo": "AgenteSensorAire", "zona": zona_id},
             protocol="FIPA-Query",
             conversation_id=conv_id,
-            reply_with=f"q-sensor-{evento_id}",
+            reply_with=f"q-sensor-{ref}",
             reply_by="5s",
             metodo_origen="supervisarAgentes()",
             caso_uso="CU-02",
@@ -1124,7 +1159,7 @@ class SMAMonitoreoBazurto:
         self.supervisor.emitir_acl(q_sensor, trace)
 
         sensor_ok = bool(zona_datos["sensor_aire_activo"])
-        riesgo_recalculado = None
+        riesgo_recalculado: Optional[float] = None
         if sensor_ok:
             self.sensor_aire.emitir_acl(
                 ACLMessage(
@@ -1140,7 +1175,7 @@ class SMAMonitoreoBazurto:
                 ),
                 trace,
             )
-        else:
+        else:  # A2: el sensor no responde antes del reply-by
             trace.append(
                 {
                     "tipo": "TIMEOUT",
@@ -1149,14 +1184,15 @@ class SMAMonitoreoBazurto:
                     "detalle": f"AgenteSensorAire en {zona_id} no respondio dentro del tiempo limite",
                 }
             )
-            inc_id = self.supervisor.registrarIncidencias(
-                "AgenteSensorAire",
-                zona_id,
-                f"Timeout de AgenteSensorAire en {zona_id} (reply-by vencido)",
-                "Recalculo de riesgo usando solo AgenteSensorResiduos",
-                trace,
+            incidencias_creadas.append(
+                self.supervisor.registrarIncidencias(
+                    "AgenteSensorAire",
+                    zona_id,
+                    f"Timeout de AgenteSensorAire en {zona_id} (reply-by vencido)",
+                    "Recalculo de riesgo usando solo AgenteSensorResiduos",
+                    trace,
+                )
             )
-            incidencias_creadas.append(inc_id)
             self.supervisor.notificarFallos("AgenteSensorAire", zona_id, conv_id, "CU-02", trace)
             req_rec = self.supervisor.solicitarAccionesCorrectivas(
                 "recalcular_riesgo_sin_sensor_aire", zona_id, conv_id, "CU-02", trace
@@ -1179,14 +1215,10 @@ class SMAMonitoreoBazurto:
             self.coordinador.priorizarZonas(zona_id, riesgo_recalculado, trace)
 
         return {
-            "caso_uso": "CU-02",
-            "conversation_id": conv_id,
-            "zona_id": zona_id,
             "alerta_confirmada": alerta_confirmada,
             "sensor_aire_activo": sensor_ok,
             "riesgo_recalculado": riesgo_recalculado,
             "incidencias_creadas": incidencias_creadas,
-            "traza": trace,
         }
 
     def ejecutar_inspeccion_coordinada_camaras(

@@ -144,6 +144,14 @@ def documentacion() -> str:
     return (STATIC_DIR / "index.html").read_text(encoding="utf-8")
 
 
+@app.get("/diagramas", response_class=HTMLResponse)
+def diagramas() -> str:
+    pagina = STATIC_DIR / "diagramas" / "diagramas.html"
+    if not pagina.exists():
+        raise HTTPException(status_code=404, detail="Pagina de diagramas aun no disponible")
+    return pagina.read_text(encoding="utf-8")
+
+
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon() -> Response:
     return Response(status_code=204)

@@ -62,11 +62,30 @@ class SimuladorEntorno:
         sma: SMAMonitoreoBazurto,
         rng: random.Random,
         paso_llenado: tuple[float, float] = (2.5, 6.0),
+        prob_falla_sensor: float = 0.03,
     ) -> None:
         self.sma = sma
         self.rng = rng
         self.paso_llenado = paso_llenado  # puntos de llenado por ronda
         self.pendientes: dict[str, int] = {}  # zona_id -> rondas que faltan para que llegue el camion
+        self.prob_falla_sensor = prob_falla_sensor  # por zona y ronda (CU-02, flujo A2)
+        self.sensores_caidos: dict[str, int] = {}  # zona_id -> rondas que faltan para que el sensor vuelva
+
+    def restablecer_sensores(self) -> None:
+        for zona in self.sma.db.list_zonas():
+            self.sma.db.update_zona(str(zona["zona_id"]), sensor_aire_activo=True)
+        self.sensores_caidos.clear()
+
+    def _actualizar_sensor_aire(self, zid: str) -> None:
+        if zid in self.sensores_caidos:
+            self.sensores_caidos[zid] -= 1
+            if self.sensores_caidos[zid] <= 0:
+                del self.sensores_caidos[zid]
+                self.sma.db.update_zona(zid, sensor_aire_activo=True)
+        elif self.rng.random() < self.prob_falla_sensor:
+            # dura lo suficiente para que la zona sea visitada al menos una vez con el sensor caido
+            self.sensores_caidos[zid] = self.rng.randint(3, 5)
+            self.sma.db.update_zona(zid, sensor_aire_activo=False)
 
     def programar_recoleccion(self, zona_id: str, en_rondas: int = 4) -> None:
         self.pendientes.setdefault(zona_id, en_rondas)
@@ -76,6 +95,7 @@ class SimuladorEntorno:
         recolectadas: list[str] = []
         for zona in self.sma.db.list_zonas():
             zid = str(zona["zona_id"])
+            self._actualizar_sensor_aire(zid)
             nivel = float(zona["nivel_llenado_contenedores"]) + self.rng.uniform(*self.paso_llenado)
             if zid in self.pendientes:
                 self.pendientes[zid] -= 1
@@ -162,6 +182,7 @@ class LoopAutonomo:
             conversation_id=msg.conversation_id,
             protocolo=msg.protocol,
             ronda=self.ronda,
+            caso_uso=str(msg.caso_uso or ""),
         )
         self.bus.emitir("narracion", **self._narrar(msg))
 
@@ -192,17 +213,34 @@ class LoopAutonomo:
         quien = _SUJETO.get(msg.sender, msg.sender)
         a = _DESTINO.get(msg.receiver, f"a {msg.receiver}")
         p = msg.performative.upper()
+        contenido = msg.content if isinstance(msg.content, dict) else {}
         if p == "INFORM" and msg.sender == "AgenteSensorResiduos":
             return {"texto": f"{quien} avisa {a}: los contenedores llevan un buen rato por encima del umbral.", "nivel": "atencion"}
         if p == "INFORM" and msg.sender == "AgenteSensorAire":
             return {"texto": f"{quien} informa {a} la concentración de gases que midió.", "nivel": "info"}
+        if p == "INFORM" and msg.sender == "AgenteSupervisor":
+            return {"texto": f"{quien} notifica {a} una falla en un agente.", "nivel": "critico"}
+        if p == "REQUEST" and msg.sender == "AgenteSupervisor":
+            return {"texto": f"{quien} pide {a} una acción correctiva.", "nivel": "atencion"}
+        if p == "REQUEST" and contenido.get("reintento"):
+            return {"texto": f"{quien} pide {a} reintentar la alerta.", "nivel": "atencion"}
+        if p == "AGREE" and msg.receiver == "AgenteSupervisor":
+            return {"texto": f"{quien} acepta la acción correctiva que pidió el Supervisor.", "nivel": "info"}
+        if p == "QUERY-IF" and msg.receiver == "AgenteSensorAire":
+            return {"texto": f"{quien} pregunta {a} si sigue funcionando (plazo: 5 s).", "nivel": "info"}
+        if p == "QUERY-IF" and msg.receiver == "AgenteCoordinador":
+            return {"texto": f"{quien} pregunta {a} si atendió el evento de riesgo.", "nivel": "info"}
+        if p == "CONFIRM" and msg.sender == "AgenteSensorAire":
+            return {"texto": f"{quien} responde {a}: sigue activo.", "nivel": "info"}
+        if p == "CONFIRM" and msg.sender == "AgenteCoordinador":
+            return {"texto": f"{quien} confirma {a} que atendió el evento.", "nivel": "info"}
         textos = {
             "INFORM": (f"{quien} informa {a}.", "info"),
             "REQUEST": (f"{quien} le pide {a} que emita una alerta a la comunidad.", "info"),
             "AGREE": (f"{quien} acepta la solicitud y avisa {a}.", "info"),
             "CONFIRM": (f"{quien} confirma {a} que la alerta llegó a la comunidad.", "info"),
             "INFORM-DONE": (f"{quien} avisa {a}: la comunidad atendió la alerta.", "info"),
-            "REFUSE": (f"{quien} rechaza la solicitud y se lo dice {a}.", "atencion"),
+            "REFUSE": (f"{quien} rechaza la solicitud {a}: ya hay una alerta activa en esa zona.", "atencion"),
             "FAILURE": (f"{quien} avisa {a}: la comunidad no confirmó la alerta.", "critico"),
             "DISCONFIRM": (f"{quien} le dice {a} que la alerta no fue confirmada.", "atencion"),
             "QUERY-IF": (f"{quien} le pregunta {a} si la alerta fue confirmada.", "info"),
@@ -225,6 +263,16 @@ class LoopAutonomo:
             confirma = self.rng.random() < self.prob_confirma
             res = self.runner.run(zona_id=zid, comunidad_confirma=confirma, gemini_api_key=self.gemini_api_key)
             est = res["estado_final_checkpoint"]
+            traza = res.get("traza") or []
+            if any(t.get("tipo") == "TIMEOUT" for t in traza):
+                self.bus.emitir(
+                    "narracion",
+                    texto=(
+                        f"El sensor de aire de {nombre} no respondió antes del plazo: el Supervisor registra la "
+                        "incidencia y el Coordinador recalcula el riesgo sin ese sensor."
+                    ),
+                    nivel="critico",
+                )
             z = self.sma.db.get_zona(zid) or {}
             riesgo = est.get("riesgo")
             # Todas las zonas publican su lectura de la ronda: nivel y riesgo siempre del mismo instante.
@@ -241,11 +289,11 @@ class LoopAutonomo:
                     humedad=float(zona_actual["humedad"]),
                     riesgo=_pct(riesgo_por_zona.get(otra)),
                 )
-            if est.get("resultado_acl") is None:
+            if est.get("resultado_acl") is None and not any(t.get("tipo") == "TIMEOUT" for t in traza):
                 nivel_z = float(z.get("nivel_llenado_contenedores", 0.0))
                 limite = self.sma.parametros.nivel_residuos_critico
                 motivo = (
-                    f"está por debajo del umbral ({limite:.0f} %)" if nivel_z < limite
+                    f"está por debajo del umbral ({limite:.0f} %)" if nivel_z <= limite
                     else "supera el umbral pero aún no lleva el tiempo mínimo seguido"
                 )
                 self.bus.emitir(
@@ -306,6 +354,7 @@ class LoopAutonomo:
     def iniciar(self) -> None:
         if self._hilo and self._hilo.is_alive():
             return
+        self.entorno.restablecer_sensores()
         limite = self.sma.parametros.nivel_residuos_critico
         for z in self.sma.db.list_zonas():  # una alerta vieja no debe bloquear nuevas con la zona ya bajo el umbral
             if float(z["nivel_llenado_contenedores"]) < limite:

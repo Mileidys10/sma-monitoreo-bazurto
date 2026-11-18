@@ -47,6 +47,7 @@ class BazurtoAgentState(TypedDict, total=False):
     evento_id: Optional[int]
     medicion_aire: dict[str, float]
     aumento_gases: bool
+    sensor_aire_caido: bool
     riesgo: float
     ranking_zonas: list[dict[str, Any]]
     reply_with: Optional[str]
@@ -60,12 +61,13 @@ class BazurtoAgentState(TypedDict, total=False):
 
 
 MERMAID_STATEGRAPH = """flowchart TD
-    START([START]) --> nodo_sensor_residuos[nodo_sensor_residuos\\nAgenteSensorResiduos]
-    nodo_sensor_residuos -->|ACL:INFORM| nodo_sensor_aire[nodo_sensor_aire\\nAgenteSensorAire]
-    nodo_sensor_aire -->|ACL:INFORM| nodo_coordinador[nodo_coordinador\\nAgenteCoordinador]
+    START([START]) --> nodo_sensor_residuos[nodo_sensor_residuos<br/>AgenteSensorResiduos]
+    nodo_sensor_residuos -->|ACL:INFORM| nodo_sensor_aire[nodo_sensor_aire<br/>AgenteSensorAire]
+    nodo_sensor_aire -->|ACL:INFORM| nodo_coordinador[nodo_coordinador<br/>AgenteCoordinador]
     nodo_coordinador -->|sin evento de riesgo persistente| END([END])
-    nodo_coordinador -->|ACL:REQUEST si hay evento| nodo_alertas[nodo_alertas\\nAgenteAlertas]
-    nodo_alertas -->|decidir_ruta_supervision: FAILURE / REFUSE / Auditar| nodo_supervisor[nodo_supervisor\\nAgenteSupervisor]
+    nodo_coordinador -->|sensor de aire sin respuesta: CU-02 A2| nodo_supervisor
+    nodo_coordinador -->|ACL:REQUEST si hay evento| nodo_alertas[nodo_alertas<br/>AgenteAlertas]
+    nodo_alertas -->|decidir_ruta_supervision: FAILURE / REFUSE / Auditar| nodo_supervisor[nodo_supervisor<br/>AgenteSupervisor]
     nodo_alertas -->|INFORM-DONE sin auditoría extra| END([END])
     nodo_supervisor -->|REQUEST / CONFIRM| END"""
 
@@ -117,7 +119,6 @@ class BazurtoStateGraphRunner:
         def nodo_sensor_residuos(state: BazurtoAgentState) -> dict[str, Any]:
             zid = str(state["zona_id"])
             conv_id = str(state["conversation_id"])
-            fw_tag = str(state.get("framework_id", "langgraph")).upper()
             trace = list(state.get("traza") or [])
             nodos = list(state.get("nodos_visitados") or [])
             transiciones = list(state.get("transiciones") or [])
@@ -155,7 +156,7 @@ class BazurtoStateGraphRunner:
             evento_id: Optional[int] = None
             if estado_interno["persiste"]:  # bloque opt del CU-01: nivel > umbral AND persiste
                 evento_id = self.sma.sensor_residuos.publicarEventoRiesgo(
-                    zid, estado_interno, conv_id, f"FW-{fw_tag}", trace
+                    zid, estado_interno, conv_id, "CU-01", trace
                 )
 
             nodos.append(
@@ -202,37 +203,49 @@ class BazurtoStateGraphRunner:
         def nodo_sensor_aire(state: BazurtoAgentState) -> dict[str, Any]:
             zid = str(state["zona_id"])
             conv_id = str(state["conversation_id"])
-            fw_tag = str(state.get("framework_id", "langgraph")).upper()
             trace = list(state.get("traza") or [])
             nodos = list(state.get("nodos_visitados") or [])
             transiciones = list(state.get("transiciones") or [])
+            transiciones.append("nodo_sensor_residuos -> nodo_sensor_aire")
+
+            if not self.sma.entorno.leer_atributos_zona(zid)["sensor_aire_activo"]:
+                # Sensor fuera de servicio: el agente no mide ni envia INFORM (lo detectara el Supervisor, CU-02 A2)
+                trace.append(
+                    {
+                        "tipo": "FALLO",
+                        "agente": "AgenteSensorAire",
+                        "metodo": "medirGases()",
+                        "detalle": f"Sensor de aire de {zid} sin respuesta: no hay medicion en esta ronda",
+                    }
+                )
+                nodos.append(
+                    {
+                        "nodo": "nodo_sensor_aire",
+                        "agente": "AgenteSensorAire",
+                        "rol": "MonitorCondicionesAmbientales",
+                        "metodos": [],
+                        "salida": "sin respuesta (sensor fuera de servicio)",
+                    }
+                )
+                return {"sensor_aire_caido": True, "nodos_visitados": nodos, "transiciones": transiciones, "traza": trace}
 
             medicion = self.sma.sensor_aire.medirGases(zid, trace)
             self.sma.sensor_aire.registrarMedicion(zid, medicion, trace)
             aumento = self.sma.sensor_aire.detectarAumentoProgresivo(zid, trace)
-            self.sma.sensor_aire.publicarMedicion(zid, medicion, aumento, conv_id, f"FW-{fw_tag}", trace)
-
+            self.sma.sensor_aire.publicarMedicion(zid, medicion, aumento, conv_id, "CU-01", trace)
             nodos.append(
                 {
                     "nodo": "nodo_sensor_aire",
                     "agente": "AgenteSensorAire",
                     "rol": "MonitorCondicionesAmbientales",
-                    "metodos": [
-                        "medirGases()",
-                        "registrarMedicion()",
-                        "detectarAumentoProgresivo()",
-                        "publicarMedicion()",
-                    ],
-                    "salida": (
-                        f"CO2={medicion['concentracionGases']}ppm, "
-                        f"aumentoProgresivo={aumento}"
-                    ),
+                    "metodos": ["medirGases()", "registrarMedicion()", "detectarAumentoProgresivo()", "publicarMedicion()"],
+                    "salida": f"CO2={medicion['concentracionGases']}ppm, aumentoProgresivo={aumento}",
                 }
             )
-            transiciones.append("nodo_sensor_residuos -> nodo_sensor_aire")
             return {
                 "medicion_aire": medicion,
                 "aumento_gases": bool(aumento),
+                "sensor_aire_caido": False,
                 "nodos_visitados": nodos,
                 "transiciones": transiciones,
                 "traza": trace,
@@ -242,7 +255,6 @@ class BazurtoStateGraphRunner:
             zid = str(state["zona_id"])
             conv_id = str(state["conversation_id"])
             evento_id = state.get("evento_id")
-            fw_tag = str(state.get("framework_id", "langgraph")).upper()
             trace = list(state.get("traza") or [])
             nodos = list(state.get("nodos_visitados") or [])
             transiciones = list(state.get("transiciones") or [])
@@ -254,7 +266,7 @@ class BazurtoStateGraphRunner:
             if evento_id is not None:  # solo hay alerta que delegar si el sensor publico un evento
                 self.sma.db.update_evento_riesgo(int(evento_id), riesgo, 1, atendido=True)
                 reply_with = self.sma.coordinador.delegarAlerta(
-                    int(evento_id), zid, riesgo, conv_id, f"FW-{fw_tag}", False, trace
+                    int(evento_id), zid, riesgo, conv_id, "CU-01", False, trace
                 )
 
             nodos.append(
@@ -287,14 +299,13 @@ class BazurtoStateGraphRunner:
             evento_id = int(state["evento_id"])  # garantizado: este nodo solo corre con evento
             riesgo = float(state["riesgo"])
             reply_with = str(state["reply_with"])
-            fw_tag = str(state.get("framework_id", "langgraph")).upper()
             trace = list(state.get("traza") or [])
             nodos = list(state.get("nodos_visitados") or [])
             transiciones = list(state.get("transiciones") or [])
 
             nivel_alerta = "ALTO" if riesgo >= self.sma.parametros.riesgo_alerta_umbral else "MODERADO"
             acepta = self.sma.alertas.recibirSolicitudAlerta(
-                zid, False, reply_with, conv_id, f"FW-{fw_tag}", trace
+                zid, False, reply_with, conv_id, "CU-01", trace
             )
             resultado_acl = "REFUSE"
             alerta_id: Optional[int] = None
@@ -303,12 +314,12 @@ class BazurtoStateGraphRunner:
                 confirma = self.sma.alertas.gestionarConfirmacion(zid, trace)
                 if confirma:
                     alerta_id = self.sma.alertas.generarReporteConfirmacion(
-                        evento_id, zid, nivel_alerta, reply_with, conv_id, f"FW-{fw_tag}", trace
+                        evento_id, zid, nivel_alerta, reply_with, conv_id, "CU-01", trace
                     )
                     resultado_acl = "INFORM-DONE"
                 else:
                     alerta_id = self.sma.alertas.generarReporteSinConfirmacion(
-                        evento_id, zid, nivel_alerta, reply_with, conv_id, f"FW-{fw_tag}", trace
+                        evento_id, zid, nivel_alerta, reply_with, conv_id, "CU-01", trace
                     )
                     resultado_acl = "FAILURE"
 
@@ -344,87 +355,22 @@ class BazurtoStateGraphRunner:
         def nodo_supervisor(state: BazurtoAgentState) -> dict[str, Any]:
             zid = str(state["zona_id"])
             conv_id = str(state["conversation_id"])
-            evento_id = int(state["evento_id"])
-            fw_tag = str(state.get("framework_id", "langgraph")).upper()
-            caso_lbl = f"FW-{fw_tag}"
+            evento_id = state.get("evento_id")
             trace = list(state.get("traza") or [])
             nodos = list(state.get("nodos_visitados") or [])
             transiciones = list(state.get("transiciones") or [])
 
             self.sma.supervisor.verificarAtencionEventos(zid, trace)
-            self.sma.supervisor.supervisarAgentes(trace)
-
-            q_alerta = ACLMessage(
-                performative="QUERY-IF",
-                sender="AgenteSupervisor",
-                receiver="AgenteAlertas",
-                content={"alerta_confirmada_por_comunidad": zid, "evento_id": evento_id},
-                protocol="FIPA-Query",
-                conversation_id=conv_id,
-                reply_with=f"q-alerta-{evento_id}",
-                metodo_origen="verificarAtencionEventos()",
-                caso_uso=caso_lbl,
+            resultado = state.get("resultado_acl")
+            auditoria = self.sma.auditar_supervision(
+                zid,
+                int(evento_id) if evento_id is not None else None,
+                conv_id,
+                trace,
+                # REFUSE = ya habia una alerta activa confirmada en la zona; solo FAILURE queda sin confirmar
+                alerta_confirmada=None if evento_id is None else resultado != "FAILURE",
             )
-            self.sma.supervisor.emitir_acl(q_alerta, trace)
-
-            incidencias: list[int] = []
-            if state.get("resultado_acl") in ("FAILURE", "REFUSE"):
-                self.sma.alertas.emitir_acl(
-                    ACLMessage(
-                        performative="DISCONFIRM",
-                        sender="AgenteAlertas",
-                        receiver="AgenteSupervisor",
-                        content={"reporteSinConfirmacion": zid, "evento_id": evento_id},
-                        protocol="FIPA-Query",
-                        conversation_id=conv_id,
-                        in_reply_to=q_alerta.reply_with,
-                        metodo_origen="generarReporteSinConfirmacion()",
-                        caso_uso=caso_lbl,
-                    ),
-                    trace,
-                )
-                inc_id = self.sma.supervisor.registrarIncidencias(
-                    "AgenteAlertas",
-                    zid,
-                    f"Orquestador {fw_tag}: Alerta #{state.get('alerta_id')} sin confirmación comunitaria",
-                    "Escalamiento automático hacia AgenteCoordinador",
-                    trace,
-                )
-                incidencias.append(inc_id)
-                self.sma.supervisor.notificarFallos("AgenteAlertas", zid, conv_id, caso_lbl, trace)
-                req_id = self.sma.supervisor.solicitarAccionesCorrectivas(
-                    "escalar_alerta_reintento", zid, conv_id, caso_lbl, trace
-                )
-                self.sma.coordinador.emitir_acl(
-                    ACLMessage(
-                        performative="AGREE",
-                        sender="AgenteCoordinador",
-                        receiver="AgenteSupervisor",
-                        content={"accion_correctiva": "escalar_alerta_reintento", "zona": zid},
-                        protocol="FIPA-Request",
-                        conversation_id=conv_id,
-                        in_reply_to=req_id,
-                        metodo_origen="delegarAlerta()",
-                        caso_uso=caso_lbl,
-                    ),
-                    trace,
-                )
-            else:
-                self.sma.alertas.emitir_acl(
-                    ACLMessage(
-                        performative="CONFIRM",
-                        sender="AgenteAlertas",
-                        receiver="AgenteSupervisor",
-                        content={"reporteConfirmacion": zid, "evento_id": evento_id},
-                        protocol="FIPA-Query",
-                        conversation_id=conv_id,
-                        in_reply_to=q_alerta.reply_with,
-                        metodo_origen="gestionarConfirmacion()",
-                        caso_uso=caso_lbl,
-                    ),
-                    trace,
-                )
-
+            incidencias = list(auditoria["incidencias_creadas"])
             nodos.append(
                 {
                     "nodo": "nodo_supervisor",
@@ -433,24 +379,26 @@ class BazurtoStateGraphRunner:
                     "metodos": [
                         "verificarAtencionEventos()",
                         "supervisarAgentes()",
-                        "registrarIncidencias()" if incidencias else "confirmarAuditoria()",
-                        "notificarFallos()" if incidencias else "cierreAuditado()",
-                        "solicitarAccionesCorrectivas()" if incidencias else "supervisarAgentes()",
+                        "registrarIncidencias()" if incidencias else "auditoria sin incidencias",
                     ],
                     "salida": (
-                        f"Incidencias escaladas={incidencias}"
-                        if incidencias
-                        else "Auditoría CONFIRM sin incidencias"
+                        f"incidencias={incidencias}, sensor_aire_activo={auditoria['sensor_aire_activo']}, "
+                        f"riesgo_recalculado={auditoria['riesgo_recalculado']}"
                     ),
                 }
             )
-            transiciones.append("nodo_alertas -> nodo_supervisor")
-            return {
+            transiciones.append(
+                "nodo_alertas -> nodo_supervisor" if evento_id is not None else "nodo_coordinador -> nodo_supervisor"
+            )
+            salida: dict[str, Any] = {
                 "incidencias_supervisor": incidencias,
                 "nodos_visitados": nodos,
                 "transiciones": transiciones,
                 "traza": trace,
             }
+            if auditoria["riesgo_recalculado"] is not None:
+                salida["riesgo"] = float(auditoria["riesgo_recalculado"])
+            return salida
 
         builder.add_node("nodo_sensor_residuos", self._observado("AgenteSensorResiduos", nodo_sensor_residuos))
         builder.add_node("nodo_sensor_aire", self._observado("AgenteSensorAire", nodo_sensor_aire))
@@ -463,8 +411,10 @@ class BazurtoStateGraphRunner:
         builder.add_edge("nodo_sensor_aire", "nodo_coordinador")
         builder.add_conditional_edges(
             "nodo_coordinador",
-            lambda st: "alertas" if st.get("evento_id") is not None else "fin",
-            {"alertas": "nodo_alertas", "fin": end_node},
+            lambda st: "alertas"
+            if st.get("evento_id") is not None
+            else ("supervisor" if st.get("sensor_aire_caido") else "fin"),
+            {"alertas": "nodo_alertas", "supervisor": "nodo_supervisor", "fin": end_node},
         )
         builder.add_conditional_edges(
             "nodo_alertas",

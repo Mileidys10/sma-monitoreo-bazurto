@@ -29,7 +29,7 @@ Tipos y `datos` (todos los campos listados siempre estan presentes salvo los mar
 - `sistema` (tambien viene en `snapshot.sistema`): `motor` (str, ej. "LangGraph"), `version_langgraph` (str), `intervalo_s` (num), `mensaje` (str).
 - `ronda_inicio`: `ronda` (int), `zona_id` (str), `zona_nombre` (str).
 - `agente_estado`: `agente` (uno de `AgenteSensorResiduos|AgenteSensorAire|AgenteCoordinador|AgenteAlertas|AgenteSupervisor`), `estado` (`reposo|analizando|comunicando|esperando`), `detalle` (str).
-- `mensaje_acl`: `msg_id`, `performativa` (ej. `INFORM`, `REQUEST`, `AGREE`, `CONFIRM`, `REFUSE`, `FAILURE`, `INFORM-DONE`), `emisor`, `receptor` (nombres de agente), `contenido` (str), `conversation_id`, `protocolo`, `ronda`.
+- `mensaje_acl`: `msg_id`, `performativa` (ej. `INFORM`, `REQUEST`, `AGREE`, `CONFIRM`, `REFUSE`, `FAILURE`, `INFORM-DONE`), `emisor`, `receptor` (nombres de agente), `contenido` (str), `conversation_id`, `protocolo`, `ronda`, `caso_uso` (`CU-01` monitoreo y alerta, `CU-02` supervisión).
 - `medicion` (una por zona en cada ronda; todas del mismo instante): `zona_id`, `nivel_llenado` (0-100), `concentracion_gases` (ppm), `temperatura` (C), `humedad` (%), `riesgo?` (0-100).
 - `vision`: `zona_id`, `contenedor_id`, `porcentaje_llenado`, `bolsas` (int), `motor` (`gemini|hsv`), `imagen_anotada_url?` (ruta relativa, ej. `/api/sala/vision/zona_3.png?v=7`: **imagen ya anotada por el analizador con las cajas dibujadas**; mostrarla tal cual con `<img>`, NO dibujar cajas encima), `imagen_url?` (imagen de muestra original, respaldo si no hay anotada), `cajas` (lista siempre vacia: IGNORAR), `explicacion` (str).
 - `alerta`: `alerta_id?`, `zona_id`, `estado` (str), `mensaje` (str).
