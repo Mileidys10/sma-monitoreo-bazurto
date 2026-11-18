@@ -1,0 +1,10 @@
+flowchart TD
+    START([START]) --> nodo_sensor_residuos[nodo_sensor_residuos<br/>AgenteSensorResiduos]
+    nodo_sensor_residuos -->|ACL:INFORM| nodo_sensor_aire[nodo_sensor_aire<br/>AgenteSensorAire]
+    nodo_sensor_aire -->|ACL:INFORM| nodo_coordinador[nodo_coordinador<br/>AgenteCoordinador]
+    nodo_coordinador -->|sin evento de riesgo persistente| END([END])
+    nodo_coordinador -->|sensor de aire sin respuesta: CU-02 A2| nodo_supervisor
+    nodo_coordinador -->|ACL:REQUEST si hay evento| nodo_alertas[nodo_alertas<br/>AgenteAlertas]
+    nodo_alertas -->|decidir_ruta_supervision: FAILURE / REFUSE / Auditar| nodo_supervisor[nodo_supervisor<br/>AgenteSupervisor]
+    nodo_alertas -->|INFORM-DONE sin auditoría extra| END([END])
+    nodo_supervisor -->|REQUEST / CONFIRM| END
