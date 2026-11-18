@@ -314,39 +314,37 @@ end
 
 ---
 
-## 5. Integración de los 7 Frameworks Multiagente del Profesor (`LangGraph`, `CrewAI`, `MAF Microsoft`, `Google ADK`, `JADE`, `AutoGen` y `Agent SDK`)
+## 5. Motor Multiagente Real en LangGraph (`StateGraph` de 5 Nodos)
 
-En reemplazo de `n8n` (cuya limitación principal era no conservar memoria persistente entre ejecuciones para atributos como `estadoInterno.tiempoSobreLimite` o `historialMediciones`), el módulo [`app/multiagent_frameworks.py`](app/multiagent_frameworks.py) implementa un **Grafo de Estados (`BazurtoStateGraphRunner`)** respaldado por **LangGraph (`StateGraph` + `MemorySaver`)** y persistencia en SQLite (`bazurto_sma.db`), junto con los adaptadores y definiciones formales para los **7 frameworks multiagente** indicados por el docente:
+El proyecto utiliza **LangGraph** como única tecnología multiagente de orquestación. El módulo [`app/motor_langgraph.py`](app/motor_langgraph.py) implementa un **Grafo de Estados (`BazurtoStateGraphRunner`)** sobre `StateGraph(BazurtoAgentState)` con checkpointer `MemorySaver` y persistencia de dominio en SQLite (`bazurto_sma.db`), conservando entre rondas el estado interno de los agentes (`tiempoSobreLimite`, `ritmoLlenado`, `ciclosConsecutivos`, `historialMediciones`), los eventos de riesgo, las alertas, las incidencias y todos los mensajes `FIPA-ACL`.
 
 ### 5.1 Arquitectura del `StateGraph` de 5 Nodos (Conectado al Backend Real)
 
 ```mermaid
 flowchart TD
-    START([START]) --> nodo_sensor_residuos["nodo_sensor_residuos<br/>AgenteSensorResiduos (Monitor)"]
-    nodo_sensor_residuos -->|ACL:INFORM| nodo_sensor_aire["nodo_sensor_aire<br/>AgenteSensorAire (Monitor)"]
-    nodo_sensor_aire -->|ACL:INFORM| nodo_coordinador["nodo_coordinador<br/>AgenteCoordinador (Coordinador)"]
-    nodo_coordinador -->|ACL:REQUEST| nodo_alertas["nodo_alertas<br/>AgenteAlertas (EmisorAlertas)"]
-    nodo_alertas -->|decidir_ruta_supervision: FAILURE / REFUSE / Auditar| nodo_supervisor["nodo_supervisor<br/>AgenteSupervisor (Supervisor)"]
+    START([START]) --> nodo_sensor_residuos[nodo_sensor_residuos<br/>AgenteSensorResiduos]
+    nodo_sensor_residuos -->|ACL:INFORM| nodo_sensor_aire[nodo_sensor_aire<br/>AgenteSensorAire]
+    nodo_sensor_aire -->|ACL:INFORM| nodo_coordinador[nodo_coordinador<br/>AgenteCoordinador]
+    nodo_coordinador -->|sin evento de riesgo persistente| END([END])
+    nodo_coordinador -->|sensor de aire sin respuesta: CU-02 A2| nodo_supervisor
+    nodo_coordinador -->|ACL:REQUEST si hay evento| nodo_alertas[nodo_alertas<br/>AgenteAlertas]
+    nodo_alertas -->|decidir_ruta_supervision: FAILURE / REFUSE / Auditar| nodo_supervisor[nodo_supervisor<br/>AgenteSupervisor]
     nodo_alertas -->|INFORM-DONE sin auditoría extra| END([END])
     nodo_supervisor -->|REQUEST / CONFIRM| END
 ```
 
-Cada ejecución guarda un `thread_id` único en el checkpointer (`MemorySaver` + SQLite `bazurto_sma.db`), conservando `tiempoSobreLimite`, `ritmoLlenado`, `historialMediciones_count`, `riesgo`, `resultado_acl` e `incidencias_supervisor`. Además, si la consola se ejecuta desde el `.zip` en un equipo universitario sin internet ni dependencias extra, el motor activa automáticamente un `FallbackStateGraph` 100% compatible con la API de `LangGraph`.
+Cada ejecución recibe un `thread_id` único en el `MemorySaver` de LangGraph y ejecuta los nodos reales conectados a `SMAMonitoreoBazurto`:
+1. `nodo_sensor_residuos` (`AgenteSensorResiduos`): mide el nivel, ejecuta `analizarImagenes()` y evalúa persistencia (`nivel > 80 %` durante `>= 30 min`, contando `15 min` simulados por visita). Solo publica evento e `INFORM` si se cumple la persistencia.
+2. `nodo_sensor_aire` (`AgenteSensorAire`): si el sensor de la zona está activo, mide CO₂, temperatura y humedad, registra historial y envía `INFORM` en cada ronda. Si está fuera de servicio, no mide ni envía `INFORM`.
+3. `nodo_coordinador` (`AgenteCoordinador`): consulta eventos, calcula el riesgo compuesto y prioriza las zonas. Si hubo evento persistente, delega `REQUEST` hacia `nodo_alertas`; si no hubo evento pero `sensor_aire_caido` es verdadero, transiciona directo hacia `nodo_supervisor` (`CU-02 A2`); de lo contrario finaliza en `END`.
+4. `nodo_alertas` (`AgenteAlertas`): responde `REFUSE` si ya hay una alerta activa en la zona; si acepta (`AGREE`), emite el aviso comunitario y cierra con `INFORM-DONE` (confirmado) o `FAILURE` (sin confirmación).
+5. `nodo_supervisor` (`AgenteSupervisor`): ejecuta `auditar_supervision()` (`CU-02`) con consultas `QUERY-IF` hacia Coordinador, Alertas y Sensor de Aire (`reply-by` de `5 s`), registrando incidencias y solicitando acciones correctivas ante `DISCONFIRM` (`A1`) o timeout del sensor de aire (`A2`).
 
-### 5.2 Tabla Comparativa de los 7 Frameworks Soportados
+### 5.2 Endpoints Activos del Sistema
 
-| # | Framework | Creador | Paradigma | Cómo Resuelve la Persistencia (vs `n8n`) | Mapeo con `SMAMonitoreoBazurto` |
-| :-: | :--- | :--- | :--- | :--- | :--- |
-| 1 | **LangGraph** | LangChain Inc. | Grafo cíclico `StateGraph` con aristas condicionales | `BazurtoAgentState` + `MemorySaver`/`SqliteSaver` por `thread_id` | Cada agente es un nodo real ejecutado secuencial y condicionalmente |
-| 2 | **CrewAI** | CrewAI Inc. | Equipos jerárquicos por `Agent` + `Task` + `Crew` | `memory=True` con persistencia de entidades en SQLite | Mapeo directo 1:1 con los 4 `<<role>>` (`manager_agent=Coordinador`) |
-| 3 | **MAF (Microsoft Agent Framework)** | Microsoft | `ChatCompletionAgent` + `AgentGroupChat` + Plugins | Hilos persistentes (`AgentThread`) y `ChatHistory` centralizado | Métodos MAS-ML expuestos como `KernelPlugins` auditables |
-| 4 | **Google ADK** | Google | `ParallelAgent` + `SequentialAgent` + `LlmAgent` (`gemini-2.5-flash`) | `DatabaseSessionService` + `ToolContext.state` persistente | `ParallelAgent(Residuos, Aire)` -> `SequentialAgent(Coordinador, Alertas, Supervisor)` |
-| 5 | **JADE** | TILAB (IEEE FIPA) | Plataforma FIPA nativa (`ACLMessage`, `CyclicBehaviour`, DF) | Agentes residentes en `Container` con persistencia JDBC/SQLite | Estándar nativo `QUERY-REF`, `INFORM`, `REQUEST`, `AGREE`, `FAILURE`, `QUERY-IF` |
-| 6 | **AutoGen** | Microsoft Research / AG2 | Conversación multiagente (`AssistantAgent` + `GroupChat`) | Historial compartido entre turnos y estado en SQLite | Grupo conversacional moderado por `AgenteCoordinador` y auditado por `AgenteSupervisor` |
-| 7 | **Agent SDK** | OpenAI | Agentes ligeros con `handoffs()` y `@function_tool` | `SQLiteSession` integrada en `Runner.run(..., session=...)` | Traspasos explícitos `Monitor -> Coordinador -> Alertas -> Supervisor` |
-
-### 5.3 Endpoints REST y Uso Offline
-
-- `GET /api/frameworks`: Retorna el catálogo completo de los 7 frameworks, estado nativo de `LangGraph` y definición del `StateGraph`.
-- `POST /api/frameworks/ejecutar`: Recibe `framework_id` (`langgraph`, `crewai`, `microsoft_maf`, `google_adk`, `jade`, `autogen`, `agent_sdk`), `zona_id` y `comunidad_confirma`; ejecuta realmente el grafo de 5 nodos y devuelve los nodos visitados, transiciones, snapshot del checkpoint y la traza `FIPA-ACL`.
-- **Modo Autónomo 100% Offline (`index.html` / `ABRIR_SIN_INSTALAR_OFFLINE.bat`)**: Replica ambos endpoints sobre `localStorage` para demostraciones sin Python instalado.
+- `GET /`: Sala de Control en vivo (observador SSE de eventos reales del motor LangGraph).
+- `GET /diagramas`: Diagramas UML MAS-ML, secuencias `CU-01` / `CU-02` y el grafo real servido desde `/api/motor`.
+- `GET /documentacion`: Consola manual para ejecutar `CU-01`, `CU-02` y los 4 casos por rol, subir fotos y consultar tablas SQLite.
+- `GET /api/motor`: Devuelve la versión instalada de LangGraph, el checkpointer y `mermaid_graph`.
+- `GET /api/sala/snapshot` y `GET /api/stream`: Snapshot inicial y flujo SSE continuo de los 9 tipos de evento.
+- `GET /health`: Estado operativo de la aplicación (`{"status": "ok", ...}`).

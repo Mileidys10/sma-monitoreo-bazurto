@@ -38,7 +38,15 @@ El backend corre sobre un motor real en **Python** compuesto por:
 1. `AgenteSensorResiduos` publica el evento de riesgo e informa al Coordinador **solo si** el nivel supera el umbral (80 %) y persiste al menos 30 min (`nivel > umbral AND persiste`). Cada visita a una zona cuenta como 15 min simulados.
 2. `AgenteSensorAire` informa su medición en cada ronda. `AgenteCoordinador` calcula riesgo y prioriza zonas siempre, pero **solo delega la alerta** (`REQUEST`) si hubo evento de riesgo.
 3. `AgenteAlertas` responde `REFUSE` si ya hay una alerta activa en esa zona (alerta duplicada, flujo alterno A2). Si acepta (`AGREE`), emite el aviso y reporta `INFORM-DONE` si la comunidad confirma o `FAILURE` si no.
-4. Sin evento de riesgo el grafo termina en el Coordinador: no se alerta.
+4. Sin evento de riesgo el grafo termina en el Coordinador: no se alerta (salvo que el sensor de aire haya caído, caso en el que transiciona al Supervisor).
+
+### Supervisión (CU-02)
+
+`AgenteSupervisor` ejecuta la auditoría mediante `auditar_supervision()`:
+- **Con evento**: envía `QUERY-IF` al Coordinador (responde `CONFIRM`), `QUERY-IF` a `AgenteAlertas` (`CONFIRM` o `DISCONFIRM`) y `QUERY-IF` a `AgenteSensorAire` con `reply-by` de `5 s`.
+- **A1 (sin confirmación comunitaria)**: `AgenteAlertas` responde `DISCONFIRM` → `registrarIncidencias()` → `REQUEST` de acción correctiva al Coordinador → `AGREE` → el Coordinador reenvía la alerta como `REQUEST` con `reintento=True`.
+- **A2 (sensor de aire caído)**: el sensor no mide ni envía mensajes en la ronda; el Supervisor no recibe respuesta antes del `reply-by` de `5 s` → `registrarIncidencias()` → `notificarFallos()` (`INFORM` al Coordinador) → `REQUEST` de recálculo → `AGREE` → el Coordinador recalcula el riesgo sin el sensor de aire. Si el sensor cae en una ronda sin evento, el grafo pasa del Coordinador directo al Supervisor. En la Sala de Control el sensor de aire de una zona falla al azar (`3 %` por zona y ronda) y vuelve tras `3–5` rondas para poder observar `A2` en vivo.
+- Cada mensaje FIPA-ACL lleva su caso de uso (`CU-01` o `CU-02`).
 
 ### Fotos para la cámara
 
@@ -95,7 +103,7 @@ Sin `GEMINI_API_KEY`, el sistema funciona de forma autónoma y offline usando el
 
 ## 7. Pruebas automatizadas
 
-Con el entorno virtual creado, ejecuta la suite de pruebas con `pytest`:
+Con el entorno virtual creado, ejecuta la suite de **37 pruebas automatizadas** con `pytest`:
 
 ```powershell
 # Windows
@@ -129,6 +137,7 @@ Con el entorno virtual creado, ejecuta la suite de pruebas con `pytest`:
 - `GET /api/sala/vision/{zona_id}.png` — Última imagen PNG anotada por el analizador de visión para esa zona.
 - `GET /api/motor` — Metadatos verificables del motor LangGraph activo y nodos del grafo.
 - `GET /documentacion` — Consola manual de casos de uso (`CU-01`, `CU-02`, 4 casos por rol MAS-ML) y visor de tablas SQLite.
+- `GET /diagramas` — Diagramas UML MAS-ML, secuencias `CU-01` y `CU-02`, y grafo real del motor consultado desde `/api/motor`.
 - `GET /health` — Verificación de salud (`{"status": "ok", ...}`).
 
 ---
