@@ -289,6 +289,61 @@
     .tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
     .tab-btn { background: #e5e7eb; color: #111827; }
     .tab-btn.active { background: var(--accent); color: #fff; }
+    .live-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      margin-bottom: 12px;
+      font-size: 0.86rem;
+    }
+    .live-agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+    }
+    .agent-live-card {
+      border: 1px solid var(--border);
+      border-top: 4px solid #9ca3af;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: var(--surface-alt);
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    }
+    .agent-live-card.active {
+      border-color: #2563eb;
+      border-top-color: #2563eb;
+      background: #eff6ff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.16);
+      transform: translateY(-2px);
+    }
+    .agent-live-card.done {
+      border-top-color: #0f766e;
+      background: #f0fdfa;
+    }
+    .agent-live-card.alert {
+      border-top-color: #b45309;
+      background: #fffbeb;
+    }
+    .pulse-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #16a34a;
+      margin-right: 6px;
+      animation: smapulse 1.2s infinite;
+    }
+    @keyframes smapulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(1.25); }
+      100% { opacity: 1; transform: scale(1); }
+    }
     footer { text-align: center; font-size: 0.85rem; color: var(--muted); margin-top: 28px; }
   </style>
 </head>
@@ -325,6 +380,70 @@
         </div>
       </div>
     </details>
+
+    <!-- Módulo 0: Monitor Autónomo en Tiempo Real de los 5 Agentes -->
+    <section class="card" aria-labelledby="live-agents-title">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
+        <h2 id="live-agents-title" style="margin:0;border:none;padding:0;">
+          <span class="pulse-dot" id="livePulseDot"></span>0. Actividad Autónoma en Tiempo Real &mdash; Los 5 Agentes Trabajando Solos
+        </h2>
+        <div class="btn-group" style="margin:0;">
+          <button type="button" class="btn-outline" id="btnToggleAutopilot" onclick="togglePilotoAutomatico()">Pausar Piloto Automático</button>
+          <button type="button" class="btn-primary" onclick="ejecutarCicloAutonomoCompleto(true)">Ejecutar Ronda Completa Ahora</button>
+        </div>
+      </div>
+      <div class="live-banner">
+        <span id="liveAutoStatusBanner"><strong>Piloto Automático Activo:</strong> Iniciando monitoreo autónomo de <code>MercadoBazurto</code> sin intervención humana...</span>
+        <span id="liveCycleBadge" class="badge b-ok">Ronda #0 · Automático</span>
+      </div>
+      <div class="live-agents-grid">
+        <div class="agent-live-card" id="card_AgenteSensorResiduos">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <strong style="font-size:0.86rem;">AgenteSensorResiduos</strong>
+            <span class="badge b-met" id="st_AgenteSensorResiduos">EN ESPERA</span>
+          </div>
+          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>MonitorCondicionesAmbientales</code></small>
+          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteSensorResiduos">Listo para analizar cámaras y contenedores.</div>
+          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteSensorResiduos">-</small>
+        </div>
+        <div class="agent-live-card" id="card_AgenteSensorAire">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <strong style="font-size:0.86rem;">AgenteSensorAire</strong>
+            <span class="badge b-met" id="st_AgenteSensorAire">EN ESPERA</span>
+          </div>
+          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>MonitorCondicionesAmbientales</code></small>
+          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteSensorAire">Listo para medir CO2, temperatura y humedad.</div>
+          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteSensorAire">-</small>
+        </div>
+        <div class="agent-live-card" id="card_AgenteCoordinador">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <strong style="font-size:0.86rem;">AgenteCoordinador</strong>
+            <span class="badge b-met" id="st_AgenteCoordinador">EN ESPERA</span>
+          </div>
+          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>Coordinador</code></small>
+          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteCoordinador">Listo para calcular riesgo y priorizar zonas.</div>
+          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteCoordinador">-</small>
+        </div>
+        <div class="agent-live-card" id="card_AgenteAlertas">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <strong style="font-size:0.86rem;">AgenteAlertas</strong>
+            <span class="badge b-met" id="st_AgenteAlertas">EN ESPERA</span>
+          </div>
+          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>EmisorAlertas</code></small>
+          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteAlertas">Listo para emitir aviso a la comunidad.</div>
+          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteAlertas">-</small>
+        </div>
+        <div class="agent-live-card" id="card_AgenteSupervisor">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <strong style="font-size:0.86rem;">AgenteSupervisor</strong>
+            <span class="badge b-met" id="st_AgenteSupervisor">EN ESPERA</span>
+          </div>
+          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>Supervisor</code></small>
+          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteSupervisor">Listo para auditar agentes e incidencias.</div>
+          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteSupervisor">-</small>
+        </div>
+      </div>
+    </section>
 
     <!-- Módulo 1: Cámara y Visión Artificial -->
     <section class="card" aria-labelledby="vision-title">
@@ -592,6 +711,17 @@
     let imagenBase64Seleccionada = null;
     let webcamStream = null;
     let useLocalFallback = false;
+    let pilotoAutomaticoActivo = true;
+    let autoRondaNum = 0;
+    let autoCicloEnCurso = false;
+    let animTimerHandles = [];
+    const AGENTES_SMA = [
+      "AgenteSensorResiduos",
+      "AgenteSensorAire",
+      "AgenteCoordinador",
+      "AgenteAlertas",
+      "AgenteSupervisor"
+    ];
 
     const LOCAL_STORAGE_ID = "bazurto_sma_cloud_v3";
 
@@ -1792,6 +1922,11 @@
     function manejarArchivoSubido(event) {
       const file = event.target.files[0];
       if (!file) return;
+      if (pilotoAutomaticoActivo) {
+        pilotoAutomaticoActivo = false;
+        const btn = document.getElementById("btnToggleAutopilot");
+        if (btn) btn.textContent = "Reanudar Piloto Automático";
+      }
       const reader = new FileReader();
       reader.onload = async () => {
         imagenBase64Seleccionada = reader.result;
@@ -2031,11 +2166,171 @@
       }).join("");
     }
 
-    function renderizarTraza(data) {
+    function resetTarjetasAgentesVivas() {
+      for (const ag of AGENTES_SMA) {
+        const card = document.getElementById(`card_${ag}`);
+        const st = document.getElementById(`st_${ag}`);
+        if (card) card.className = "agent-live-card";
+        if (st) {
+          st.className = "badge b-met";
+          st.textContent = "EN ESPERA";
+        }
+      }
+    }
+
+    function animarActividadAgentesDesdeTraza(traza, etiqueta = "Ciclo Activo") {
+      for (const h of animTimerHandles) clearTimeout(h);
+      animTimerHandles = [];
+      resetTarjetasAgentesVivas();
+      const pasos = (traza || []).filter(item => item && (item.agente || item.sender));
+      const seenDone = new Set();
+
+      pasos.forEach((step, idx) => {
+        const timer = setTimeout(() => {
+          const ag = step.tipo === "ACL" ? step.sender : step.agente;
+          if (!AGENTES_SMA.includes(ag)) return;
+          for (const prevAg of AGENTES_SMA) {
+            if (prevAg !== ag && seenDone.has(prevAg)) {
+              const pCard = document.getElementById(`card_${prevAg}`);
+              const pSt = document.getElementById(`st_${prevAg}`);
+              if (pCard && pCard.classList.contains("active")) pCard.className = "agent-live-card done";
+              if (pSt && pSt.textContent === "EJECUTANDO") {
+                pSt.className = "badge b-ok";
+                pSt.textContent = "ACTIVO";
+              }
+            }
+          }
+          seenDone.add(ag);
+          const card = document.getElementById(`card_${ag}`);
+          const st = document.getElementById(`st_${ag}`);
+          const act = document.getElementById(`act_${ag}`);
+          const aclEl = document.getElementById(`acl_${ag}`);
+          if (card) card.className = "agent-live-card active";
+          if (st) {
+            st.className = "badge b-acl";
+            st.textContent = "EJECUTANDO";
+          }
+          if (act) {
+            act.innerHTML = step.tipo === "ACL"
+              ? `Mensaje a <strong>${step.receiver}</strong> (<code>${step.metodo_origen || "-"}</code>)`
+              : (step.tipo === "TIMEOUT"
+                ? `<strong>TIMEOUT:</strong> ${step.detalle}`
+                : `<code>${step.metodo}</code><br><span style="color:var(--muted);">${String(step.detalle || "").slice(0, 72)}</span>`);
+          }
+          if (aclEl && step.tipo === "ACL") {
+            aclEl.textContent = `ACL:${step.performative} -> ${step.receiver}`;
+          }
+
+          if (idx === pasos.length - 1) {
+            setTimeout(() => {
+              for (const finalAg of AGENTES_SMA) {
+                if (seenDone.has(finalAg)) {
+                  const fCard = document.getElementById(`card_${finalAg}`);
+                  const fSt = document.getElementById(`st_${finalAg}`);
+                  if (fCard) fCard.className = "agent-live-card done";
+                  if (fSt) {
+                    fSt.className = "badge b-ok";
+                    fSt.textContent = "COMPLETADO";
+                  }
+                }
+              }
+              const banner = document.getElementById("liveAutoStatusBanner");
+              if (banner) {
+                banner.innerHTML = `<strong>${etiqueta}:</strong> Los ${seenDone.size} agentes completaron la coordinación en vivo. Observa los mensajes <code>FIPA-ACL</code> y tablas actualizadas abajo.`;
+              }
+            }, 320);
+          }
+        }, idx * 280);
+        animTimerHandles.push(timer);
+      });
+    }
+
+    function togglePilotoAutomatico() {
+      pilotoAutomaticoActivo = !pilotoAutomaticoActivo;
+      const btn = document.getElementById("btnToggleAutopilot");
+      const dot = document.getElementById("livePulseDot");
+      const banner = document.getElementById("liveAutoStatusBanner");
+      if (btn) btn.textContent = pilotoAutomaticoActivo ? "Pausar Piloto Automático" : "Reanudar Piloto Automático";
+      if (dot) dot.style.background = pilotoAutomaticoActivo ? "#16a34a" : "#9ca3af";
+      if (banner && !pilotoAutomaticoActivo) {
+        banner.innerHTML = "<strong>Piloto Automático en Pausa:</strong> Puedes probar manualmente fotos, zonas y botones debajo o pulsar <em>Reanudar</em>.";
+      } else if (pilotoAutomaticoActivo) {
+        ejecutarCicloAutonomoCompleto(true);
+      }
+    }
+
+    async function ejecutarCicloAutonomoCompleto(avanzarZona = true) {
+      if (autoCicloEnCurso) return;
+      autoCicloEnCurso = true;
+      try {
+        autoRondaNum += 1;
+        const rotZonas = ["zona_3", "zona_5", "zona_2"];
+        const presetMap = {
+          "zona_3": "contenedor_critico.png",
+          "zona_5": "contenedor_medio.png",
+          "zona_2": "contenedor_limpio.png"
+        };
+        const zid = rotZonas[(autoRondaNum - 1) % rotZonas.length];
+        const preset = presetMap[zid] || "contenedor_critico.png";
+        const confirma = autoRondaNum % 3 !== 0;
+
+        if (!imagenBase64Seleccionada) {
+          presetSeleccionado = preset;
+          sincronizarSelectoresZonasYContenedores(zid, null);
+          sincronizarInputsZona();
+          renderizarMuestrasVision();
+        }
+        const usedZid = imagenBase64Seleccionada ? (document.getElementById("zonaSelect")?.value || zid) : zid;
+        const usedPreset = imagenBase64Seleccionada ? null : preset;
+
+        const cycBadge = document.getElementById("liveCycleBadge");
+        const banner = document.getElementById("liveAutoStatusBanner");
+        if (cycBadge) cycBadge.textContent = `Ronda #${autoRondaNum} · ${usedZid}`;
+        if (banner) {
+          banner.innerHTML = `<strong>Piloto Automático Activo (Ronda #${autoRondaNum}):</strong> Los 5 agentes monitorean <code>${usedZid}</code> automáticamente sin clics...`;
+        }
+
+        const cid = document.getElementById("visionContenedorSelect")?.value || null;
+        const cu1 = await apiRequest("/api/caso-uso-1", "POST", {
+          zona_id: usedZid,
+          contenedor_id: cid,
+          forzar_duplicada: false,
+          comunidad_confirma: confirma,
+          image_base64: imagenBase64Seleccionada,
+          preset_imagen: usedPreset,
+          esperar_confirmacion_interactiva: false
+        });
+        if (cu1.vision) mostrarResultadoVision(cu1.vision);
+
+        const cu2 = await apiRequest("/api/caso-uso-2", "POST", {
+          zona_id: usedZid,
+          simular_sin_confirmacion: !confirma,
+          simular_sensor_caido: false
+        });
+
+        const combinado = {
+          caso_uso: "CU-01 + CU-02 (Autónomo)",
+          conversation_id: `${cu1.conversation_id} -> ${cu2.conversation_id}`,
+          riesgo: cu1.riesgo,
+          resultado_acl: cu1.resultado_acl,
+          alerta_confirmada: cu2.alerta_confirmada,
+          sensor_aire_activo: cu2.sensor_aire_activo,
+          traza: [...(cu1.traza || []), ...(cu2.traza || [])]
+        };
+        await cargarEstado();
+        renderizarTraza(combinado, `Ronda Autónoma #${autoRondaNum} (${usedZid})`);
+      } finally {
+        autoCicloEnCurso = false;
+      }
+    }
+
+    function renderizarTraza(data, etiqueta = "Ejecución En Vivo") {
       const summary = document.getElementById("traceSummary");
       if (data.caso_uso === "CU-01") {
         const extra = data.riesgo !== undefined ? ` · Riesgo: <strong>${data.riesgo}</strong>` : "";
         summary.innerHTML = `<strong>${data.caso_uso}</strong> · Conversación <code>${data.conversation_id}</code>${extra} · Cierre ACL: <span class="badge b-acl">${data.resultado_acl}</span>`;
+      } else if (String(data.caso_uso || "").includes("Autónomo")) {
+        summary.innerHTML = `<strong>${data.caso_uso}</strong> · Riesgo: <strong>${data.riesgo}</strong> · Cierre CU-01: <span class="badge b-acl">${data.resultado_acl}</span> · Auditoría Supervisor: <strong>${data.alerta_confirmada ? "CONFIRM" : "ESCALADA"}</strong>`;
       } else {
         summary.innerHTML = `<strong>${data.caso_uso}</strong> · Conversación <code>${data.conversation_id}</code> · Confirmada: <strong>${data.alerta_confirmada}</strong> · Sensor Activo: <strong>${data.sensor_aire_activo}</strong>`;
       }
@@ -2050,6 +2345,7 @@
         }
         return `<div class="trace-item"><span class="badge b-met">${idx + 1}. MÉTODO</span> <strong>${item.agente}</strong>.<code>${item.metodo}</code><br><span style="color:#4b5563">${item.detalle}</span></div>`;
       }).join("");
+      animarActividadAgentesDesdeTraza(data.traza || [], etiqueta);
     }
 
     function cambiarFormatoACL(fmt) {
@@ -2087,7 +2383,15 @@
       ).join("");
     }
 
-    cargarEstado().then(() => analizarImagenActual());
+    cargarEstado().then(async () => {
+      await analizarImagenActual();
+      await ejecutarCicloAutonomoCompleto(false);
+      setInterval(() => {
+        if (pilotoAutomaticoActivo && !imagenBase64Seleccionada) {
+          ejecutarCicloAutonomoCompleto(true);
+        }
+      }, 15000);
+    });
   </script>
 </body>
 </html>
