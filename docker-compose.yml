@@ -4,8 +4,12 @@ services:
     container_name: sma-monitoreo-bazurto
     ports:
       - "8000:8000"
+    environment:
+      # Opcional: con clave, el agente de residuos usa Gemini; sin ella usa el analisis local HSV.
+      # La clave se toma del entorno de quien ejecuta; NUNCA se escribe en el repositorio.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     volumes:
-      - sma_data:/app
+      - sma_data:/data
     restart: unless-stopped
 
 volumes:

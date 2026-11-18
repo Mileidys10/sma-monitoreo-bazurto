@@ -509,119 +509,6 @@
       color: #fff;
     }
 
-    .fw-grid-tabs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 10px 0 14px;
-    }
-
-    .fw-tab-btn {
-      background: #f3f4f6;
-      color: var(--ink);
-      border: 1px solid var(--border);
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 0.84rem;
-      font-weight: 700;
-    }
-
-    .fw-tab-btn.active {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
-    }
-
-    .fw-graph-flow {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      padding: 12px;
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin: 10px 0;
-    }
-
-    .fw-node-pill {
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
-      border-left: 4px solid var(--accent);
-      border-radius: 6px;
-      padding: 7px 10px;
-      font-size: 0.8rem;
-      min-width: 155px;
-    }
-
-    .fw-node-pill.supervisor {
-      border-left-color: var(--warn);
-    }
-
-    .fw-arrow {
-      font-weight: 800;
-      color: var(--muted);
-      font-size: 1rem;
-    }
-
-    .live-banner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      margin-bottom: 12px;
-      font-size: 0.86rem;
-    }
-
-    .live-agents-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-      gap: 10px;
-    }
-
-    .agent-live-card {
-      border: 1px solid var(--border);
-      border-top: 4px solid #9ca3af;
-      border-radius: 8px;
-      padding: 10px 12px;
-      background: var(--surface-alt);
-      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
-    }
-
-    .agent-live-card.active {
-      border-color: #2563eb;
-      border-top-color: #2563eb;
-      background: #eff6ff;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.16);
-      transform: translateY(-2px);
-    }
-
-    .agent-live-card.done {
-      border-top-color: #0f766e;
-      background: #f0fdfa;
-    }
-
-    .pulse-dot {
-      display: inline-block;
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: #16a34a;
-      margin-right: 6px;
-      animation: smapulse 1.2s infinite;
-    }
-
-    @keyframes smapulse {
-      0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.45; transform: scale(1.25); }
-      100% { opacity: 1; transform: scale(1); }
-    }
-
     footer {
       text-align: center;
       font-size: 0.85rem;
@@ -643,6 +530,7 @@
       </p>
     </div>
     <div class="btn-group">
+      <a href="/" class="btn-primary" style="text-decoration:none; display:inline-flex; align-items:center;">Volver a la Sala de control</a>
       <button class="btn-outline" onclick="cargarEstado()">Actualizar Estado</button>
       <button class="btn-danger" onclick="resetearBD()">Reiniciar BD</button>
     </div>
@@ -674,70 +562,6 @@
         </div>
       </div>
     </details>
-
-    <!-- Módulo 0: Monitor Autónomo en Tiempo Real de los 5 Agentes -->
-    <section class="card" aria-labelledby="live-agents-title">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
-        <h2 id="live-agents-title" style="margin:0;border:none;padding:0;">
-          <span class="pulse-dot" id="livePulseDot"></span>0. Actividad Autónoma en Tiempo Real &mdash; Los 5 Agentes Trabajando Solos
-        </h2>
-        <div class="btn-group" style="margin:0;">
-          <button type="button" class="btn-outline" id="btnToggleAutopilot" onclick="togglePilotoAutomatico()">Pausar Piloto Automático</button>
-          <button type="button" class="btn-primary" onclick="ejecutarCicloAutonomoCompleto(true)">Ejecutar Ronda Autónoma Ahora</button>
-        </div>
-      </div>
-      <div class="live-banner">
-        <span id="liveAutoStatusBanner"><strong>Piloto Automático Activo:</strong> Coordinando las 3 cámaras y el grafo de 5 agentes sin intervención humana...</span>
-        <span id="liveCycleBadge" class="badge b-ok">Ronda #0 · Automático</span>
-      </div>
-      <div class="live-agents-grid">
-        <div class="agent-live-card" id="card_AgenteSensorResiduos">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
-            <strong style="font-size:0.86rem;">AgenteSensorResiduos</strong>
-            <span class="badge b-met" id="st_AgenteSensorResiduos">EN ESPERA</span>
-          </div>
-          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>MonitorCondicionesAmbientales</code></small>
-          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteSensorResiduos">Listo para analizar cámaras y contenedores.</div>
-          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteSensorResiduos">-</small>
-        </div>
-        <div class="agent-live-card" id="card_AgenteSensorAire">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
-            <strong style="font-size:0.86rem;">AgenteSensorAire</strong>
-            <span class="badge b-met" id="st_AgenteSensorAire">EN ESPERA</span>
-          </div>
-          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>MonitorCondicionesAmbientales</code></small>
-          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteSensorAire">Listo para medir CO2, temperatura y humedad.</div>
-          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteSensorAire">-</small>
-        </div>
-        <div class="agent-live-card" id="card_AgenteCoordinador">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
-            <strong style="font-size:0.86rem;">AgenteCoordinador</strong>
-            <span class="badge b-met" id="st_AgenteCoordinador">EN ESPERA</span>
-          </div>
-          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>Coordinador</code></small>
-          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteCoordinador">Listo para calcular riesgo y priorizar zonas.</div>
-          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteCoordinador">-</small>
-        </div>
-        <div class="agent-live-card" id="card_AgenteAlertas">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
-            <strong style="font-size:0.86rem;">AgenteAlertas</strong>
-            <span class="badge b-met" id="st_AgenteAlertas">EN ESPERA</span>
-          </div>
-          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>EmisorAlertas</code></small>
-          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteAlertas">Listo para emitir aviso a la comunidad.</div>
-          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteAlertas">-</small>
-        </div>
-        <div class="agent-live-card" id="card_AgenteSupervisor">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
-            <strong style="font-size:0.86rem;">AgenteSupervisor</strong>
-            <span class="badge b-met" id="st_AgenteSupervisor">EN ESPERA</span>
-          </div>
-          <small style="display:block;color:var(--muted);margin:3px 0;">Rol: <code>Supervisor</code></small>
-          <div style="font-size:0.79rem;margin-top:4px;" id="act_AgenteSupervisor">Listo para auditar agentes e incidencias.</div>
-          <small style="display:block;color:#1e3a8a;margin-top:4px;font-family:monospace;" id="acl_AgenteSupervisor">-</small>
-        </div>
-      </div>
-    </section>
 
     <!-- Módulo 1: Cámara y Visión Artificial -->
     <section class="card" aria-labelledby="vision-title">
@@ -891,50 +715,6 @@
         </div>
       </div>
       <div id="visionHistoryList" class="trace-list" style="max-height:360px;"></div>
-    </section>
-
-    <!-- Módulo 1D: Frameworks Multiagente Recomendados por el Profesor -->
-    <section class="card" aria-labelledby="fw-title">
-      <div
-        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
-        <h2 id="fw-title" style="margin:0; border:none; padding:0;">1D. Orquestador de Frameworks Multiagente (Profesor:
-          LangGraph &middot; CrewAI &middot; MAF &middot; Google ADK &middot; JADE &middot; AutoGen &middot; Agent SDK)</h2>
-        <span id="fwEngineStatusBadge" class="badge b-ok">StateGraph + Checkpointer Persistente</span>
-      </div>
-      <p style="margin:0 0 10px; font-size:0.88rem; color:var(--muted);">
-        Selecciona cualquiera de los <strong>7 frameworks multiagente</strong> recomendados para superar las
-        limitaciones de <code>n8n</code> (sin estado persistente). Al ejecutar el grafo, <code>BazurtoStateGraphRunner</code>
-        recorre los <strong>5 nodos reales</strong> (<code>AgenteSensorResiduos</code> &rarr; <code>AgenteSensorAire</code>
-        &rarr; <code>AgenteCoordinador</code> &rarr; <code>AgenteAlertas</code> &rarr; nodo condicional
-        <code>AgenteSupervisor</code>), guarda el checkpoint con <code>thread_id</code> en SQLite y muestra la
-        implementación exacta en el framework seleccionado.
-      </p>
-
-      <div id="fwSelectorTabs" class="fw-grid-tabs"></div>
-
-      <div class="assign-box" style="margin-bottom:12px;">
-        <div class="assign-row">
-          <div>
-            <label for="fwZonaSelect">Zona para ejecutar el Grafo Multiagente</label>
-            <select id="fwZonaSelect"></select>
-          </div>
-          <div>
-            <label for="fwComunidadSelect">Escenario de Confirmación Comunitaria</label>
-            <select id="fwComunidadSelect">
-              <option value="true">Comunidad Confirma (INFORM-DONE + Auditoría CONFIRM)</option>
-              <option value="false">Comunidad NO Responde (FAILURE &rarr; Arista Condicional a AgenteSupervisor)</option>
-            </select>
-          </div>
-          <div>
-            <button type="button" class="btn-primary" style="width:100%;" onclick="ejecutarOrquestacionFramework()">
-              Ejecutar Grafo Multiagente (StateGraph + Checkpointer)
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div id="fwSpecBox" style="margin-bottom:12px;"></div>
-      <div id="fwExecutionOutput"></div>
     </section>
 
     <!-- Módulo 2: Entorno y Casos de Uso -->
@@ -1172,91 +952,6 @@
     let imagenBase64Seleccionada = null;
     let webcamStream = null;
     let useLocalFallback = false;
-    let frameworkSeleccionado = "langgraph";
-    let pilotoAutomaticoActivo = true;
-    let autoRondaNum = 0;
-    let autoCicloEnCurso = false;
-    let animTimerHandles = [];
-    const AGENTES_SMA = [
-      "AgenteSensorResiduos",
-      "AgenteSensorAire",
-      "AgenteCoordinador",
-      "AgenteAlertas",
-      "AgenteSupervisor"
-    ];
-
-    const FRAMEWORKS_CATALOG_LOCAL = [
-      {
-        id: "langgraph",
-        nombre: "LangGraph",
-        creador: "LangChain Inc.",
-        lenguaje: "Python",
-        paradigma: "Grafo de Estados Cíclico (StateGraph) con Checkpointer persistente",
-        resuelve_persistencia: "Reemplaza la falta de memoria de n8n mediante BazurtoAgentState + SqliteSaver/MemorySaver: conserva tiempoSobreLimite, historialMediciones y conversation_id entre nodos.",
-        mapeo_agentes: "Cada agente MAS-ML es un nodo (nodo_sensor_residuos, nodo_sensor_aire, nodo_coordinador, nodo_alertas, nodo_supervisor) unido por aristas condicionales.",
-        codigo_implementacion: `from langgraph.graph import StateGraph, START, END\nfrom langgraph.checkpoint.memory import MemorySaver\n\nbuilder = StateGraph(BazurtoAgentState)\nbuilder.add_node("nodo_sensor_residuos", agente_sensor_residuos_node)\nbuilder.add_node("nodo_sensor_aire", agente_sensor_aire_node)\nbuilder.add_node("nodo_coordinador", agente_coordinador_node)\nbuilder.add_node("nodo_alertas", agente_alertas_node)\nbuilder.add_node("nodo_supervisor", agente_supervisor_node)\nbuilder.add_edge(START, "nodo_sensor_residuos")\nbuilder.add_conditional_edges("nodo_alertas", decidir_ruta_supervision, {"supervisor": "nodo_supervisor", "fin": END})\nsma_graph = builder.compile(checkpointer=MemorySaver())`
-      },
-      {
-        id: "crewai",
-        nombre: "CrewAI",
-        creador: "CrewAI Inc.",
-        lenguaje: "Python",
-        paradigma: "Equipos Multiagente por Roles (Agent + Task + Crew Jerárquico)",
-        resuelve_persistencia: "Usa memory=True y almacenamiento SQLite por entidad para recordar mediciones previas y priorizaciones entre ejecuciones.",
-        mapeo_agentes: "Mapeo directo con los <<role>> MAS-ML: MonitorCondicionesAmbientales, Coordinador (manager_agent), EmisorAlertas y Supervisor.",
-        codigo_implementacion: `from crewai import Agent, Task, Crew, Process\n\ncoordinador = Agent(role="Coordinador", goal="calcularRiesgo() y priorizarZonas()", allow_delegation=True)\ncrew_bazurto = Crew(agents=[residuos, aire, alertas, supervisor], tasks=[t1, t2, t3, t4], process=Process.hierarchical, manager_agent=coordinador, memory=True)`
-      },
-      {
-        id: "microsoft_maf",
-        nombre: "MAF (Microsoft Agent Framework)",
-        creador: "Microsoft",
-        lenguaje: "Python / C# (.NET)",
-        paradigma: "Orquestación Enterprise con ChatCompletionAgent + AgentGroupChat + Plugins",
-        resuelve_persistencia: "Centraliza el historial de conversación (ChatHistory) y estado en hilos persistentes (AgentThread).",
-        mapeo_agentes: "Cada agente encapsula sus métodos MAS-ML como Plugins tipados dentro de AgentGroupChat.",
-        codigo_implementacion: `from semantic_kernel.agents import ChatCompletionAgent, AgentGroupChat\n\nchat_bazurto = AgentGroupChat(\n    agents=[agente_residuos, agente_aire, agente_coord, agente_alertas, agente_sup],\n    termination_strategy=SupervisorAuditTermination(),\n)`
-      },
-      {
-        id: "google_adk",
-        nombre: "Google ADK (Agent Development Kit)",
-        creador: "Google",
-        lenguaje: "Python",
-        paradigma: "Jerarquía Composable (LlmAgent, ParallelAgent, SequentialAgent) con Gemini 2.5 Flash",
-        resuelve_persistencia: "Integra DatabaseSessionService y ToolContext.state persistente para conservar estadoInterno y alertas entre turnos.",
-        mapeo_agentes: "ParallelAgent (Residuos + Aire) entrega el estado al SequentialAgent (Coordinador -> Alertas -> Supervisor).",
-        codigo_implementacion: `from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent\n\nmonitores = ParallelAgent(name="MonitorCondicionesAmbientales", sub_agents=[sensor_residuos, sensor_aire])\nsma_adk_root = SequentialAgent(name="SMAMonitoreoBazurto", sub_agents=[monitores, coordinador, alertas, supervisor])`
-      },
-      {
-        id: "jade",
-        nombre: "JADE (Java Agent Development Framework)",
-        creador: "TILAB / Telecom Italia (Estándar FIPA)",
-        lenguaje: "Java / Python ACL Bridge",
-        paradigma: "Plataforma FIPA Nativa (ACLMessage + CyclicBehaviour + DF)",
-        resuelve_persistencia: "Los agentes viven continuamente en un Container JADE con atributos persistidos en SQLite y mensajería ACLMessage oficial.",
-        mapeo_agentes: "Implementación FIPA-ACL estándar con performativas QUERY-REF, INFORM, REQUEST, AGREE, REFUSE, INFORM-DONE, FAILURE, QUERY-IF y CONFIRM.",
-        codigo_implementacion: `public class AgenteCoordinador extends Agent {\n  protected void setup() {\n    addBehaviour(new CyclicBehaviour(this) {\n      public void action() {\n        ACLMessage msg = receive();\n        if (msg != null && msg.getPerformative() == ACLMessage.INFORM) { /* delegarAlerta() */ }\n      }\n    });\n  }\n}`
-      },
-      {
-        id: "autogen",
-        nombre: "AutoGen",
-        creador: "Microsoft Research / AG2",
-        lenguaje: "Python",
-        paradigma: "Conversación Multiagente Event-Driven (AssistantAgent + GroupChatManager)",
-        resuelve_persistencia: "Mantiene historial compartido entre turnos del GroupChat y persiste estado de herramientas en SQLite.",
-        mapeo_agentes: "Los 5 agentes conversan en un GroupChat moderado por AgenteCoordinador y auditado por AgenteSupervisor.",
-        codigo_implementacion: `from autogen import AssistantAgent, GroupChat, GroupChatManager\n\ngroup_chat = GroupChat(agents=[sensor_residuos, sensor_aire, coordinador, alertas, supervisor], messages=[], max_round=12)\nmanager = GroupChatManager(groupchat=group_chat)`
-      },
-      {
-        id: "agent_sdk",
-        nombre: "Agent SDK (OpenAI Agents SDK)",
-        creador: "OpenAI",
-        lenguaje: "Python / TypeScript",
-        paradigma: "Agentes Ligeros con Handoffs Explícitos y @function_tool",
-        resuelve_persistencia: "Usa SQLiteSession en Runner.run(..., session=...) para recordar estado previo de sensores y alertas.",
-        mapeo_agentes: "Cada agente expone sus métodos como @function_tool y usa handoff() para transferir Monitores -> Coordinador -> Alertas -> Supervisor.",
-        codigo_implementacion: `from agents import Agent, Runner, SQLiteSession, handoff\n\nsession = SQLiteSession("bazurto_zona_3", "bazurto_sma.db")\nresult = Runner.run_sync(monitor, "Ejecutar monitoreo y priorización", session=session)`
-      }
-    ];
 
     const LOCAL_STORAGE_ID = "bazurto_sma_v2_cloud_v1";
 
@@ -2413,73 +2108,6 @@
             return { caso_uso: "CU-ROL-03", rol: "EmisorAlertas", conversation_id: convId, zona_id: zid, alerta_id: alertaId, resultado_acl: z.comunidad_confirma ? "INFORM-DONE" : "FAILURE", traza: trace };
           }
         }
-        if (path === "/api/frameworks") {
-          return {
-            total_frameworks: FRAMEWORKS_CATALOG_LOCAL.length,
-            langgraph_nativo_instalado: false,
-            motor_activo: "StateGraph Compatible Offline (Navegador + LocalStorage)",
-            frameworks: FRAMEWORKS_CATALOG_LOCAL
-          };
-        }
-        if (path === "/api/frameworks/ejecutar") {
-          const fwId = (body.framework_id || "langgraph").toLowerCase();
-          const fw = FRAMEWORKS_CATALOG_LOCAL.find(item => item.id === fwId);
-          if (!fw) throw new Error(`Framework desconocido: ${fwId}`);
-          const zid = body.zona_id || "zona_3";
-          const confirma = body.comunidad_confirma !== false;
-          const r1 = await handleLocalApi("/api/caso-uso-1", { zona_id: zid, comunidad_confirma: confirma, gemini_api_key: body.gemini_api_key || "" });
-          const trace = [...(r1.traza || [])];
-          const incidencias = [];
-          const nodosVisitados = [
-            { nodo: "nodo_sensor_residuos", agente: "AgenteSensorResiduos", rol: "MonitorCondicionesAmbientales", metodos: ["medirNivelLlenadoContenedores()", "analizarImagenes()", "evaluarPersistencia()", "publicarEventoRiesgo()"], salida: `evento=#${r1.evento_id || 1}, nivel=${r1.vision?.nivel_llenado_visual ?? 80}%` },
-            { nodo: "nodo_sensor_aire", agente: "AgenteSensorAire", rol: "MonitorCondicionesAmbientales", metodos: ["medirGases()", "registrarMedicion()", "detectarAumentoProgresivo()", "publicarMedicion()"], salida: `CO2 medido en ${zid}` },
-            { nodo: "nodo_coordinador", agente: "AgenteCoordinador", rol: "Coordinador", metodos: ["consultarEventos()", "calcularRiesgo()", "priorizarZonas()", "delegarAlerta()"], salida: `riesgo=${r1.riesgo}` },
-            { nodo: "nodo_alertas", agente: "AgenteAlertas", rol: "EmisorAlertas", metodos: ["recibirSolicitudAlerta()", "emitirAviso()", "gestionarConfirmacion()", confirma ? "generarReporteConfirmacion()" : "generarReporteSinConfirmacion()"], salida: `alerta_id=${r1.alerta_id}, ACL=${r1.resultado_acl}` }
-          ];
-          const transiciones = [
-            "START -> nodo_sensor_residuos",
-            "nodo_sensor_residuos -> nodo_sensor_aire",
-            "nodo_sensor_aire -> nodo_coordinador",
-            "nodo_coordinador -> nodo_alertas"
-          ];
-          if (!confirma || body.incluir_supervision !== false) {
-            const r2 = await handleLocalApi("/api/caso-uso-2", { zona_id: zid, simular_sin_confirmacion: !confirma, simular_sensor_caido: false });
-            (r2.traza || []).forEach(t => trace.push(t));
-            nodosVisitados.push({ nodo: "nodo_supervisor", agente: "AgenteSupervisor", rol: "Supervisor", metodos: ["verificarAtencionEventos()", "supervisarAgentes()", confirma ? "confirmarAuditoria()" : "registrarIncidencias()"], salida: confirma ? "Auditoría CONFIRM sin incidencias" : "Incidencia escalada al Coordinador" });
-            transiciones.push("nodo_alertas -> nodo_supervisor", "nodo_supervisor -> END");
-          } else {
-            transiciones.push("nodo_alertas -> END");
-          }
-          const estRes = (db.estado_interno_residuos || []).find(r => r.zona_id === zid) || {};
-          return {
-            caso_uso: `FW-${fwId.toUpperCase()}`,
-            framework_id: fw.id,
-            framework_nombre: fw.nombre,
-            paradigma: fw.paradigma,
-            resuelve_persistencia: fw.resuelve_persistencia,
-            motor_ejecucion: `StateGraph Offline (adaptador ${fw.nombre})`,
-            langgraph_nativo_instalado: false,
-            conversation_id: `${fw.id}-${zid}-local`,
-            thread_id: `${fw.id}-${zid}-local`,
-            zona_id: zid,
-            riesgo: r1.riesgo,
-            resultado_acl: r1.resultado_acl,
-            nodos_visitados: nodosVisitados,
-            transiciones,
-            estado_final_checkpoint: {
-              zona_id: zid,
-              tiempoSobreLimite: estRes.tiempo_sobre_limite ?? 0,
-              ritmoLlenado: estRes.ritmo_llenado ?? 0,
-              historialMediciones_count: (db.historial_mediciones_aire || []).length,
-              riesgo: r1.riesgo,
-              alerta_id: r1.alerta_id,
-              resultado_acl: r1.resultado_acl,
-              incidencias_supervisor: incidencias
-            },
-            codigo_implementacion: fw.codigo_implementacion,
-            traza: trace
-          };
-        }
         throw new Error("Ruta local no implementada: " + path);
       }
 
@@ -2533,7 +2161,6 @@
         sincronizarSelectoresZonasYContenedores();
         sincronizarInputsZona();
         renderizarCamarasCoordinador();
-        renderizarCatalogoFrameworks();
         renderizarMuestrasVision();
         renderizarHistorialVision();
         renderizarPanelComunidad();
@@ -2641,94 +2268,6 @@
         await cargarEstado();
       }
 
-      function escapeHtml(text) {
-        return String(text || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      }
-
-      function renderizarCatalogoFrameworks() {
-        const tabsEl = document.getElementById("fwSelectorTabs");
-        const specEl = document.getElementById("fwSpecBox");
-        if (!tabsEl || !specEl) return;
-        const catalog = (estadoCache && estadoCache.frameworks_catalogo) || FRAMEWORKS_CATALOG_LOCAL;
-        tabsEl.innerHTML = catalog.map(fw => {
-          const activeCls = fw.id === frameworkSeleccionado ? "active" : "";
-          return `<button type="button" class="fw-tab-btn ${activeCls}" onclick="seleccionarFramework('${fw.id}')">${fw.nombre}</button>`;
-        }).join("");
-
-        const actual = catalog.find(f => f.id === frameworkSeleccionado) || catalog[0];
-        if (!actual) return;
-        specEl.innerHTML = `
-          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--surface-alt);">
-            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px;">
-              <strong style="font-size:0.96rem;">${actual.nombre} <span style="color:var(--muted);font-weight:500;">(${actual.creador} &middot; ${actual.lenguaje})</span></strong>
-              <span class="badge b-acl">${actual.paradigma}</span>
-            </div>
-            <p style="margin:4px 0;font-size:0.84rem;"><strong>Cómo resuelve el límite de n8n (Persistencia):</strong> ${actual.resuelve_persistencia}</p>
-            <p style="margin:4px 0 8px;font-size:0.84rem;"><strong>Mapeo MAS-ML de Bazurto:</strong> ${actual.mapeo_agentes}</p>
-            <details>
-              <summary style="cursor:pointer;font-size:0.83rem;font-weight:700;color:var(--accent);">Ver código de implementación de SMAMonitoreoBazurto en ${actual.nombre}</summary>
-              <pre>${escapeHtml(actual.codigo_implementacion)}</pre>
-            </details>
-          </div>
-        `;
-      }
-
-      function seleccionarFramework(fwId) {
-        frameworkSeleccionado = fwId;
-        renderizarCatalogoFrameworks();
-      }
-
-      async function ejecutarOrquestacionFramework() {
-        const zid = document.getElementById("fwZonaSelect")?.value || document.getElementById("zonaSelect").value;
-        const confirmaVal = (document.getElementById("fwComunidadSelect")?.value || "true") === "true";
-        const data = await apiRequest("/api/frameworks/ejecutar", "POST", {
-          framework_id: frameworkSeleccionado,
-          zona_id: zid,
-          comunidad_confirma: confirmaVal,
-          incluir_supervision: true,
-          gemini_api_key: getGeminiKey() || null
-        });
-        renderizarResultadoFramework(data);
-        renderizarTraza(data);
-        await cargarEstado();
-      }
-
-      function renderizarResultadoFramework(data) {
-        const outEl = document.getElementById("fwExecutionOutput");
-        const statusBadge = document.getElementById("fwEngineStatusBadge");
-        if (statusBadge && data.motor_ejecucion) {
-          statusBadge.textContent = data.motor_ejecucion;
-        }
-        if (!outEl || !data) return;
-        const nodos = data.nodos_visitados || [];
-        const cp = data.estado_final_checkpoint || {};
-        outEl.innerHTML = `
-          <div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:12px;">
-            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center;">
-              <strong>Ejecución Real de Grafo Multiagente &middot; Framework: <code>${data.framework_nombre}</code></strong>
-              <span class="badge b-ok">Checkpoint thread_id: ${data.thread_id}</span>
-            </div>
-            <div class="fw-graph-flow">
-              ${nodos.map((n, i) => `
-                ${i > 0 ? '<span class="fw-arrow">&rarr;</span>' : ""}
-                <div class="fw-node-pill ${n.nodo === "nodo_supervisor" ? "supervisor" : ""}">
-                  <strong>${n.nodo}</strong><br>
-                  <span style="color:var(--accent);font-weight:700;">${n.agente}</span><br>
-                  <small style="color:var(--muted);">${n.salida}</small>
-                </div>
-              `).join("")}
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:0.82rem;margin-top:6px;">
-              <span class="badge b-acl">Cierre ACL: ${cp.resultado_acl || data.resultado_acl}</span>
-              <span class="badge b-met">Riesgo: ${cp.riesgo}</span>
-              <span class="badge b-met">tiempoSobreLimite (Checkpoint): ${cp.tiempoSobreLimite} min</span>
-              <span class="badge b-met">historialMediciones: ${cp.historialMediciones_count}</span>
-              <span class="badge ${cp.incidencias_supervisor?.length ? "b-warn" : "b-ok"}">Incidencias Supervisor: ${(cp.incidencias_supervisor || []).length}</span>
-            </div>
-          </div>
-        `;
-      }
-
       function sincronizarSelectoresZonasYContenedores(zonaPreferida = null, contenedorPreferido = null) {
         if (!estadoCache) return;
         const zonas = estadoCache.entorno_zonas || [];
@@ -2738,7 +2277,6 @@
         const selVis = document.getElementById("visionZonaSelect");
         const selHist = document.getElementById("historyFilterZona");
         const selCont = document.getElementById("visionContenedorSelect");
-        const selFw = document.getElementById("fwZonaSelect");
 
         const currentZona = zonaPreferida || (selVis && selVis.value) || (selEnv && selEnv.value) || (zonas[0]?.zona_id || "zona_3");
         const currentHist = selHist ? selHist.value : "";
@@ -2751,12 +2289,6 @@
         if (selVis) {
           selVis.innerHTML = optsHtml;
           if (zonas.some(z => z.zona_id === currentZona)) selVis.value = currentZona;
-        }
-        if (selFw) {
-          const prevFw = selFw.value;
-          selFw.innerHTML = optsHtml;
-          if (prevFw && zonas.some(z => z.zona_id === prevFw)) selFw.value = prevFw;
-          else if (zonas.some(z => z.zona_id === currentZona)) selFw.value = currentZona;
         }
         if (selHist) {
           selHist.innerHTML = `<option value="">Todas las zonas</option>` + zonas.map(z => `<option value="${z.zona_id}">${z.zona_id} — ${z.nombre}</option>`).join("");
@@ -2965,11 +2497,6 @@
       function manejarArchivoSubido(event) {
         const file = event.target.files[0];
         if (!file) return;
-        if (pilotoAutomaticoActivo) {
-          pilotoAutomaticoActivo = false;
-          const btn = document.getElementById("btnToggleAutopilot");
-          if (btn) btn.textContent = "Reanudar Piloto Automático";
-        }
         const reader = new FileReader();
         reader.onload = async () => {
           imagenBase64Seleccionada = reader.result;
@@ -3219,161 +2746,6 @@
         }).join("");
       }
 
-      function resetTarjetasAgentesVivas() {
-        for (const ag of AGENTES_SMA) {
-          const card = document.getElementById(`card_${ag}`);
-          const st = document.getElementById(`st_${ag}`);
-          if (card) card.className = "agent-live-card";
-          if (st) {
-            st.className = "badge b-met";
-            st.textContent = "EN ESPERA";
-          }
-        }
-      }
-
-      function animarActividadAgentesDesdeTraza(traza, etiqueta = "Ciclo Activo") {
-        for (const h of animTimerHandles) clearTimeout(h);
-        animTimerHandles = [];
-        resetTarjetasAgentesVivas();
-        const pasos = (traza || []).filter(item => item && (item.agente || item.sender));
-        const seenDone = new Set();
-
-        pasos.forEach((step, idx) => {
-          const timer = setTimeout(() => {
-            const ag = step.tipo === "ACL" ? step.sender : step.agente;
-            if (!AGENTES_SMA.includes(ag)) return;
-            for (const prevAg of AGENTES_SMA) {
-              if (prevAg !== ag && seenDone.has(prevAg)) {
-                const pCard = document.getElementById(`card_${prevAg}`);
-                const pSt = document.getElementById(`st_${prevAg}`);
-                if (pCard && pCard.classList.contains("active")) pCard.className = "agent-live-card done";
-                if (pSt && pSt.textContent === "EJECUTANDO") {
-                  pSt.className = "badge b-ok";
-                  pSt.textContent = "ACTIVO";
-                }
-              }
-            }
-            seenDone.add(ag);
-            const card = document.getElementById(`card_${ag}`);
-            const st = document.getElementById(`st_${ag}`);
-            const act = document.getElementById(`act_${ag}`);
-            const aclEl = document.getElementById(`acl_${ag}`);
-            if (card) card.className = "agent-live-card active";
-            if (st) {
-              st.className = "badge b-acl";
-              st.textContent = "EJECUTANDO";
-            }
-            if (act) {
-              act.innerHTML = step.tipo === "ACL"
-                ? `Mensaje a <strong>${step.receiver}</strong> (<code>${step.metodo_origen || "-"}</code>)`
-                : (step.tipo === "TIMEOUT"
-                  ? `<strong>TIMEOUT:</strong> ${step.detalle}`
-                  : `<code>${step.metodo}</code><br><span style="color:var(--muted);">${String(step.detalle || "").slice(0, 72)}</span>`);
-            }
-            if (aclEl && step.tipo === "ACL") {
-              aclEl.textContent = `ACL:${step.performative} -> ${step.receiver}`;
-            }
-
-            if (idx === pasos.length - 1) {
-              setTimeout(() => {
-                for (const finalAg of AGENTES_SMA) {
-                  if (seenDone.has(finalAg)) {
-                    const fCard = document.getElementById(`card_${finalAg}`);
-                    const fSt = document.getElementById(`st_${finalAg}`);
-                    if (fCard) fCard.className = "agent-live-card done";
-                    if (fSt) {
-                      fSt.className = "badge b-ok";
-                      fSt.textContent = "COMPLETADO";
-                    }
-                  }
-                }
-                const banner = document.getElementById("liveAutoStatusBanner");
-                if (banner) {
-                  banner.innerHTML = `<strong>${etiqueta}:</strong> Los ${seenDone.size} agentes completaron cámaras + grafo (${frameworkSeleccionado}) en vivo.`;
-                }
-              }, 320);
-            }
-          }, idx * 240);
-          animTimerHandles.push(timer);
-        });
-      }
-
-      function togglePilotoAutomatico() {
-        pilotoAutomaticoActivo = !pilotoAutomaticoActivo;
-        const btn = document.getElementById("btnToggleAutopilot");
-        const dot = document.getElementById("livePulseDot");
-        const banner = document.getElementById("liveAutoStatusBanner");
-        if (btn) btn.textContent = pilotoAutomaticoActivo ? "Pausar Piloto Automático" : "Reanudar Piloto Automático";
-        if (dot) dot.style.background = pilotoAutomaticoActivo ? "#16a34a" : "#9ca3af";
-        if (banner && !pilotoAutomaticoActivo) {
-          banner.innerHTML = "<strong>Piloto Automático en Pausa:</strong> Puedes probar manualmente cámaras, zonas y frameworks o pulsar <em>Reanudar</em>.";
-        } else if (pilotoAutomaticoActivo) {
-          ejecutarCicloAutonomoCompleto(true);
-        }
-      }
-
-      async function ejecutarCicloAutonomoCompleto(avanzarZona = true) {
-        if (autoCicloEnCurso) return;
-        autoCicloEnCurso = true;
-        try {
-          autoRondaNum += 1;
-          const rotZonas = ["zona_3", "zona_5", "zona_2"];
-          const presetMap = {
-            "zona_3": "contenedor_critico.png",
-            "zona_5": "contenedor_medio.png",
-            "zona_2": "contenedor_limpio.png"
-          };
-          const zid = rotZonas[(autoRondaNum - 1) % rotZonas.length];
-          const confirma = autoRondaNum % 3 !== 0;
-
-          if (!imagenBase64Seleccionada) {
-            presetSeleccionado = presetMap[zid] || "contenedor_critico.png";
-            sincronizarSelectoresZonasYContenedores(zid, null);
-            sincronizarInputsZona();
-            renderizarMuestrasVision();
-          }
-          const usedZid = imagenBase64Seleccionada ? (document.getElementById("zonaSelect")?.value || zid) : zid;
-          const gKey = getGeminiKey() || null;
-
-          const cycBadge = document.getElementById("liveCycleBadge");
-          const banner = document.getElementById("liveAutoStatusBanner");
-          if (cycBadge) cycBadge.textContent = `Ronda #${autoRondaNum} · ${usedZid}`;
-          if (banner) {
-            banner.innerHTML = `<strong>Piloto Automático Activo (Ronda #${autoRondaNum}):</strong> Coordinador ordenando revisión de 3 cámaras y ejecutando <code>${frameworkSeleccionado}</code> en <code>${usedZid}</code>...`;
-          }
-
-          const insp = await apiRequest("/api/coordinador/inspeccionar-camaras", "POST", {
-            gemini_api_key: gKey,
-            comunidad_confirma: confirma,
-            esperar_confirmacion_interactiva: false
-          });
-          renderizarResultadoInspeccionCoordinada(insp);
-
-          const fwData = await apiRequest("/api/frameworks/ejecutar", "POST", {
-            framework_id: frameworkSeleccionado,
-            zona_id: usedZid,
-            comunidad_confirma: confirma,
-            incluir_supervision: true,
-            gemini_api_key: gKey
-          });
-          renderizarResultadoFramework(fwData);
-
-          const combinado = {
-            caso_uso: fwData.caso_uso || `FW-${frameworkSeleccionado.toUpperCase()}`,
-            framework_nombre: fwData.framework_nombre,
-            thread_id: fwData.thread_id,
-            conversation_id: fwData.conversation_id,
-            riesgo: fwData.riesgo,
-            resultado_acl: fwData.resultado_acl,
-            traza: [...(insp.traza || []).slice(0, 10), ...(fwData.traza || [])]
-          };
-          await cargarEstado();
-          renderizarTraza(combinado, `Ronda Autónoma V2 #${autoRondaNum} (${usedZid})`);
-        } finally {
-          autoCicloEnCurso = false;
-        }
-      }
-
       function renderizarTraza(data, etiqueta = "Ejecución En Vivo") {
         const summary = document.getElementById("traceSummary");
         if (data.caso_uso === "CU-01") {
@@ -3382,8 +2754,6 @@
         } else if (String(data.caso_uso || "").startsWith("CU-ROL-")) {
           const extraTop = data.zona_prioritaria ? ` · Prioridad #1: <strong>${data.zona_prioritaria.zona_id}</strong> (riesgo ${data.zona_prioritaria.riesgo})` : "";
           summary.innerHTML = `<strong>${data.caso_uso}</strong> (Rol: <code>${data.rol || "-"}</code>) · Conversación <code>${data.conversation_id}</code>${extraTop} · Estado: <span class="badge b-acl">${data.resultado_acl || "OK"}</span>`;
-        } else if (String(data.caso_uso || "").startsWith("FW-")) {
-          summary.innerHTML = `<strong>${data.caso_uso}</strong> (Framework: <code>${data.framework_nombre || data.framework_id}</code>) · Checkpoint <code>${data.thread_id || data.conversation_id}</code> · Riesgo: <strong>${data.riesgo}</strong> · Cierre ACL: <span class="badge b-acl">${data.resultado_acl || "OK"}</span>`;
         } else {
           summary.innerHTML = `<strong>${data.caso_uso}</strong> · Conversación <code>${data.conversation_id}</code> · Confirmada: <strong>${data.alerta_confirmada}</strong> · Sensor Activo: <strong>${data.sensor_aire_activo}</strong>`;
         }
@@ -3398,7 +2768,6 @@
           }
           return `<div class="trace-item"><span class="badge b-met">${idx + 1}. MÉTODO</span> <strong>${item.agente}</strong>.<code>${item.metodo}</code><br><span style="color:#4b5563">${item.detalle}</span></div>`;
         }).join("");
-        animarActividadAgentesDesdeTraza(data.traza || [], etiqueta);
       }
 
       function cambiarFormatoACL(fmt) {
@@ -3438,12 +2807,6 @@
 
       cargarEstado().then(async () => {
         await analizarImagenActual();
-        await ejecutarCicloAutonomoCompleto(false);
-        setInterval(() => {
-          if (pilotoAutomaticoActivo && !imagenBase64Seleccionada) {
-            ejecutarCicloAutonomoCompleto(true);
-          }
-        }, 16000);
       });
   </script>
 </body>

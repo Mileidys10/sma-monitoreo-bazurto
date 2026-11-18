@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMA Bazurto — Sala de Control Multiagente</title>
+  <link rel="stylesheet" href="/static/sala/sala.css">
+  <script src="/static/sala/sala.js" defer></script>
+</head>
+<body>
+  <a href="#contenido-principal" class="saltar-contenido">Saltar al contenido principal</a>
+
+  <main id="contenido-principal" class="sala-layout" tabindex="-1">
+    <!-- Banda 1: Cabecera de estado y narrador -->
+    <header class="banda-cabecera">
+      <div class="cabecera-superior">
+        <div class="cabecera-identidad">
+          <h1>SMA Bazurto</h1>
+          <p class="cabecera-subtitulo">Sala de control del sistema multiagente</p>
+        </div>
+        <div class="cabecera-indicadores">
+          <span id="estado-conexion" class="estado-conexion" data-estado="reconectando" role="status" aria-live="polite">reconectando...</span>
+          <span id="chip-motor" class="chip-motor">Motor: LangGraph</span>
+        </div>
+      </div>
+      <div class="cabecera-narrador">
+        <span class="narrador-etiqueta">En curso</span>
+        <p id="narrador" class="barra-narrador" data-nivel="info" role="status" aria-live="polite">Esperando eventos del motor multiagente en el servidor...</p>
+      </div>
+    </header>
+
+    <!-- Banda 2: Zonas del mercado (izquierda) y Red de agentes (derecha) -->
+    <div class="banda-media">
+      <section id="mapa-zonas" class="panel-sala" aria-labelledby="titulo-mapa-zonas">
+        <div class="panel-cabecera">
+          <h2 id="titulo-mapa-zonas">Zonas del Mercado</h2>
+          <span class="etiqueta-entorno">Sensores del entorno: simulados</span>
+        </div>
+        <p class="panel-ayuda">Seleccione una zona para abrir su captura visual y mediciones.</p>
+        <div id="lista-zonas" class="lista-zonas" role="list" aria-label="Zonas monitoreadas del Mercado Bazurto"></div>
+      </section>
+
+      <section id="red-agentes" class="panel-sala" aria-labelledby="titulo-red-agentes">
+        <div class="panel-cabecera">
+          <h2 id="titulo-red-agentes">Red de Agentes FIPA-ACL</h2>
+          <span class="leyenda-agentes" aria-label="Estados posibles de los agentes">
+            <span class="leyenda-item"><span class="punto-estado" data-estado="reposo" aria-hidden="true"></span>Reposo</span>
+            <span class="leyenda-item"><span class="punto-estado" data-estado="analizando" aria-hidden="true"></span>Analizando</span>
+            <span class="leyenda-item"><span class="punto-estado" data-estado="comunicando" aria-hidden="true"></span>Comunicando</span>
+            <span class="leyenda-item"><span class="punto-estado" data-estado="esperando" aria-hidden="true"></span>Esperando</span>
+          </span>
+        </div>
+        <p class="panel-ayuda">Active un nodo para inspeccionar su estado y últimos 5 mensajes.</p>
+
+        <div class="contenedor-svg">
+          <svg id="svg-agentes" viewBox="0 0 600 360" role="group" aria-label="Diagrama de los cinco agentes y canales de comunicación FIPA-ACL">
+            <defs>
+              <marker id="punta-flecha" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" class="flecha-punta"></path>
+              </marker>
+            </defs>
+
+            <g id="capa-flechas">
+              <!-- Líneas visibles entre nodos -->
+              <line id="flecha-SensorResiduos-Coordinador" class="flecha-agente" x1="180" y1="189" x2="220" y2="201" marker-end="url(#punta-flecha)"></line>
+              <line id="flecha-SensorAire-Coordinador" class="flecha-agente" x1="180" y1="261" x2="220" y2="249" marker-end="url(#punta-flecha)"></line>
+              <line id="flecha-Coordinador-Alertas" class="flecha-agente" x1="378" y1="225" x2="418" y2="225" marker-end="url(#punta-flecha)"></line>
+              <line id="flecha-Supervisor-Coordinador" class="flecha-agente" x1="300" y1="79" x2="300" y2="196" marker-end="url(#punta-flecha)"></line>
+              <line id="flecha-Supervisor-Alertas" class="flecha-agente" x1="331" y1="79" x2="466" y2="196" marker-end="url(#punta-flecha)"></line>
+
+              <!-- Alias con nombre completo de agente para trazado directo desde eventos ACL -->
+              <line id="flecha-AgenteSensorResiduos-AgenteCoordinador" class="flecha-alias" x1="180" y1="189" x2="220" y2="201"></line>
+              <line id="flecha-AgenteSensorAire-AgenteCoordinador" class="flecha-alias" x1="180" y1="261" x2="220" y2="249"></line>
+              <line id="flecha-AgenteCoordinador-AgenteAlertas" class="flecha-alias" x1="378" y1="225" x2="418" y2="225"></line>
+              <line id="flecha-AgenteSupervisor-AgenteCoordinador" class="flecha-alias" x1="300" y1="79" x2="300" y2="196"></line>
+              <line id="flecha-AgenteSupervisor-AgenteAlertas" class="flecha-alias" x1="331" y1="79" x2="466" y2="196"></line>
+            </g>
+
+            <g id="capa-nodos">
+              <g id="nodo-AgenteSupervisor" class="nodo-agente" data-agente="AgenteSupervisor" data-estado="reposo" tabindex="0" role="button" aria-label="AgenteSupervisor, estado: reposo">
+                <rect class="nodo-caja" x="222" y="25" width="156" height="54" rx="6"></rect>
+                <circle class="nodo-indicador" cx="238" cy="43" r="5"></circle>
+                <text class="nodo-nombre" x="250" y="47">Supervisor</text>
+                <text class="nodo-estado" x="238" y="65">Estado: reposo</text>
+              </g>
+
+              <g id="nodo-AgenteSensorResiduos" class="nodo-agente" data-agente="AgenteSensorResiduos" data-estado="reposo" tabindex="0" role="button" aria-label="AgenteSensorResiduos, estado: reposo">
+                <rect class="nodo-caja" x="24" y="138" width="156" height="54" rx="6"></rect>
+                <circle class="nodo-indicador" cx="40" cy="156" r="5"></circle>
+                <text class="nodo-nombre" x="52" y="160">Sensor Residuos</text>
+                <text class="nodo-estado" x="40" y="178">Estado: reposo</text>
+              </g>
+
+              <g id="nodo-AgenteSensorAire" class="nodo-agente" data-agente="AgenteSensorAire" data-estado="reposo" tabindex="0" role="button" aria-label="AgenteSensorAire, estado: reposo">
+                <rect class="nodo-caja" x="24" y="258" width="156" height="54" rx="6"></rect>
+                <circle class="nodo-indicador" cx="40" cy="276" r="5"></circle>
+                <text class="nodo-nombre" x="52" y="280">Sensor Aire</text>
+                <text class="nodo-estado" x="40" y="298">Estado: reposo</text>
+              </g>
+
+              <g id="nodo-AgenteCoordinador" class="nodo-agente" data-agente="AgenteCoordinador" data-estado="reposo" tabindex="0" role="button" aria-label="AgenteCoordinador, estado: reposo">
+                <rect class="nodo-caja" x="222" y="198" width="156" height="54" rx="6"></rect>
+                <circle class="nodo-indicador" cx="238" cy="216" r="5"></circle>
+                <text class="nodo-nombre" x="250" y="220">Coordinador</text>
+                <text class="nodo-estado" x="238" y="238">Estado: reposo</text>
+              </g>
+
+              <g id="nodo-AgenteAlertas" class="nodo-agente" data-agente="AgenteAlertas" data-estado="reposo" tabindex="0" role="button" aria-label="AgenteAlertas, estado: reposo">
+                <rect class="nodo-caja" x="420" y="198" width="156" height="54" rx="6"></rect>
+                <circle class="nodo-indicador" cx="436" cy="216" r="5"></circle>
+                <text class="nodo-nombre" x="448" y="220">Alertas</text>
+                <text class="nodo-estado" x="436" y="238">Estado: reposo</text>
+              </g>
+            </g>
+
+            <g id="capa-pulsos" aria-hidden="true"></g>
+          </svg>
+        </div>
+      </section>
+    </div>
+
+    <!-- Banda 3: Bitácora de mensajes ACL (últimas 8 líneas) -->
+    <section id="bitacora" class="panel-sala banda-bitacora" aria-labelledby="titulo-bitacora">
+      <div class="panel-cabecera">
+        <h2 id="titulo-bitacora">Bitácora FIPA-ACL</h2>
+        <span class="panel-meta">Últimas 8 líneas (más reciente arriba)</span>
+      </div>
+      <ol id="lista-bitacora" class="lista-bitacora" role="log" aria-live="polite" aria-relevant="additions"></ol>
+    </section>
+  </main>
+
+  <!-- Cajón lateral: Detalle de agente -->
+  <aside id="cajon-agente" class="cajon-lateral" aria-labelledby="cajon-agente-titulo" hidden>
+    <div class="cajon-cabecera">
+      <h2 id="cajon-agente-titulo">Agente</h2>
+      <button type="button" id="cerrar-cajon-agente" class="btn-cerrar" aria-label="Cerrar detalle de agente">Cerrar (Esc)</button>
+    </div>
+    <div class="cajon-cuerpo">
+      <div id="cajon-agente-estado" class="cajon-bloque"></div>
+      <h3 class="cajon-subtitulo">Últimos 5 mensajes</h3>
+      <ol id="cajon-agente-mensajes" class="cajon-lista-mensajes"></ol>
+    </div>
+  </aside>
+
+  <!-- Cajón lateral: Detalle de zona y visión -->
+  <aside id="cajon-zona" class="cajon-lateral" aria-labelledby="cajon-zona-titulo" hidden>
+    <div class="cajon-cabecera">
+      <h2 id="cajon-zona-titulo">Zona</h2>
+      <button type="button" id="cerrar-cajon-zona" class="btn-cerrar" aria-label="Cerrar detalle de zona">Cerrar (Esc)</button>
+    </div>
+    <div class="cajon-cuerpo">
+      <p class="rotulo-muestra">Imagen de muestra analizada</p>
+      <div id="cajon-zona-imagen" class="cajon-visor-imagen"></div>
+      <div id="cajon-zona-datos" class="cajon-bloque"></div>
+      <p id="cajon-zona-explicacion" class="cajon-explicacion"></p>
+    </div>
+  </aside>
+
+  <footer class="pie-pagina">
+    <p class="pie-nota">SMAMonitoreoBazurto V2 — Observador de eventos SSE</p>
+    <nav aria-label="Enlaces legales y documentación">
+      <ul class="pie-enlaces">
+        <li><a href="/privacy">Privacidad</a></li>
+        <li><a href="/terms">Términos y condiciones</a></li>
+        <li><a href="/documentacion">Documentación</a></li>
+      </ul>
+    </nav>
+  </footer>
+</body>
+</html>
