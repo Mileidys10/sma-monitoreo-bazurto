@@ -1,30 +1,54 @@
 """Aplicación FastAPI para operar y visualizar SMAMonitoreoBazurto con persistencia SQLite."""
 
+import asyncio
+import os
 import re
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, AsyncIterator, Optional
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from app.autonomo import LoopAutonomo
+from app.eventos import EventBus
 from app.models_masml import SMAMonitoreoBazurto
-from app.multiagent_frameworks import ejecutar_orquestacion_framework, obtener_catalogo_frameworks
+from app.motor_langgraph import info_motor
 from app.vision_analyzer import analizar_imagen_contenedor, ensure_sample_images
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 SAMPLE_CATALOG = ensure_sample_images(STATIC_DIR)
 
+bus = EventBus()
+sma = SMAMonitoreoBazurto(db_path=os.environ.get("SMA_DB_PATH") or str(BASE_DIR.parent / "bazurto_sma.db"))
+loop_autonomo = LoopAutonomo(
+    sma,
+    bus,
+    intervalo_s=float(os.environ.get("SMA_INTERVALO_S", "6")),
+    gemini_api_key=os.environ.get("GEMINI_API_KEY") or None,
+)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    if os.environ.get("SMA_AUTONOMO", "1") != "0":
+        loop_autonomo.iniciar()
+    try:
+        yield
+    finally:
+        loop_autonomo.detener()
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="SMAMonitoreoBazurto — MAS-ML & FIPA-ACL",
     description="Sistema Multiagente de Monitoreo Ambiental del Mercado de Bazurto con persistencia SQLite.",
     version="1.0.0",
 )
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
-sma = SMAMonitoreoBazurto(db_path=str(BASE_DIR.parent / "bazurto_sma.db"))
 
 
 class ZonaUpdateRequest(BaseModel):
@@ -103,13 +127,6 @@ class AlertaResponderRequest(BaseModel):
     confirmar: bool
 
 
-class FrameworkRunRequest(BaseModel):
-    framework_id: str = "langgraph"
-    zona_id: str = "zona_3"
-    comunidad_confirma: Optional[bool] = True
-    incluir_supervision: bool = True
-    gemini_api_key: Optional[str] = None
-
 
 @app.get("/health")
 def health() -> dict[str, str]:
@@ -118,7 +135,73 @@ def health() -> dict[str, str]:
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
+    sala = STATIC_DIR / "sala" / "sala.html"
+    return (sala if sala.exists() else STATIC_DIR / "index.html").read_text(encoding="utf-8")
+
+
+@app.get("/documentacion", response_class=HTMLResponse)
+def documentacion() -> str:
     return (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon() -> Response:
+    return Response(status_code=204)
+
+
+@app.get("/api/motor")
+def get_motor() -> dict[str, Any]:
+    return info_motor()
+
+
+@app.get("/api/sala/snapshot")
+def sala_snapshot() -> dict[str, Any]:
+    return loop_autonomo.snapshot()
+
+
+@app.get("/api/sala/vision/{zona_id}.png")
+def sala_vision(zona_id: str) -> Response:
+    png = loop_autonomo.imagenes.get(zona_id)
+    if png is None:
+        raise HTTPException(status_code=404, detail="Aun no hay imagen analizada para esa zona")
+    return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/api/stream")
+async def stream_eventos(request: Request, desde: int = 0) -> StreamingResponse:
+    ultimo = request.headers.get("last-event-id")
+    if ultimo and ultimo.isdigit():
+        desde = max(desde, int(ultimo))
+
+    async def generador() -> AsyncIterator[str]:
+        gen = bus.stream(desde_id=desde)
+        pendiente: Optional["asyncio.Future[Any]"] = None
+        try:
+            yield "retry: 3000\n\n"
+            while True:
+                if pendiente is None:
+                    pendiente = asyncio.ensure_future(gen.__anext__())
+                hecho, _ = await asyncio.wait({pendiente}, timeout=15)
+                if not hecho:
+                    yield ": keepalive\n\n"
+                    continue
+                evento = pendiente.result()
+                pendiente = None
+                yield evento.a_sse()
+        finally:
+            if pendiente is not None:
+                pendiente.cancel()
+                await asyncio.gather(pendiente, return_exceptions=True)  # esperar a que termine antes de cerrar
+            try:
+                await gen.aclose()
+            except RuntimeError:  # el generador ya se cerro al cancelarse la espera
+                pass
+
+    return StreamingResponse(
+        generador(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/privacy", response_class=HTMLResponse)
@@ -175,7 +258,6 @@ def get_estado() -> dict[str, Any]:
         "alertas": sma.db.list_alertas(limit=15),
         "incidencias": sma.db.list_incidencias(limit=15),
         "mensajes_acl": sma.db.list_acl_messages(limit=30),
-        "frameworks_catalogo": obtener_catalogo_frameworks()["frameworks"],
     }
 
 
@@ -398,26 +480,6 @@ def run_cu2(req: CasoUso2Request) -> dict[str, Any]:
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-
-@app.get("/api/frameworks")
-def get_frameworks() -> dict[str, Any]:
-    return obtener_catalogo_frameworks()
-
-
-@app.post("/api/frameworks/ejecutar")
-def run_framework_orchestration(req: FrameworkRunRequest) -> dict[str, Any]:
-    try:
-        return ejecutar_orquestacion_framework(
-            sma=sma,
-            framework_id=req.framework_id,
-            zona_id=req.zona_id,
-            comunidad_confirma=req.comunidad_confirma,
-            incluir_supervision=req.incluir_supervision,
-            gemini_api_key=req.gemini_api_key,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/reset")

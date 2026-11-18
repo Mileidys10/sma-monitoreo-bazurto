@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.main import STATIC_DIR, app
 from app.models_masml import SMAMonitoreoBazurto
-from app.multiagent_frameworks import ejecutar_orquestacion_framework
+from app.motor_langgraph import BazurtoStateGraphRunner, info_motor
 from app.vision_analyzer import analizar_imagen_contenedor, ensure_sample_images
 
 
@@ -406,69 +406,36 @@ def test_v2_inspeccion_coordinada_camaras_y_4_casos_uso_por_rol() -> None:
     assert r4.json()["caso_uso"] == "CU-ROL-04"
 
 
-def test_v2_siete_frameworks_profesor_stategraph_y_checkpointer(tmp_path: Path) -> None:
+def test_v2_motor_langgraph_real_5_nodos_y_estados_de_agente(tmp_path: Path) -> None:
+    info = info_motor()
+    assert info["motor"] == "LangGraph" and info["version_langgraph"]
+    assert [n["id"] for n in info["nodos_grafo"]] == [
+        "nodo_sensor_residuos", "nodo_sensor_aire", "nodo_coordinador", "nodo_alertas", "nodo_supervisor",
+    ]
+
+    for confirma, esperado in ((True, "INFORM-DONE"), (False, "FAILURE")):
+        sma = SMAMonitoreoBazurto(db_path=str(tmp_path / f"lg_{confirma}.db"))
+        estados: list[tuple[str, str]] = []
+        runner = BazurtoStateGraphRunner(sma, on_agente=lambda a, e, d: estados.append((a, e)))
+        res = runner.run(zona_id="zona_3", comunidad_confirma=confirma)
+
+        assert [n["nodo"] for n in res["nodos_visitados"]] == [n["id"] for n in info["nodos_grafo"]]
+        cp = res["estado_final_checkpoint"]
+        assert cp["resultado_acl"] == esperado
+        assert cp["tiempoSobreLimite"] >= 15 and cp["historialMediciones_count"] >= 1
+        assert (len(cp["incidencias_supervisor"]) == 0) == confirma
+        assert [e for _, e in estados].count("analizando") == 5
+        assert estados[0] == ("AgenteSensorResiduos", "analizando")
+
+
+def test_v2_endpoints_sala_de_control_y_sin_frameworks_falsos() -> None:
     client = TestClient(app)
-    assert client.post("/api/reset").status_code == 200
-
-    cat_resp = client.get("/api/frameworks")
-    assert cat_resp.status_code == 200
-    cat = cat_resp.json()
-    assert cat["total_frameworks"] == 7
-    assert cat["langgraph_nativo_instalado"] is True
-    ids = {fw["id"] for fw in cat["frameworks"]}
-    assert ids == {
-        "langgraph",
-        "crewai",
-        "microsoft_maf",
-        "google_adk",
-        "jade",
-        "autogen",
-        "agent_sdk",
-    }
-
-    # Ejecutar los 7 frameworks vía HTTP (LangGraph nativo + SQLite)
-    for fw_id in ("langgraph", "crewai", "microsoft_maf", "google_adk", "jade", "autogen", "agent_sdk"):
-        confirma = fw_id != "jade"
-        run_resp = client.post(
-            "/api/frameworks/ejecutar",
-            json={
-                "framework_id": fw_id,
-                "zona_id": "zona_3",
-                "comunidad_confirma": confirma,
-                "incluir_supervision": True,
-            },
-        )
-        assert run_resp.status_code == 200
-        data = run_resp.json()
-        assert data["framework_id"] == fw_id
-        assert len(data["nodos_visitados"]) == 5
-        assert [n["nodo"] for n in data["nodos_visitados"]] == [
-            "nodo_sensor_residuos",
-            "nodo_sensor_aire",
-            "nodo_coordinador",
-            "nodo_alertas",
-            "nodo_supervisor",
-        ]
-        cp = data["estado_final_checkpoint"]
-        assert cp["tiempoSobreLimite"] >= 15
-        assert cp["historialMediciones_count"] >= 1
-        if confirma:
-            assert data["resultado_acl"] == "INFORM-DONE"
-            assert cp["incidencias_supervisor"] == []
-        else:
-            assert data["resultado_acl"] == "FAILURE"
-            assert len(cp["incidencias_supervisor"]) == 1
-
-    # Verificar paridad del motor FallbackStateGraph 100% offline (sin depender de langgraph instalado)
-    sma_off = SMAMonitoreoBazurto(db_path=str(tmp_path / "test_fw_offline.db"))
-    off_res = ejecutar_orquestacion_framework(
-        sma=sma_off,
-        framework_id="google_adk",
-        zona_id="zona_3",
-        comunidad_confirma=False,
-        incluir_supervision=True,
-        force_fallback=True,
-    )
-    assert off_res["resultado_acl"] == "FAILURE"
-    assert len(off_res["nodos_visitados"]) == 5
-    assert len(off_res["estado_final_checkpoint"]["incidencias_supervisor"]) == 1
+    assert client.get("/api/frameworks").status_code == 404
+    motor = client.get("/api/motor").json()
+    assert motor["motor"] == "LangGraph"
+    snap = client.get("/api/sala/snapshot").json()
+    assert {"ultimo_evento_id", "zonas", "agentes", "recientes"} <= set(snap)
+    assert len(snap["agentes"]) == 5
+    assert client.get("/api/sala/vision/zona_inexistente.png").status_code == 404
+    assert client.get("/documentacion").status_code == 200
+    assert client.get("/").status_code == 200

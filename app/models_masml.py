@@ -1,7 +1,7 @@
 """Implementación 1:1 del Diagrama de Clases MAS-ML para SMAMonitoreoBazurto."""
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from app.database import BazurtoDatabase
 from app.fipa_acl import ACLMessage
@@ -125,6 +125,16 @@ class MercadoBazurto:
         }
 
 
+_OBSERVADORES_ACL: list[Callable[[ACLMessage], None]] = []
+
+
+def registrar_observador_acl(fn: Callable[[ACLMessage], None]) -> None:
+    """Registra un callback que recibe cada mensaje FIPA-ACL en el instante en que se emite."""
+    if fn not in _OBSERVADORES_ACL:
+        _OBSERVADORES_ACL.append(fn)
+
+
+
 class AgenteBase:
     """Base común para trazabilidad de ejecución y envío de mensajes FIPA-ACL."""
 
@@ -149,6 +159,11 @@ class AgenteBase:
                 "json": msg.to_dict(),
             }
         )
+        for observador in list(_OBSERVADORES_ACL):
+            try:
+                observador(msg)
+            except Exception:  # un observador defectuoso nunca debe romper al agente
+                pass
         return msg
 
 
