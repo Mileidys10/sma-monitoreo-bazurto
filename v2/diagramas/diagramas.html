@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMA Bazurto — Diagramas</title>
+  <link rel="stylesheet" href="./diagramas.css">
+  <script src="../vendor/mermaid-11.4.1.min.js"></script>
+  <script src="./diagramas.js" defer></script>
+</head>
+<body>
+  <a href="#contenido-principal" class="saltar-contenido">Saltar al contenido principal</a>
+
+  <header class="cabecera-diagramas">
+    <div class="cabecera-contenido">
+      <div>
+        <h1>SMA Bazurto — Diagramas de Arquitectura y Secuencia</h1>
+        <p class="cabecera-subtitulo">Modelado MAS-ML, protocolos FIPA-ACL y grafo real en LangGraph</p>
+      </div>
+      <nav aria-label="Navegación principal">
+        <a href="../" class="btn-volver">Volver</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenido-principal" class="contenedor-diagramas" tabindex="-1">
+    <aside class="aviso-estatico" role="note" aria-label="Aviso de versión estática">
+      <p>Versión estática: el grafo se muestra tal como lo compila el motor en el momento de publicar.</p>
+    </aside>
+
+    <section class="panel-diagrama" aria-labelledby="titulo-clases-masml">
+      <h2 id="titulo-clases-masml">1. Diagrama de Clases MAS-ML</h2>
+      <p class="descripcion-diagrama">
+        Representa la organización SMAMonitoreoBazurto en el entorno MercadoBazurto, sus cuatro roles y los cinco agentes con sus métodos.
+        Muestra las relaciones inhabit, ownership, play, control y dependency entre roles.
+      </p>
+      <div class="marco-mermaid">
+        <pre class="mermaid">classDiagram
+    class SMAMonitoreoBazurto {
+        &lt;&lt;organization&gt;&gt;
+        +objetivo: ReducirRiesgoAmbientalBazurto
+        +politica: PriorizacionCoordinada
+        +parametros: UmbralesConfigurables
+    }
+
+    class MercadoBazurto {
+        &lt;&lt;environment&gt;&gt;
+        +zonas: Lista~Zona~
+        +nivelLlenadoContenedores: Real
+        +concentracionGases: Real
+        +temperatura: Real
+        +humedad: Real
+    }
+
+    class MonitorCondicionesAmbientales {
+        &lt;&lt;role&gt;&gt;
+        +duties: obtener mediciones ambientales, analizar condiciones del entorno, identificar situaciones de riesgo, reportar eventos ambientales
+        +rights: acceder a los datos de los sensores, consultar mediciones ambientales, comunicar eventos al coordinador
+    }
+
+    class Coordinador {
+        &lt;&lt;role&gt;&gt;
+        +duties: calcular riesgo ambiental, priorizar zonas, delegar emisión de alertas, escalar situaciones
+        +rights: consultar eventos ambientales, solicitar emisión de alertas
+    }
+
+    class EmisorAlertas {
+        &lt;&lt;role&gt;&gt;
+        +duties: emitir mensajes a la comunidad, gestionar confirmaciones de recepción, generar reportes de confirmación o falta de confirmación
+        +rights: recibir solicitudes de alerta, acceder a mecanismos de comunicación, consultar estado de alertas
+    }
+
+    class Supervisor {
+        &lt;&lt;role&gt;&gt;
+        +duties: supervisar funcionamiento de agentes, verificar atención de eventos, registrar incidencias, notificar fallos
+        +rights: consultar estado general del sistema, solicitar acciones correctivas
+    }
+
+    class AgenteSensorResiduos {
+        &lt;&lt;agent&gt;&gt;
+        -arquitectura: Basado en modelos
+        -estadoInterno: nivel, tiempoSobreLimite, ritmoLlenado
+        +medirNivelLlenadoContenedores()
+        +analizarImagenes()
+        +evaluarPersistencia()
+        +publicarEventoRiesgo()
+    }
+
+    class AgenteSensorAire {
+        &lt;&lt;agent&gt;&gt;
+        -arquitectura: Basado en modelos
+        -historialMediciones: Lista~Medicion~
+        +medirGases()
+        +registrarMedicion()
+        +detectarAumentoProgresivo()
+        +publicarMedicion()
+    }
+
+    class AgenteCoordinador {
+        &lt;&lt;agent&gt;&gt;
+        -arquitectura: Basado en utilidad
+        +consultarEventos()
+        +calcularRiesgo()
+        +priorizarZonas()
+        +delegarAlerta()
+    }
+
+    class AgenteAlertas {
+        &lt;&lt;agent&gt;&gt;
+        -arquitectura: Basado en metas
+        +recibirSolicitudAlerta()
+        +emitirAviso()
+        +gestionarConfirmacion()
+        +generarReporteConfirmacion()
+        +generarReporteSinConfirmacion()
+    }
+
+    class AgenteSupervisor {
+        &lt;&lt;agent&gt;&gt;
+        -arquitectura: Basado en utilidad
+        +supervisarAgentes()
+        +verificarAtencionEventos()
+        +registrarIncidencias()
+        +notificarFallos()
+        +solicitarAccionesCorrectivas()
+    }
+
+    %% Relaciones inhabit y owns
+    SMAMonitoreoBazurto "1" -- "1" MercadoBazurto : inhabit
+    SMAMonitoreoBazurto *-- MonitorCondicionesAmbientales : owns
+    SMAMonitoreoBazurto *-- Coordinador : owns
+    SMAMonitoreoBazurto *-- EmisorAlertas : owns
+    SMAMonitoreoBazurto *-- Supervisor : owns
+
+    %% Relaciones play (Agente -&gt; Rol)
+    AgenteSensorResiduos --&gt; MonitorCondicionesAmbientales : play
+    AgenteSensorAire --&gt; MonitorCondicionesAmbientales : play
+    AgenteCoordinador --&gt; Coordinador : play
+    AgenteAlertas --&gt; EmisorAlertas : play
+    AgenteSupervisor --&gt; Supervisor : play
+
+    %% Relaciones control (Jerarquía de Roles)
+    Supervisor --&gt; MonitorCondicionesAmbientales : control
+    Supervisor --&gt; Coordinador : control
+    Supervisor --&gt; EmisorAlertas : control
+
+    %% Relaciones dependency (Dependencia entre Roles - Regla del Profesor: Punta depende del Rabo)
+    MonitorCondicionesAmbientales ..&gt; Coordinador : dependency
+    Coordinador ..&gt; EmisorAlertas : dependency</pre>
+      </div>
+    </section>
+
+    <section class="panel-diagrama" aria-labelledby="titulo-secuencia-cu01">
+      <h2 id="titulo-secuencia-cu01">2. Diagrama de Secuencia CU-01 — Monitoreo Ambiental, Priorización de Riesgo y Emisión de Alerta Comunitaria</h2>
+      <p class="descripcion-diagrama">
+        Detalla el flujo desde la lectura de sensores y análisis visual hasta el cálculo de riesgo por el Coordinador.
+        Incluye los mensajes FIPA-ACL INFORM, REQUEST, AGREE, INFORM-DONE, FAILURE y REFUSE con el AgenteAlertas.
+      </p>
+      <div class="marco-mermaid">
+        <pre class="mermaid">sequenceDiagram
+    autonumber
+    participant ENV as MercadoBazurto&lt;br/&gt;«environment»
+    participant SR as AgenteSensorResiduos&lt;br/&gt;«agent» (rol: MonitorCondicionesAmbientales)
+    participant SA as AgenteSensorAire&lt;br/&gt;«agent» (rol: MonitorCondicionesAmbientales)
+    participant CO as AgenteCoordinador&lt;br/&gt;«agent» (rol: Coordinador)
+    participant AL as AgenteAlertas&lt;br/&gt;«agent» (rol: EmisorAlertas)
+
+    Note over ENV,AL: 1. Monitoreo de Residuos y Aire
+    SR-&gt;&gt;SR: medirNivelLlenadoContenedores()
+    SR-&gt;&gt;ENV: consultar nivelLlenadoContenedores(zona_3)
+    ENV--&gt;&gt;SR: nivelLlenadoContenedores = 92%
+    SR-&gt;&gt;SR: analizarImagenes()
+    SR-&gt;&gt;SR: evaluarPersistencia()
+    opt nivel &gt; umbral AND persiste
+        SR-&gt;&gt;SR: publicarEventoRiesgo()
+        SR-&gt;&gt;CO: INFORM (eventoRiesgo zona_3 nivel=92% t=45min) «ACL:INFORM»
+    end
+
+    SA-&gt;&gt;SA: medirGases()
+    SA-&gt;&gt;ENV: consultar gases, temp, humedad(zona_3)
+    ENV--&gt;&gt;SA: concentracionGases=850ppm, temperatura=32C, humedad=78%
+    SA-&gt;&gt;SA: registrarMedicion()
+    SA-&gt;&gt;SA: detectarAumentoProgresivo()
+    SA-&gt;&gt;SA: publicarMedicion()
+    SA-&gt;&gt;CO: INFORM (medicion zona_3 CO2=850ppm aumentoProgresivo=true) «ACL:INFORM»
+
+    Note over ENV,AL: 2. Coordinación y Priorización de Riesgo
+    activate CO
+    CO-&gt;&gt;CO: consultarEventos()
+    CO-&gt;&gt;CO: calcularRiesgo()
+    CO-&gt;&gt;CO: priorizarZonas()
+    CO-&gt;&gt;CO: delegarAlerta()
+    CO-&gt;&gt;AL: REQUEST (emitir_alerta zona_3 riesgo=0.89 nivel=ALTO) «ACL:REQUEST»
+    deactivate CO
+
+    Note over ENV,AL: 3. Emisión de Alerta y Gestión de Confirmación
+    activate AL
+    AL-&gt;&gt;AL: recibirSolicitudAlerta()
+    alt puede atender (no duplicada)
+        AL--&gt;&gt;CO: AGREE (emitir_alerta zona_3) «ACL:AGREE»
+        AL-&gt;&gt;AL: emitirAviso()
+        AL-&gt;&gt;ENV: difundirAvisoComunidad(zona_3)
+        ENV--&gt;&gt;AL: aviso_desplegado(ok)
+        AL-&gt;&gt;AL: gestionarConfirmacion()
+        alt comunidad confirmó
+            AL-&gt;&gt;AL: generarReporteConfirmacion()
+            AL--&gt;&gt;CO: INFORM-DONE (alerta zona_3 confirmada) «ACL:INFORM-DONE»
+        else sin confirmación comunitaria
+            AL-&gt;&gt;AL: generarReporteSinConfirmacion()
+            AL--&gt;&gt;CO: FAILURE (alerta zona_3 sin_confirmacion) «ACL:FAILURE»
+        end
+    else alerta duplicada activa
+        AL--&gt;&gt;CO: REFUSE (alerta_ya_emitida zona_3) «ACL:REFUSE»
+    end
+    deactivate AL</pre>
+      </div>
+    </section>
+
+    <section class="panel-diagrama" aria-labelledby="titulo-secuencia-cu02">
+      <h2 id="titulo-secuencia-cu02">3. Diagrama de Secuencia CU-02 — Supervisión Continua, Auditoría de Atención/Sensores y Escalamiento Correctivo</h2>
+      <p class="descripcion-diagrama">
+        Muestra cómo el AgenteSupervisor audita eventos y salud de sensores usando el protocolo FIPA-Query (QUERY-IF, CONFIRM, DISCONFIRM).
+        Ante fallos o falta de confirmación comunitaria, registra incidencias y solicita acciones correctivas al Coordinador.
+      </p>
+      <div class="marco-mermaid">
+        <pre class="mermaid">sequenceDiagram
+    autonumber
+    participant SU as AgenteSupervisor&lt;br/&gt;«agent» (rol: Supervisor)
+    participant CO as AgenteCoordinador&lt;br/&gt;«agent» (rol: Coordinador)
+    participant AL as AgenteAlertas&lt;br/&gt;«agent» (rol: EmisorAlertas)
+    participant SA as AgenteSensorAire&lt;br/&gt;«agent» (rol: MonitorCondicionesAmbientales)
+
+    Note over SU,SA: 1. Verificación de Atención de Eventos
+    SU-&gt;&gt;SU: supervisarAgentes()
+    SU-&gt;&gt;SU: verificarAtencionEventos()
+    SU-&gt;&gt;CO: QUERY-IF (evento_45 atendido) «ACL:QUERY-IF»
+    activate CO
+    CO--&gt;&gt;SU: CONFIRM (evento_45 atendido, alerta delegada) «ACL:CONFIRM»
+    deactivate CO
+
+    SU-&gt;&gt;AL: QUERY-IF (alerta evento_45 confirmada_por_comunidad) «ACL:QUERY-IF»
+    activate AL
+    alt comunidad confirmó la alerta
+        AL--&gt;&gt;SU: CONFIRM (reporteConfirmacion evento_45) «ACL:CONFIRM»
+    else sin confirmación comunitaria
+        AL--&gt;&gt;SU: DISCONFIRM (reporteSinConfirmacion evento_45) «ACL:DISCONFIRM»
+        deactivate AL
+        SU-&gt;&gt;SU: registrarIncidencias()
+        SU-&gt;&gt;SU: solicitarAccionesCorrectivas()
+        SU-&gt;&gt;CO: REQUEST (escalar evento_45 reintento_alerta) «ACL:REQUEST»
+        activate CO
+        CO--&gt;&gt;SU: AGREE (escalar evento_45) «ACL:AGREE»
+        CO-&gt;&gt;CO: delegarAlerta()
+        CO-&gt;&gt;AL: REQUEST (emitir_alerta evento_45 reintento) «ACL:REQUEST»
+        deactivate CO
+    end
+
+    Note over SU,SA: 2. Supervisión de Salud de Sensores (Timeout)
+    SU-&gt;&gt;SA: QUERY-IF (estado_activo AgenteSensorAire) «ACL:QUERY-IF»
+    alt sensor operativo responde antes de reply-by
+        SA--&gt;&gt;SU: CONFIRM (estado_activo true) «ACL:CONFIRM»
+    else reply-by vencido: sin respuesta
+        Note over SU,SA: Tiempo límite reply-by excedido
+        SU-&gt;&gt;SU: registrarIncidencias()
+        SU-&gt;&gt;SU: notificarFallos()
+        SU-&gt;&gt;CO: INFORM (fallo AgenteSensorAire zona_3) «ACL:INFORM»
+        SU-&gt;&gt;SU: solicitarAccionesCorrectivas()
+        SU-&gt;&gt;CO: REQUEST (recalcular_riesgo zona_3 sin AgenteSensorAire) «ACL:REQUEST»
+        activate CO
+        CO--&gt;&gt;SU: AGREE (recalcular_riesgo zona_3) «ACL:AGREE»
+        CO-&gt;&gt;CO: calcularRiesgo()
+        CO-&gt;&gt;CO: priorizarZonas()
+        deactivate CO
+    end</pre>
+      </div>
+    </section>
+
+    <section class="panel-diagrama" aria-labelledby="titulo-grafo-motor">
+      <h2 id="titulo-grafo-motor">4. Grafo real del motor</h2>
+      <p class="descripcion-diagrama">
+        Representa el StateGraph compilado en LangGraph que ejecutan los cinco agentes, publicado en el archivo estático del repositorio.
+        Incluye la arista condicional hacia AgenteSupervisor tanto desde AgenteAlertas como desde AgenteCoordinador ante caída del sensor de aire.
+      </p>
+      <p id="estado-grafo-motor" class="meta-motor" role="status" aria-live="polite">Motor: LangGraph 1.2.22</p>
+      <div class="marco-mermaid">
+        <pre id="mermaid-grafo-motor" class="mermaid"></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie-diagramas">
+    <p class="pie-nota">SMAMonitoreoBazurto V2 — Diagramas locales sin CDN</p>
+    <nav aria-label="Enlaces de la aplicación">
+      <ul class="pie-enlaces">
+        <li><a href="../">Volver a SMA Bazurto V2</a></li>
+        <li><a href="../privacidad.html">Privacidad y términos de uso</a></li>
+      </ul>
+    </nav>
+  </footer>
+</body>
+</html>
